@@ -11,8 +11,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include(CTest)
-enable_testing()
+#include(CTest)
+#enable_testing()
 
 find_package(Crow CONFIG REQUIRED)
 find_package(SOCI CONFIG REQUIRED)
