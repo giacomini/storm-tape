@@ -42,7 +42,7 @@ constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
   return static_cast<std::underlying_type_t<Enum>>(e);
 }
 
-std::string to_string(File::State state)
+inline std::string to_string(File::State state)
 {
   switch (state) {
   case File::State::submitted:
@@ -60,7 +60,7 @@ std::string to_string(File::State state)
   }
 }
 
-std::string to_string(File::Locality locality)
+inline std::string to_string(File::Locality locality)
 {
   using namespace std::string_literals;
   static std::string const localities[]{"UNKNOWN"s, "TAPE"s, "DISK"s,
