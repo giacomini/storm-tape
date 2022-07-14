@@ -18,7 +18,7 @@ find_package(Crow CONFIG REQUIRED)
 find_package(SOCI CONFIG REQUIRED)
 find_package(Boost REQUIRED)
 
-add_executable(storm-tape main.cpp json.cpp)
+add_executable(storm-tape main.cpp json.cpp tape_api.cpp)
 target_include_directories(storm-tape PRIVATE ${CROW_INCLUDE_DIRS})
 target_link_libraries(storm-tape PRIVATE Crow::Crow SOCI::soci_sqlite3_static SOCI::soci_core_static SOCI::soci_empty_static Boost::boost)
 
