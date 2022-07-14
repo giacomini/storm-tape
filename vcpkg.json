@@ -1,7 +1,6 @@
 {
   "name": "storm-tape",
   "version": "0.0.1",
-  "builtin-baseline": "d769781d113bb1675fe4a1671f7f081f72afd722",
   "dependencies": [
     "crow",
     {
