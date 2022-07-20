@@ -9,4 +9,6 @@ int main(int, char*[])
   MockDatabase db;
   Configuration const& config{};
   create_routes(app, config, db);
+  // Configuring server with hostname instead of IP address with Crow?
+  app.port(config.port).run();
 }
