@@ -6,6 +6,8 @@
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <soci/soci.h>
+#include <soci/sqlite3/soci-sqlite3.h>
 #include <chrono>
 #include <filesystem>
 #include <map>
