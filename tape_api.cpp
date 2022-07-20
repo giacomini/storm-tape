@@ -1,12 +1,15 @@
-#include "database.hpp"
 #include "tape_api.hpp"
 #include "configuration.hpp"
+#include "database.hpp"
+#include "tape_response.hpp"
+#include "tape_service.hpp"
 
 namespace json = boost::json;
 
-void create_routes(crow::SimpleApp& app, Configuration const& config, Database& db){
-  app.route_dynamic(config.well_known_uri.c_str())
-  ([&] {
+void create_routes(crow::SimpleApp& app, Configuration const& config,
+                   Database& db)
+{
+  app.route_dynamic(config.well_known_uri.c_str())([&] {
     return crow::response{
         crow::status::OK, "json",
         json::serialize(json::value{
