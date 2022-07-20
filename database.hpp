@@ -73,12 +73,12 @@ inline std::string to_string(File::Locality locality)
 }
 
 // FG should a path be absolute? can there be duplicates?
-struct Stage
+struct StageRequest
 {
   Clock::time_point created_at;
   Clock::time_point started_at;
   std::vector<File> files;
-  Stage(std::string_view body)
+  StageRequest(std::string_view body)
       : created_at(Clock::now())
       , started_at(created_at)
   {
@@ -130,20 +130,20 @@ struct Archiveinfo : RequestWithPaths
 
 class Database
 {
-  public:
-  virtual std::string insert(Stage stage) = 0;
-  virtual Stage const* find(std::string const& id) const = 0;
-  virtual Stage* find(std::string const& id) = 0;
-  virtual int erase(std::string const& id) = 0;
+ public:
+  virtual std::string insert(StageRequest stage)                = 0;
+  virtual StageRequest const* find(std::string const& id) const = 0;
+  virtual StageRequest* find(std::string const& id)             = 0;
+  virtual int erase(std::string const& id)                      = 0;
 };
 
 class MockDatabase : public Database
 {
-  std::map<std::string, Stage> m_db;
+  std::map<std::string, StageRequest> m_db;
   boost::uuids::random_generator m_uuid_gen;
 
  public:
-  std::string insert(Stage stage) override
+  std::string insert(StageRequest stage) override
   {
     auto const uuid = m_uuid_gen();
     auto const id   = to_string(uuid);
@@ -151,12 +151,12 @@ class MockDatabase : public Database
     assert(ret.second == true);
     return id;
   }
-  Stage const* find(std::string const& id) const override
+  StageRequest const* find(std::string const& id) const override
   {
     auto it = m_db.find(id);
     return it == m_db.end() ? nullptr : &it->second;
   }
-  Stage* find(std::string const& id) override
+  StageRequest* find(std::string const& id) override
   {
     auto it = m_db.find(id);
     return it == m_db.end() ? nullptr : &it->second;
