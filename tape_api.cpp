@@ -21,13 +21,9 @@ void create_routes(crow::SimpleApp& app, Configuration const& config, Database& 
   CROW_ROUTE(app, "/api/v1/stage")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
-          Stage stage{req.body};
-          // storage.stage:/storage/cms
-          auto const id = db.insert(stage);
-          json::object jbody{{"requestId", id}};
-          crow::response resp{crow::status::CREATED, "json",
-                              json::serialize(jbody)};
-          resp.add_header("Location", config.api_uri + "/stage/" + id);
+          StageRequest stage{req.body};
+          auto jbody          = TapeService::stage(stage, db);
+          crow::response resp = TapeResponse::stage(jbody, config);
           return resp;
         } catch (...) {
           return crow::response{crow::status::BAD_REQUEST};
