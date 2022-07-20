@@ -204,7 +204,4 @@ void create_routes(crow::SimpleApp& app, Configuration const& config, Database& 
 
   CROW_ROUTE(app, "/favicon.ico")
   ([] { return crow::response{crow::status::NO_CONTENT}; });
-
-  app.bindaddr(config.ip_address).port(config.port).run();
-
 }
