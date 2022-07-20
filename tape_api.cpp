@@ -33,7 +33,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config, Database& 
   CROW_ROUTE(app, "/api/v1/stage/<string>")
   ([&](std::string const& id) {
     try {
-      Stage const* stage = db.find(id);
+      StageRequest const* stage = db.find(id);
       if (stage == nullptr) {
         return crow::response{crow::status::NOT_FOUND};
       }
@@ -71,7 +71,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config, Database& 
       .methods("POST"_method)(
           [&](crow::request const& req, std::string const& id) {
             try {
-              Stage const* stage = db.find(id);
+              StageRequest const* stage = db.find(id);
               if (stage == nullptr) {
                 return crow::response{crow::status::NOT_FOUND};
               }
@@ -120,7 +120,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config, Database& 
   CROW_ROUTE(app, "/api/v1/stage/<string>")
       .methods("DELETE"_method)([&](std::string const& id) {
         try {
-          Stage const* stage = db.find(id);
+          StageRequest const* stage = db.find(id);
           if (stage == nullptr) {
             return crow::response{crow::status::NOT_FOUND};
           }
@@ -137,7 +137,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config, Database& 
       .methods("POST"_method)(
           [&](crow::request const& req, std::string const& id) {
             try {
-              Stage const* stage = db.find(id);
+              StageRequest const* stage = db.find(id);
               if (stage == nullptr) {
                 return crow::response{crow::status::NOT_FOUND};
               }
