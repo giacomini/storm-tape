@@ -17,6 +17,7 @@ class Database
   virtual StageRequest const* find(std::string const& id) const = 0;
   virtual StageRequest* find(std::string const& id)             = 0;
   virtual int erase(std::string const& id)                      = 0;
+  std::vector<std::string> id_buffer;
 };
 
 class MockDatabase : public Database
@@ -25,12 +26,14 @@ class MockDatabase : public Database
   boost::uuids::random_generator m_uuid_gen;
 
  public:
+  std::vector<std::string> id_buffer;
   std::string insert(StageRequest stage) override
   {
     auto const uuid = m_uuid_gen();
     auto const id   = to_string(uuid);
     auto const ret  = m_db.insert({id, std::move(stage)});
     assert(ret.second == true);
+    id_buffer.push_back(id);
     return id;
   }
   StageRequest const* find(std::string const& id) const override
@@ -45,8 +48,13 @@ class MockDatabase : public Database
   }
   int erase(std::string const& id) override
   {
+    auto it = std::find(id_buffer.begin(), id_buffer.end(), id);
+    if (it != id_buffer.end()) {
+      id_buffer.erase(it);
+    }
     return m_db.erase(id);
   }
 };
+} // namespace storm
 
 #endif
