@@ -60,7 +60,6 @@ std::vector<std::filesystem::path> storm::TapeService::archive()
   m_id_buffer = id_buffer;
   file_buffer.reserve(m_id_buffer.size());
   for (auto id : m_id_buffer) {
-    std::cout << id << std::endl;
     storm::StageRequest const* stage = m_db->find(id);
     for (auto& file : stage->getFiles()) {
       file_buffer.push_back(file.path);
