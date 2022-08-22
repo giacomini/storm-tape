@@ -1,8 +1,8 @@
 #ifndef CONFIGURATION_HPP
 #define CONFIGURATION_HPP
-#include <crow.h>
-#include <netdb.h>
 #include <string>
+
+namespace storm {
 struct Configuration
 {
   std::string hostname = "localhost";
@@ -11,5 +11,6 @@ struct Configuration
   std::string well_known_uri = "/.well-known/wlcg-tape-rest-api";
   std::uint16_t port         = 8080;
 };
+} // namespace storm
 
 #endif
