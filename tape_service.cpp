@@ -56,7 +56,7 @@ std::vector<std::filesystem::path> storm::TapeService::archive()
 {
   std::vector<std::filesystem::path> file_buffer;
   std::vector<std::string> id_buffer =
-      dynamic_cast<storm::MockDatabase*>(m_db)->storm::MockDatabase::id_buffer;
+      static_cast<storm::MockDatabase*>(m_db)->storm::MockDatabase::m_id_buffer;
   m_id_buffer = id_buffer;
   file_buffer.reserve(m_id_buffer.size());
   for (auto id : m_id_buffer) {
