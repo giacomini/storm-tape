@@ -28,10 +28,10 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
   CROW_ROUTE(app, "/api/v1/stage")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
-          auto files = storm::files_from_json_path(req.body);
+          auto files = storm::fromJSONPath(req.body);
           storm::StageRequest stage{files};
           auto resp  = service.stage(stage);
-          auto jbody = storm::newStage_to_json(resp.getId());
+          auto jbody = storm::newStageToJSON(resp.getId());
           return resp.staged(jbody, config);
         } catch (...) {
           return storm::TapeResponse::bad_request();
@@ -45,10 +45,10 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
       if (stage == nullptr) {
         return storm::TapeResponse::not_found();
       }
-      storm::TapeResponse resp{
-          id}; // Decide if we have to create a TapeResponse or simply pass the
-               // id to IO operations!
-      auto jbody = storm::alreadyStaged_to_json(stage, resp.getId());
+      storm::TapeResponse resp{id};
+      // TD: Decide if we have to create a TapeResponse or simply pass the
+      // id to IO operations!
+      auto jbody = storm::StagedToJSON(stage, resp.getId());
       return resp.status(jbody);
     } catch (...) {
       return storm::TapeResponse::bad_request();
@@ -59,20 +59,21 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
       .methods("POST"_method)(
           [&](crow::request const& req, std::string const& id) {
             try {
-              storm::StageRequest* stage = service.find_and_edit(id);
+              storm::StageRequest* stage = service.findAndEdit(id);
               if (stage == nullptr) {
                 return storm::TapeResponse::not_found();
               }
               storm::Cancel cancel{req.body};
 
-              auto staged_to_cancel = service.staged_to_cancel(cancel, stage);
-
+              auto staged_to_cancel = service.stagedToCancel(cancel, stage);
+              // TD: These operations should be carried by service or a new
+              // "utils" object?
               if (cancel.paths.size() != staged_to_cancel.size()) {
-                auto resp = service.check_invalid(cancel, staged_to_cancel, id);
-                auto jbody = storm::fileMissing_to_json(
-                    resp.getInvalid(),
-                    resp.getId()); // Decide also here if better a TapeResponse
-                                   // or simply pass to IO operations!
+                auto resp = service.checkInvalid(cancel, staged_to_cancel, id);
+                auto jbody =
+                    storm::fileMissingToJSON(resp.getInvalid(), resp.getId());
+                // TD: Decide also here if better a TapeResponse
+                // or simply pass to IO operations!
                 return resp.bad_request_with_body(jbody);
               } else {
                 auto resp = service.cancel(cancel, stage);
@@ -101,7 +102,7 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
       .methods(
           "POST"_method)([&](crow::request const& req, std::string const& id) {
         try {
-          storm::StageRequest* stage = service.find_and_edit(id);
+          storm::StageRequest* stage = service.findAndEdit(id);
           if (stage == nullptr) {
             return storm::TapeResponse::not_found();
           }
@@ -111,11 +112,11 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
           // syntactically correct?
           // TD I believe it's an existing request with a certain ID
 
-          auto staged_to_release = service.staged_to_release(release, stage);
+          auto staged_to_release = service.stagedToRelease(release, stage);
 
           if (release.paths.size() != staged_to_release.size()) {
-            auto resp  = service.check_invalid(release, staged_to_release, id);
-            auto jbody = storm::fileMissing_to_json(
+            auto resp  = service.checkInvalid(release, staged_to_release, id);
+            auto jbody = storm::fileMissingToJSON(
                 resp.getInvalid(),
                 resp.getId()); // Decide also here if better a TapeResponse
                                // or simply pass to IO operations!
@@ -126,7 +127,7 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
           // TD Good question!
           else {
             auto resp =
-                service.release(release, stage); // What do I have to do??
+                service.release(release, stage); // TD: What do I have to do??
             return resp.released();
           }
         } catch (...) {
@@ -143,20 +144,19 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
           auto from_archive = service.archive();
           jbody.reserve(info.paths.size());
 
-          auto info_from_archive =
-              service.info_from_archive(info, from_archive);
+          auto info_from_archive = service.infoFromArchive(info, from_archive);
 
           if (info.paths.size() != info_from_archive.size()) {
-            auto resp = service.check_invalid(info, info_from_archive);
-            jbody = storm::fileNotInArchive_to_json(resp.getInvalid(), jbody);
+            auto resp = service.checkInvalid(info, info_from_archive);
+            jbody     = storm::fileNotInArchiveToJSON(resp.getInvalid(), jbody);
             auto remaining = service.compute_remaining(info, resp.getInvalid());
-            jbody          = storm::infoFromFiles_to_json(remaining, jbody);
+            jbody          = storm::infoFromFilesToJSON(remaining, jbody);
             return resp.fetched_from_archive(jbody);
           } else {
             storm::TapeResponse
                 resp; // Decide if we have to create a TapeResponse or simply
                       // pass the id to IO operations!
-            jbody = storm::infoFromFiles_to_json(info.paths, jbody);
+            jbody = storm::infoFromFilesToJSON(info.paths, jbody);
             return resp.fetched_from_archive(jbody);
           }
         } catch (...) {
