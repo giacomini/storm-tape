@@ -7,15 +7,15 @@
 namespace storm {
 class StageRequest;
 
-boost::json::object newStage_to_json(std::string id);
-boost::json::object alreadyStaged_to_json(StageRequest const* stage, std::string id);
-boost::json::object fileMissing_to_json(std::vector<std::filesystem::path> missing,
+boost::json::object newStageToJSON(std::string id);
+boost::json::object StagedToJSON(StageRequest const* stage, std::string id);
+boost::json::object fileMissingToJSON(std::vector<std::filesystem::path> missing,
                             std::string const& id);
-boost::json::array fileNotInArchive_to_json(std::vector<std::filesystem::path> missing,
+boost::json::array fileNotInArchiveToJSON(std::vector<std::filesystem::path> missing,
                            boost::json::array jbody);
-boost::json::array infoFromFiles_to_json(std::vector<File> file,
+boost::json::array infoFromFilesToJSON(std::vector<File> file,
                            boost::json::array jbody);
-std::vector<File> files_from_json_path(std::string_view body);
+std::vector<File> fromJSONPath(std::string_view body);
 std::vector<File> files_from_json_paths(std::string_view body);
 
 template<class Enum>

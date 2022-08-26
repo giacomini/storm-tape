@@ -2,7 +2,7 @@
 #include "stage_request.hpp"
 
 // Creates a JSON object with the given request ID, for a new stage request.
-boost::json::object storm::newStage_to_json(std::string id)
+boost::json::object storm::newStageToJSON(std::string id)
 {
   boost::json::object jbody{{"requestId", id}};
   return jbody;
@@ -10,8 +10,8 @@ boost::json::object storm::newStage_to_json(std::string id)
 
 // Creates a JSON object for an already staged request, with a certain
 // requestId.
-boost::json::object storm::alreadyStaged_to_json(StageRequest const* stage,
-                                                 std::string id)
+boost::json::object storm::StagedToJSON(StageRequest const* stage,
+                                        std::string id)
 {
   boost::json::array files;
   auto m_files = stage->getFiles();
@@ -45,8 +45,8 @@ boost::json::object storm::alreadyStaged_to_json(StageRequest const* stage,
 // Creates a JSON object when one or more files targeted for cancellation do
 // not belong to the initially submitted stage request.
 boost::json::object
-storm::fileMissing_to_json(std::vector<std::filesystem::path> missing,
-                           std::string const& id)
+storm::fileMissingToJSON(std::vector<std::filesystem::path> missing,
+                         std::string const& id)
 {
   std::string sfile;
   for (auto&& file : missing) {
@@ -60,10 +60,11 @@ storm::fileMissing_to_json(std::vector<std::filesystem::path> missing,
   return jbody;
 }
 
-// Given a JSON array, appends the missing or not accessible files in JSON objects, one per file.
+// Given a JSON array, appends the missing or not accessible files in JSON
+// objects, one per file.
 boost::json::array
-storm::fileNotInArchive_to_json(std::vector<std::filesystem::path> missing,
-                                boost::json::array jbody)
+storm::fileNotInArchiveToJSON(std::vector<std::filesystem::path> missing,
+                              boost::json::array jbody)
 {
   std::transform( //
       missing.begin(), missing.end(), std::back_inserter(jbody),
@@ -77,10 +78,10 @@ storm::fileNotInArchive_to_json(std::vector<std::filesystem::path> missing,
   return jbody;
 }
 
-// Given a JSON array, appends the files information in JSON objects, one per file.
-boost::json::array
-storm::infoFromFiles_to_json(std::vector<storm::File> files,
-                             boost::json::array jbody)
+// Given a JSON array, appends the files information in JSON objects, one per
+// file.
+boost::json::array storm::infoFromFilesToJSON(std::vector<storm::File> files,
+                                              boost::json::array jbody)
 {
   std::transform( //
       files.begin(), files.end(), std::back_inserter(jbody),
@@ -95,7 +96,7 @@ storm::infoFromFiles_to_json(std::vector<storm::File> files,
 
 // Returns a vector of File objects, given a JSON with one or more files listed
 // in each "path" field of the "files" array, for a given stage request.
-std::vector<storm::File> storm::files_from_json_path(std::string_view body)
+std::vector<storm::File> storm::fromJSONPath(std::string_view body)
 {
   auto const value =
       boost::json::parse(boost::json::string_view{body.data(), body.size()});
