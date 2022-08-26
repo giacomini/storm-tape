@@ -12,7 +12,8 @@ crow::response storm::TapeResponse::staged(boost::json::object jbody,
 
 crow::response storm::TapeResponse::status(boost::json::object jbody)
 {
-  return crow::response{crow::status::OK, "json", boost::json::serialize(jbody)};
+  return crow::response{crow::status::OK, "json",
+                        boost::json::serialize(jbody)};
 }
 
 crow::response storm::TapeResponse::cancelled()
@@ -30,14 +31,18 @@ crow::response storm::TapeResponse::released()
   return crow::response{crow::status::OK};
 }
 
-crow::response storm::TapeResponse::fetched_from_archive(boost::json::array jbody)
+crow::response
+storm::TapeResponse::fetched_from_archive(boost::json::array jbody)
 {
-  return crow::response{crow::status::OK, "json", boost::json::serialize(jbody)};
+  return crow::response{crow::status::OK, "json",
+                        boost::json::serialize(jbody)};
 }
 
-crow::response storm::TapeResponse::bad_request_with_body(boost::json::object jbody)
+crow::response
+storm::TapeResponse::bad_request_with_body(boost::json::object jbody)
 {
-  return crow::response(crow::status::BAD_REQUEST, "json", boost::json::serialize(jbody));
+  return crow::response(crow::status::BAD_REQUEST, "json",
+                        boost::json::serialize(jbody));
 }
 
 crow::response storm::TapeResponse::bad_request()

@@ -3,8 +3,8 @@
 
 #include <boost/json.hpp>
 #include <crow.h>
-#include <string>
 #include <filesystem>
+#include <string>
 
 namespace storm {
 class Configuration;
@@ -13,17 +13,19 @@ class TapeResponse
 {
  private:
   std::string m_id;
-  std::vector<std::filesystem::path> m_invalid; //
+  std::vector<std::filesystem::path> m_invalid;
 
  public:
-  TapeResponse(std::string const& id, std::vector<std::filesystem::path>& invalid)
+  TapeResponse(std::string const& id,
+               std::vector<std::filesystem::path>& invalid)
       : m_id(id)
       , m_invalid(invalid)
   {}
   TapeResponse(std::string const& id)
       : m_id(id)
   {}
-  TapeResponse() {}
+  TapeResponse()
+  {}
 
   crow::response staged(boost::json::object jbody, Configuration const& config);
   crow::response status(boost::json::object jbody);
