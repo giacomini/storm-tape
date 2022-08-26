@@ -72,7 +72,6 @@ git clone --depth=1 \
     -c receive.fsck.zeroPaddedFilemode=ignore \
     -b stable_tommaso --single-branch \
     https://github.com/Tommaso93/vcpkg "${VCPKG_ROOT}"
-echo "ciao sono quiiiiiiii"
 
 ## Run installer to get latest stable vcpkg binary
 ## https://github.com/microsoft/vcpkg/blob/7e7dad5fe20cdc085731343e0e197a7ae655555b/scripts/bootstrap.sh#L126-L144
