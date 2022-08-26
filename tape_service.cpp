@@ -69,9 +69,9 @@ std::vector<std::filesystem::path> storm::TapeService::archive()
 }
 
 storm::TapeResponse
-storm::TapeService::check_invalid(storm::RequestWithPaths cancel,
-                                  std::vector<std::filesystem::path> both,
-                                  std::string const& id)
+storm::TapeService::checkInvalid(storm::RequestWithPaths cancel,
+                                 std::vector<std::filesystem::path> both,
+                                 std::string const& id)
 {
   auto proj =
       [](storm::File const& stage_file) -> std::filesystem::path const& {
@@ -90,8 +90,8 @@ storm::TapeService::check_invalid(storm::RequestWithPaths cancel,
 }
 
 std::vector<std::filesystem::path>
-storm::TapeService::staged_to_cancel(storm::Cancel cancel,
-                                     storm::StageRequest* stage)
+storm::TapeService::stagedToCancel(storm::Cancel cancel,
+                                   storm::StageRequest* stage)
 {
   auto proj =
       [](storm::File const& stage_file) -> std::filesystem::path const& {
@@ -110,8 +110,8 @@ storm::TapeService::staged_to_cancel(storm::Cancel cancel,
 }
 
 std::vector<std::filesystem::path>
-storm::TapeService::staged_to_release(storm::Release release,
-                                      storm::StageRequest* stage)
+storm::TapeService::stagedToRelease(storm::Release release,
+                                    storm::StageRequest* stage)
 {
   auto proj =
       [](storm::File const& stage_file) -> std::filesystem::path const& {
@@ -129,8 +129,9 @@ storm::TapeService::staged_to_release(storm::Release release,
   return both;
 }
 
-std::vector<std::filesystem::path> storm::TapeService::info_from_archive(
-    storm::Archiveinfo info, std::vector<std::filesystem::path> archive)
+std::vector<std::filesystem::path>
+storm::TapeService::infoFromArchive(storm::Archiveinfo info,
+                                    std::vector<std::filesystem::path> archive)
 {
   auto proj =
       [](storm::File const& stage_file) -> std::filesystem::path const& {
@@ -164,7 +165,7 @@ storm::StageRequest const* storm::TapeService::find(std::string id)
   return stage;
 }
 
-storm::StageRequest* storm::TapeService::find_and_edit(std::string id)
+storm::StageRequest* storm::TapeService::findAndEdit(std::string id)
 {
   storm::StageRequest* stage = m_db->find(id);
   return stage;

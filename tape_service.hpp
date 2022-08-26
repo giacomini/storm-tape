@@ -31,21 +31,20 @@ class TapeService
   TapeResponse release(Release release, StageRequest* stage_request);
   std::vector<std::filesystem::path> archive();
 
-  TapeResponse check_invalid(RequestWithPaths cancel,
-                             std::vector<std::filesystem::path> both,
-                             std::string const& id = "");
+  TapeResponse checkInvalid(RequestWithPaths cancel,
+                            std::vector<std::filesystem::path> both,
+                            std::string const& id = "");
   std::vector<std::filesystem::path>
-  staged_to_cancel(Cancel cancel, StageRequest* stage_request);
+  stagedToCancel(Cancel cancel, StageRequest* stage_request);
   std::vector<std::filesystem::path>
-  staged_to_release(Release release, StageRequest* stage_request);
+  stagedToRelease(Release release, StageRequest* stage_request);
   std::vector<std::filesystem::path>
-  info_from_archive(Archiveinfo info,
-                    std::vector<std::filesystem::path> archive);
+  infoFromArchive(Archiveinfo info, std::vector<std::filesystem::path> archive);
   std::vector<File>
   compute_remaining(Archiveinfo info,
                     std::vector<std::filesystem::path> missing);
   StageRequest const* find(std::string id);
-  StageRequest* find_and_edit(std::string id);
+  StageRequest* findAndEdit(std::string id);
 };
 
 } // namespace storm
