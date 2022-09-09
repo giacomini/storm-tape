@@ -2,9 +2,9 @@
 #include "stage_request.hpp"
 
 // Creates a JSON object with the given request ID, for a new stage request.
-boost::json::object storm::newStageToJSON(std::string id)
+boost::json::object storm::to_json(StageResponse const& resp)
 {
-  boost::json::object jbody{{"requestId", id}};
+  boost::json::object jbody{{"requestId", resp.id()}};
   return jbody;
 }
 
