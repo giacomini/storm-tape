@@ -8,6 +8,14 @@ boost::json::object storm::to_json(StageResponse const& resp)
   return jbody;
 }
 
+// Creates the CROW response for the stage operation.
+crow::response storm::to_crow_response(StageResponse const& resp,
+                                       Configuration const& config)
+{
+  auto jbody = to_json(resp);
+  return resp.staged(jbody, config);
+}
+
 // Creates a JSON object for an already staged request, with a certain
 // requestId.
 boost::json::object storm::staged_to_json(StageRequest const* stage,
@@ -42,6 +50,12 @@ boost::json::object storm::staged_to_json(StageRequest const* stage,
   return jbody;
 }
 
+crow::response storm::to_crow_response(StatusResponse const& resp)
+{
+  auto jbody = staged_to_json(resp.stage(), resp.id());
+  return resp.status(jbody);
+}
+
 // Creates a JSON object when one or more files targeted for cancellation do
 // not belong to the initially submitted stage request.
 boost::json::object
@@ -58,6 +72,18 @@ storm::file_missing_to_json(std::vector<std::filesystem::path> const& missing,
       {"title", "File missing from stage request"},
       {"detail", "Files " + sfile + "do not belong to stage request " + id}};
   return jbody;
+}
+
+crow::response storm::to_crow_response(CancelResponse const& resp)
+{
+  auto jbody = storm::file_missing_to_json(resp.invalid(), resp.id());
+  return storm::CancelResponse::bad_request_with_body(jbody);
+}
+
+crow::response storm::to_crow_response(ReleaseResponse const& resp)
+{
+  auto jbody = storm::file_missing_to_json(resp.invalid(), resp.id());
+  return storm::ReleaseResponse::bad_request_with_body(jbody);
 }
 
 // Given a JSON array, appends the missing or not accessible files in JSON
@@ -92,6 +118,11 @@ boost::json::array storm::archive_to_json(std::vector<storm::File> const& files,
         return result;
       });
   return jbody;
+}
+
+crow::response storm::to_crow_response(ArchiveResponse const& resp)
+{
+  return resp.fetched_from_archive(resp.jbody());
 }
 
 // Returns a vector of File objects, given a JSON with one or more files listed
