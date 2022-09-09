@@ -30,26 +30,12 @@ class TapeService
       : m_db(&db)
   {}
 
-  TapeResponse stage(StageRequest& stage_request);
-  TapeResponse cancel(Cancel cancel, StageRequest* stage_request);
-  TapeResponse erase(std::string const& id);
-  TapeResponse release(Release release, StageRequest* stage_request);
-  std::vector<std::filesystem::path> archive();
-
-  TapeResponse checkInvalid(RequestWithPaths cancel,
-                            std::vector<std::filesystem::path> both,
-                            std::string const& id = "");
-  std::vector<std::filesystem::path>
-  stagedToCancel(Cancel cancel, StageRequest* stage_request);
-  std::vector<std::filesystem::path>
-  stagedToRelease(Release release, StageRequest* stage_request);
-  std::vector<std::filesystem::path>
-  infoFromArchive(Archiveinfo info, std::vector<std::filesystem::path> archive);
-  std::vector<File>
-  compute_remaining(Archiveinfo info,
-                    std::vector<std::filesystem::path> missing);
-  StageRequest const* find(std::string id);
-  StageRequest* findAndEdit(std::string id);
+  StageResponse stage(StageRequest const& stage_request);
+  StatusResponse status(std::string const& id);
+  CancelResponse cancel(std::string const& id, CancelRequest const& cancel);
+  DeleteResponse erase(std::string const& id);
+  ReleaseResponse release(std::string const& id, ReleaseRequest const& release);
+  ArchiveResponse archive(storm::ArchiveInfo const& info);
 };
 
 } // namespace storm
