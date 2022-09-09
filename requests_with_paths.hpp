@@ -17,17 +17,17 @@ struct RequestWithPaths
   }
 };
 
-struct Cancel : RequestWithPaths
+struct CancelRequest : RequestWithPaths
 {
   using RequestWithPaths::RequestWithPaths;
 };
 
-struct Release : RequestWithPaths
+struct ReleaseRequest : RequestWithPaths
 {
   using RequestWithPaths::RequestWithPaths;
 };
 
-struct Archiveinfo : RequestWithPaths
+struct ArchiveInfo : RequestWithPaths
 {
   using RequestWithPaths::RequestWithPaths;
 };
