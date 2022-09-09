@@ -3,6 +3,7 @@
 
 #include "file.hpp"
 #include <boost/json.hpp>
+#include <crow.h>
 
 namespace storm {
 class StageRequest;
@@ -14,16 +15,29 @@ class ReleaseResponse;
 class ArchiveResponse;
 class Configuration;
 
-boost::json::object newStageToJSON(std::string id);
-boost::json::object StagedToJSON(StageRequest const* stage, std::string id);
-boost::json::object fileMissingToJSON(std::vector<std::filesystem::path> missing,
-                            std::string const& id);
-boost::json::array fileNotInArchiveToJSON(std::vector<std::filesystem::path> missing,
-                           boost::json::array jbody);
-boost::json::array infoFromFilesToJSON(std::vector<File> file,
-                           boost::json::array jbody);
-std::vector<File> fromJSONPath(std::string_view body);
-std::vector<File> files_from_json_paths(std::string_view body);
+boost::json::object to_json(StageResponse const& resp);
+crow::response to_crow_response(StageResponse const& resp,
+                                Configuration const& config);
+
+boost::json::object staged_to_json(StageRequest const* stage,
+                                   std::string const& id);
+crow::response to_crow_response(StatusResponse const& resp);
+
+boost::json::object
+file_missing_to_json(std::vector<std::filesystem::path> const& missing,
+                     std::string const& id);
+crow::response to_crow_response(CancelResponse const& resp);
+crow::response to_crow_response(ReleaseResponse const& resp);
+
+boost::json::array
+not_in_archive_to_json(std::vector<std::filesystem::path> const& missing,
+                       boost::json::array& jbody);
+boost::json::array archive_to_json(std::vector<File> const& file,
+                                   boost::json::array& jbody);
+crow::response to_crow_response(ArchiveResponse const& resp);
+
+std::vector<File> from_json(std::string_view const& body);
+std::vector<File> files_from_json_paths(std::string_view const& body);
 
 template<class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
