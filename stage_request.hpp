@@ -4,22 +4,19 @@
 #include "file.hpp"
 #include <vector>
 
-namespace storm { // FG should a path be absolute? can there be duplicates?
-struct StageRequest
+namespace storm {
+class StageRequest
 {
- private:
+  std::chrono::system_clock::time_point m_created_at;
+  std::chrono::system_clock::time_point m_started_at;
   std::vector<File> m_files;
 
  public:
-  using Clock = std::chrono::system_clock;
-
-  Clock::time_point created_at;
-  Clock::time_point started_at;
-  std::vector<File> files;
-
   StageRequest(std::vector<File> files);
-  std::vector<File> getFiles() const;
-  void setFiles(std::vector<File> fle);
+  std::vector<File> const& files() const;
+  std::vector<File>& files();
+  std::chrono::system_clock::time_point const& created_at() const;
+  std::chrono::system_clock::time_point const& started_at() const;
 };
 } // namespace storm
 
