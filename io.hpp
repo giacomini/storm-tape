@@ -6,6 +6,13 @@
 
 namespace storm {
 class StageRequest;
+class StageResponse;
+class StatusResponse;
+class CancelResponse;
+class DeleteResponse;
+class ReleaseResponse;
+class ArchiveResponse;
+class Configuration;
 
 boost::json::object newStageToJSON(std::string id);
 boost::json::object StagedToJSON(StageRequest const* stage, std::string id);
