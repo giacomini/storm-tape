@@ -5,7 +5,8 @@ boost::json::array const& storm::ArchiveResponse::jbody() const
   return m_jbody;
 }
 
-std::vector<std::filesystem::path> const& storm::ArchiveResponse::invalid() const
+std::vector<std::filesystem::path> const&
+storm::ArchiveResponse::invalid() const
 {
   return m_invalid;
 }

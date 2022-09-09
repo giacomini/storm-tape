@@ -1,6 +1,7 @@
 #include "status_response.hpp"
 
-crow::response storm::StatusResponse::status(boost::json::object const& jbody) const
+crow::response
+storm::StatusResponse::status(boost::json::object const& jbody) const
 {
   return crow::response{crow::status::OK, "json",
                         boost::json::serialize(jbody)};
@@ -13,7 +14,7 @@ std::string const& storm::StatusResponse::id() const
 
 storm::StageRequest const* storm::StatusResponse::stage() const
 {
-    return m_stage;
+  return m_stage;
 }
 
 crow::response storm::StatusResponse::bad_request()

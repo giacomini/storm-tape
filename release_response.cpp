@@ -10,7 +10,8 @@ storm::StageRequest const* storm::ReleaseResponse::stage() const
   return m_stage;
 }
 
-std::vector<std::filesystem::path> const& storm::ReleaseResponse::invalid() const
+std::vector<std::filesystem::path> const&
+storm::ReleaseResponse::invalid() const
 {
   return m_invalid;
 }
