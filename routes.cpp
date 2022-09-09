@@ -1,10 +1,15 @@
 #include "routes.hpp"
+#include "archive_response.hpp"
+#include "cancel_response.hpp"
 #include "configuration.hpp"
 #include "database.hpp"
+#include "delete_response.hpp"
 #include "io.hpp"
+#include "release_response.hpp"
 #include "requests_with_paths.hpp"
 #include "stage_request.hpp"
-#include "tape_response.hpp"
+#include "stage_response.hpp"
+#include "status_response.hpp"
 #include "tape_service.hpp"
 
 void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
