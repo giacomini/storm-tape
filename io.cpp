@@ -1,5 +1,12 @@
 #include "io.hpp"
+#include "archive_response.hpp"
+#include "cancel_response.hpp"
+#include "configuration.hpp"
+#include "delete_response.hpp"
+#include "release_response.hpp"
 #include "stage_request.hpp"
+#include "status_response.hpp"
+#include "stage_response.hpp"
 
 // Creates a JSON object with the given request ID, for a new stage request.
 boost::json::object storm::to_json(StageResponse const& resp)
@@ -22,7 +29,7 @@ boost::json::object storm::staged_to_json(StageRequest const* stage,
                                           std::string const& id)
 {
   boost::json::array files;
-  auto m_files = stage->getFiles();
+  auto m_files = stage->files();
   files.reserve(m_files.size());
   std::transform( //
       m_files.begin(), m_files.end(), std::back_inserter(files),
@@ -39,11 +46,11 @@ boost::json::object storm::staged_to_json(StageRequest const* stage,
   jbody["id"]         = id;
   jbody["created_at"] = //
       std::chrono::duration_cast<std::chrono::seconds>(
-          stage->created_at.time_since_epoch())
+          stage->created_at().time_since_epoch())
           .count();
   jbody["started_at"] = //
       std::chrono::duration_cast<std::chrono::seconds>(
-          stage->started_at.time_since_epoch())
+          stage->started_at().time_since_epoch())
           .count();
   jbody["files"] = files;
 
@@ -60,7 +67,7 @@ crow::response storm::to_crow_response(StatusResponse const& resp)
 // not belong to the initially submitted stage request.
 boost::json::object
 storm::file_missing_to_json(std::vector<std::filesystem::path> const& missing,
-                         std::string const& id)
+                            std::string const& id)
 {
   std::string sfile;
   for (auto&& file : missing) {
