@@ -48,8 +48,7 @@ inline std::string to_string(File::Locality locality)
   static std::string const localities[]{"UNKNOWN"s, "TAPE"s, "DISK"s,
                                         "DISK_AND_TAPE"s};
   auto const index = to_underlying(locality);
-  return index >= 0 && index < std::size(localities) ? localities[index]
-                                                     : "UNKNOWN"s;
+  return index < std::size(localities) ? localities[index] : "UNKNOWN"s;
 }
 } // namespace storm
 
