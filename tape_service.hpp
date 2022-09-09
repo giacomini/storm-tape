@@ -8,11 +8,16 @@
 namespace storm {
 class Database;
 class StageRequest;
-class TapeResponse;
-class Cancel;
-class Release;
+class CancelRequest;
+class ReleaseRequest;
 class RequestWithPaths;
-class Archiveinfo;
+class ArchiveInfo;
+class StageResponse;
+class StatusResponse;
+class CancelResponse;
+class DeleteResponse;
+class ReleaseResponse;
+class ArchiveResponse;
 class File;
 
 class TapeService
