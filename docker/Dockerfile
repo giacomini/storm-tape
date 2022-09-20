@@ -31,4 +31,4 @@ RUN /tmp/install-vcpkg.sh ${USERNAME} \
 
 # Compile storm-tape-poc
 COPY compile_src.sh /tmp/
-RUN /tmp/compile_src.sh
+RUN chmod +x /tmp/compile_src.sh && /tmp/compile_src.sh && rm -f /tmp/compile_src.sh
