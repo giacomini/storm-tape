@@ -9,7 +9,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/base:0-${VARIANT}
 ARG REINSTALL_CMAKE_VERSION_FROM_SOURCE="3.24.0"
 
 # Optionally install the cmake for vcpkg
-COPY ./base-scripts/reinstall-cmake.sh /tmp/
+COPY docker/base-scripts/reinstall-cmake.sh /tmp/
 RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
         apt-get update \
         && chmod +x /tmp/reinstall-cmake.sh && /tmp/reinstall-cmake.sh ${REINSTALL_CMAKE_VERSION_FROM_SOURCE}; \
@@ -17,7 +17,7 @@ RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
     && rm -f /tmp/reinstall-cmake.sh
 
 # Install needed packages. Use a separate RUN statement to add your own dependencies.
-COPY library-scripts/meta.env /usr/local/etc/vscode-dev-containers
+COPY docker/library-scripts/meta.env /usr/local/etc/vscode-dev-containers
 
 # Setup ENV vars for vcpkg
 ENV VCPKG_ROOT=/usr/local/vcpkg \
@@ -25,12 +25,12 @@ ENV VCPKG_ROOT=/usr/local/vcpkg \
 ENV PATH="${PATH}:${VCPKG_ROOT}"
 
 # Install vcpkg itself: https://github.com/microsoft/vcpkg/blob/master/README.md#quick-start-unix
-COPY base-scripts/install-vcpkg.sh /tmp/
+COPY docker/base-scripts/install-vcpkg.sh /tmp/
 RUN /tmp/install-vcpkg.sh ${USERNAME} \
     && rm -f /tmp/install-vcpkg.sh
 
 # Compile storm-tape-poc
 #RUN mkdir /storm-tape-poc/
 #COPY ../*.cpp ../*.hpp ../*.json ../CMakeLists.txt /storm-tape-poc/
-COPY compile_src.sh /tmp/
+COPY docker/compile_src.sh /tmp/
 RUN chmod +x /tmp/compile_src.sh && /tmp/compile_src.sh && rm -f /tmp/compile_src.sh
