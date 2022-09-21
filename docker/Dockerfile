@@ -30,7 +30,7 @@ RUN /tmp/install-vcpkg.sh ${USERNAME} \
     && rm -f /tmp/install-vcpkg.sh
 
 # Compile storm-tape-poc
-#RUN mkdir /storm-tape-poc/
+RUN mkdir -p /storm-tape-poc/build/
 #COPY ../*.cpp ../*.hpp ../*.json ../CMakeLists.txt /storm-tape-poc/
 COPY docker/compile_src.sh /tmp/
 RUN chmod +x /tmp/compile_src.sh && /tmp/compile_src.sh && rm -f /tmp/compile_src.sh
