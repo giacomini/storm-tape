@@ -2,7 +2,7 @@
 
 storm-tape-poc/build/storm-tape &
 sleep 5
-response_code=`curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/.well-known/wlcg-tape-rest-api`
+response_code=`curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/.well-known/wlcg-tape-rest-apifail`
 if [$response_code != '200']
 then
     exit 1
