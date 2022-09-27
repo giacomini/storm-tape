@@ -16,8 +16,7 @@ build_storm_tape:
   image: "$CI_REGISTRY_IMAGE:latest"
   script:
     - mkdir build/
-    - |
-      cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
+    - cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
       -DCMAKE_BUILD_TYPE:STRING=Debug -S . -B build/ -G Ninja
     - cmake --build build/ --config Debug --target all
   artifacts:
