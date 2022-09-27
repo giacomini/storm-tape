@@ -13,7 +13,7 @@ before_script:
 
 build_storm_tape:
   stage: build
-  image: "$CONTAINER_RELEASE_IMAGE"
+  image: docker:latest
   script:
     - mkdir build/
     - |
@@ -27,7 +27,6 @@ build_storm_tape:
 
 docker-build:
   stage: docker-build
-  image: docker:latest
   # Default branch leaves tag empty (= latest tag)
   # All other branches are tagged with the escaped branch name (commit ref slug)
   script:
