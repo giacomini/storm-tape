@@ -1,4 +1,5 @@
 # Use the official docker image.
+image: docker:latest
 services:
   - docker:dind
 
@@ -12,7 +13,7 @@ before_script:
 
 build_storm_tape:
   stage: build
-  image: storm-tape-poc:latest
+  image: baltig.infn.it:4567/giaco/storm-tape-poc:latest
   script:
     - mkdir build/
     - |
