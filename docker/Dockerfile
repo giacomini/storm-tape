@@ -32,7 +32,11 @@ RUN /tmp/install-vcpkg.sh ${USERNAME} \
 # Compile storm-tape-poc
 RUN mkdir -p /storm-tape-poc/build/
 COPY *.cpp *.hpp *.json CMakeLists.txt /storm-tape-poc/
-COPY docker/compile_src.sh /tmp/
+#COPY docker/compile_src.sh /tmp/
 COPY docker/test_script.sh /test/
-RUN chmod +x /tmp/compile_src.sh && chmod +x /test/test_script.sh && \
-/tmp/compile_src.sh && rm -f /tmp/compile_src.sh
+RUN /usr/local/bin/cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE \
+-DCMAKE_BUILD_TYPE:STRING=Debug -S /storm-tape-poc \
+-B /storm-tape-poc/build -G Ninja
+RUN /usr/local/bin/cmake --build /storm-tape-poc/build \
+--config Debug --target all
+RUN chmod +x /test/test_script.sh
