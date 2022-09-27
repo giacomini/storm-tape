@@ -21,7 +21,7 @@ build_storm_tape:
       -B /build -G Ninja
     - cmake --build build/ --config Debug --target all
   artifacts:
-    path:
+    paths:
     - build/storm-tape.tar.gz
 
 docker-build:
