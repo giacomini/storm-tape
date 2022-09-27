@@ -13,7 +13,7 @@ before_script:
 
 build_storm_tape:
   stage: build
-  image: baltig.infn.it:4567/giaco/storm-tape-poc:latest
+  image: "$CONTAINER_RELEASE_IMAGE"
   script:
     - mkdir build/
     - |
