@@ -1,4 +1,5 @@
 # StoRM Tape
+Diotalevi's branch #ciao
 
 ## Introduction
 
@@ -38,39 +39,100 @@ $ build/storm-tape
 ...
 ```
 
-The repo contains a simple stage request and a simple cancel request.
+### Stage a request
+To stage a request, using the dummy stage request JSON contained in this repo:
 
 ```shell
 $ curl -i -d @stage_request.json http://localhost:8080/api/v1/stage
 HTTP/1.1 201 Created
-Location: http://localhost:8080/api/v1/stage/c5a71127-9745-48e6-bd94-245b48309c05
+Location: https://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
 Content-Type: application/json
 Content-Length: 52
 Server: Crow/1.0
-Date: Thu, 28 Apr 2022 15:49:35 GMT
+Date: Mon, 22 Aug 2022 15:00:21 GMT
 Connection: Keep-Alive
 
-{"requestId":"c5a71127-9745-48e6-bd94-245b48309c05"}
+{"requestId":"6aa34070-d82c-49c5-b4c1-f48046625d2f"}
 ```
 
-```shell
-$ curl -i -d @cancel_request.json http://localhost:8080/api/v1/stage/c5a71127-9745-48e6-bd94-245b48309c05/cancel
-HTTP/1.1 200 OK
-Content-Length: 0
-Server: Crow/1.0
-Date: Thu, 28 Apr 2022 15:52:16 GMT
-Connection: Keep-Alive
-
-```
+### Progress tracking
+To see the progress tracking of one request: 
 
 ```shell
-$curl -i http://localhost:8080/api/v1/stage/617f5a60-329a-435a-a2be-94e590daa41f
+$ curl -i http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 188
 Server: Crow/1.0
-Date: Thu, 28 Apr 2022 15:53:54 GMT
+Date: Mon, 22 Aug 2022 15:25:52 GMT
 Connection: Keep-Alive
 
-{"id":"617f5a60-329a-435a-a2be-94e590daa41f","created_at":1651161090,"started_at":1651161090,"files":[{"path":"/data/pluto","state":"SUBMITTED"},{"path":"/tmp/pippo","state":"SUBMITTED"}]}
+{"id":"6aa34070-d82c-49c5-b4c1-f48046625d2f","created_at":1661181803,"started_at":1661181803,"files":[{"path":"/data/pluto","state":"SUBMITTED"},{"path":"/tmp/pippo","state":"SUBMITTED"}]}
+```
+
+### Cancel a subset of files
+To cancel a subset of files, listed in JSON format (a cancel request dummy JSON is provided in this repo), of a given stage request:
+
+```shell
+$ curl -i -d @cancel_request.json http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f/cancel
+HTTP/1.1 200 OK
+Content-Length: 0
+Server: Crow/1.0
+Date: Mon, 22 Aug 2022 15:26:45 GMT
+Connection: Keep-Alive
+```
+
+Requesting again a progress track of the stage request, now gives the following output:
+
+```shell
+$ curl -i http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 188
+Server: Crow/1.0
+Date: Mon, 22 Aug 2022 15:27:33 GMT
+Connection: Keep-Alive
+
+{"id":"6aa34070-d82c-49c5-b4c1-f48046625d2f","created_at":1661181803,"started_at":1661181803,"files":[{"path":"/data/pluto","state":"CANCELLED"},{"path":"/tmp/pippo","state":"SUBMITTED"}]}
+```
+
+### Archive information
+To request information about the progress of writing files to tape, given a JSON with the list of requested files (a dummy archive info JSON is provided in this repo):
+
+```shell
+$ curl -i -d @archive_info.json http://localhost:8080/api/v1/archiveinfo
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 135
+Server: Crow/1.0
+Date: Mon, 22 Aug 2022 15:28:17 GMT
+Connection: Keep-Alive
+
+[{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/local/minni"},{"locality":"TAPE","path":"/tmp/pippo"}]
+```
+
+### Delete a stage request
+To delete a stage request, given its unique ID:
+
+```shell
+$ curl -X "DELETE" -i http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
+HTTP/1.1 200 OK
+Content-Length: 0
+Server: Crow/1.0
+Date: Mon, 22 Aug 2022 15:29:21 GMT
+Connection: Keep-Alive
+```
+
+And again, requesting the archive information about the same files, now gives the following output:
+
+```shell
+$ curl -i -d @archive_info.json http://localhost:8080/api/v1/archiveinfo
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 187
+Server: Crow/1.0
+Date: Mon, 22 Aug 2022 15:30:49 GMT
+Connection: Keep-Alive
+
+[{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/local/minni"},{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/tmp/pippo"}]
 ```
