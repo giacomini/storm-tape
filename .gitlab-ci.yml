@@ -8,8 +8,8 @@ stages:
   - docker-build
   - test
 
-before_script:
-  - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+#before_script:
+#  - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" $CI_REGISTRY
 
 build_storm_tape:
   stage: build
@@ -38,6 +38,7 @@ docker-build:
         tag=":$CI_COMMIT_REF_SLUG"
         echo "Running on branch '$CI_COMMIT_BRANCH': tag = $tag"
       fi
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" $CI_REGISTRY
     - docker build --pull -t "$CI_REGISTRY_IMAGE${tag}" -f ./docker/Dockerfile .
     - docker push "$CI_REGISTRY_IMAGE${tag}"
  
@@ -58,5 +59,6 @@ test_container:
         tag=":$CI_COMMIT_REF_SLUG"
         echo "Running on branch '$CI_COMMIT_BRANCH': tag = $tag"
       fi
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" $CI_REGISTRY
     - docker pull "$CI_REGISTRY_IMAGE${tag}"
     - docker run "$CI_REGISTRY_IMAGE${tag}" /test/test_script.sh
