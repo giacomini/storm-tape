@@ -21,7 +21,7 @@ build_storm_tape:
     - cmake --build build/ --config Debug --target package
   artifacts:
     paths:
-    - build/storm-tape.tar.gz
+    - build/storm-tape-*-Linux.tar.gz
 
 docker-build:
   stage: docker-build
