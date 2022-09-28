@@ -42,7 +42,7 @@ CMD storm-tape
 # Compile storm-tape-poc
 #RUN mkdir -p /storm-tape-poc/build/
 #COPY *.cpp *.hpp *.json CMakeLists.txt /storm-tape-poc/
-#COPY docker/test_script.sh /test/
+COPY docker/test_script.sh /test/
 #RUN /usr/local/bin/cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE \
 #-DCMAKE_BUILD_TYPE:STRING=Debug -S /storm-tape-poc \
 #-B /storm-tape-poc/build -G Ninja
