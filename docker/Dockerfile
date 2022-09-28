@@ -31,10 +31,8 @@ RUN /tmp/install-vcpkg.sh ${USERNAME} \
 
 COPY /build/storm-tape-*-Linux.tar.gz /
 
-RUN ls -lR
-
-RUN tar xzvf /storm-tape.tar.gz && \
-      rm /storm2-be.tar.gz
+RUN tar xzvf /storm-tape-*-Linux.tar.gz && \
+      rm /storm-tape-*-Linux.tar.gz
 
 CMD storm-tape
 
