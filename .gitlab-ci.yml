@@ -41,6 +41,8 @@ docker-build:
     - docker push "$CI_REGISTRY_IMAGE${tag}"
   needs:
     - ["build_storm_tape"]
+  dependencies:
+    - build_storm_tape
 
   # Run this job in a branch where a Dockerfile exists
   rules:

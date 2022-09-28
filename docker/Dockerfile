@@ -29,10 +29,9 @@ COPY docker/base-scripts/install-vcpkg.sh /tmp/
 RUN /tmp/install-vcpkg.sh ${USERNAME} \
     && rm -f /tmp/install-vcpkg.sh
 
-RUN ls -lR 
-RUN pwd
-
 COPY /build/storm-tape-*-Linux.tar.gz /
+
+RUN ls -lR
 
 RUN tar xzvf /storm-tape.tar.gz && \
       rm /storm2-be.tar.gz
