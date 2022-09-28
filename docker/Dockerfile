@@ -33,9 +33,9 @@ COPY /build/storm-tape-*-Linux.tar.gz /
 RUN ls
 RUN tar xzvf /storm-tape-*-Linux.tar.gz && \
       rm /storm-tape-*-Linux.tar.gz
-
+COPY /storm-tape-*-Linux/bin/storm-tape /usr/local/bin/
 RUN ls
-CMD storm-tape-poc/build/storm-tape
+CMD storm-tape
 
 
 
