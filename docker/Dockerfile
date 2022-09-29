@@ -37,9 +37,6 @@ RUN cp /storm-tape-*-Linux/bin/storm-tape /usr/local/bin/ && rm -r storm-tape-*-
 
 CMD storm-tape
 
-
-
-
 # Compile storm-tape-poc
 #RUN mkdir -p /storm-tape-poc/build/
 #COPY *.cpp *.hpp *.json CMakeLists.txt /storm-tape-poc/
