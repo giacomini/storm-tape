@@ -13,7 +13,7 @@ struct RequestWithPaths
   std::vector<storm::File> paths;
   RequestWithPaths(std::string_view const& body)
   {
-    paths = files_from_json_paths(body);
+    paths = from_json_paths(body);
   }
 };
 
