@@ -138,7 +138,7 @@ std::vector<storm::File> storm::from_json(std::string_view const& body)
 {
   auto const value =
       boost::json::parse(boost::json::string_view{body.data(), body.size()});
-
+      
   auto& jfiles = value.as_object().at("files").as_array();
   std::vector<storm::File> f_files;
   f_files.reserve(jfiles.size());
@@ -146,7 +146,7 @@ std::vector<storm::File> storm::from_json(std::string_view const& body)
                  [](auto& file) {
                    return storm::File{
                        std::filesystem::path{
-                           file.as_object().at("path").as_string().c_str()},
+                           file.as_object().at("path").as_string().c_str()}.lexically_normal(),
                        // /storage/cms/...
                    };
                  });
@@ -168,7 +168,7 @@ std::vector<storm::File> storm::from_json_paths(std::string_view const& body)
   std::transform(jfiles.begin(), jfiles.end(), std::back_inserter(f_files),
                  [](auto& file) {
                    return storm::File{
-                       std::filesystem::path{file.as_string().c_str()},
+                       std::filesystem::path{file.as_string().c_str()}.lexically_normal(),
                    };
                  });
   std::sort(f_files.begin(), f_files.end(),
