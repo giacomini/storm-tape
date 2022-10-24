@@ -157,7 +157,7 @@ std::vector<storm::File> storm::from_json(std::string_view const& body)
 
 // Returns a vector of File objects, given a JSON with one or more files listed
 // in the "paths" field, for a given cancel request.
-std::vector<storm::File> storm::files_from_json_paths(std::string_view const& body)
+std::vector<storm::File> storm::from_json_paths(std::string_view const& body)
 {
   std::vector<storm::File> f_files;
   auto const value =
