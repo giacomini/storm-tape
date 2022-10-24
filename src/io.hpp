@@ -37,7 +37,7 @@ boost::json::array archive_to_json(std::vector<File> const& file,
 crow::response to_crow_response(ArchiveResponse const& resp);
 
 std::vector<File> from_json(std::string_view const& body);
-std::vector<File> files_from_json_paths(std::string_view const& body);
+std::vector<File> from_json_paths(std::string_view const& body);
 
 template<class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
