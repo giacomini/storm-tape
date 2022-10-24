@@ -9,15 +9,15 @@
 #include "stage_response.hpp"
 
 // Creates a JSON object with the given request ID, for a new stage request.
-boost::json::object storm::to_json(StageResponse const& resp)
+boost::json::object storm::to_json(storm::StageResponse const& resp)
 {
   boost::json::object jbody{{"requestId", resp.id()}};
   return jbody;
 }
 
 // Creates the CROW response for the stage operation.
-crow::response storm::to_crow_response(StageResponse const& resp,
-                                       Configuration const& config)
+crow::response storm::to_crow_response(storm::StageResponse const& resp,
+                                       storm::Configuration const& config)
 {
   auto jbody = to_json(resp);
   return resp.staged(jbody, config);
@@ -25,7 +25,7 @@ crow::response storm::to_crow_response(StageResponse const& resp,
 
 // Creates a JSON object for an already staged request, with a certain
 // requestId.
-boost::json::object storm::staged_to_json(StageRequest const* stage,
+boost::json::object storm::staged_to_json(storm::StageRequest const* stage,
                                           std::string const& id)
 {
   boost::json::array files;
@@ -57,7 +57,7 @@ boost::json::object storm::staged_to_json(StageRequest const* stage,
   return jbody;
 }
 
-crow::response storm::to_crow_response(StatusResponse const& resp)
+crow::response storm::to_crow_response(storm::StatusResponse const& resp)
 {
   auto jbody = staged_to_json(resp.stage(), resp.id());
   return resp.status(jbody);
@@ -81,13 +81,13 @@ storm::file_missing_to_json(std::vector<std::filesystem::path> const& missing,
   return jbody;
 }
 
-crow::response storm::to_crow_response(CancelResponse const& resp)
+crow::response storm::to_crow_response(storm::CancelResponse const& resp)
 {
   auto jbody = storm::file_missing_to_json(resp.invalid(), resp.id());
   return storm::CancelResponse::bad_request_with_body(jbody);
 }
 
-crow::response storm::to_crow_response(ReleaseResponse const& resp)
+crow::response storm::to_crow_response(storm::ReleaseResponse const& resp)
 {
   auto jbody = storm::file_missing_to_json(resp.invalid(), resp.id());
   return storm::ReleaseResponse::bad_request_with_body(jbody);
@@ -127,7 +127,7 @@ boost::json::array storm::archive_to_json(std::vector<storm::File> const& files,
   return jbody;
 }
 
-crow::response storm::to_crow_response(ArchiveResponse const& resp)
+crow::response storm::to_crow_response(storm::ArchiveResponse const& resp)
 {
   return resp.fetched_from_archive(resp.jbody());
 }
@@ -151,7 +151,7 @@ std::vector<storm::File> storm::from_json(std::string_view const& body)
                    };
                  });
   std::sort(f_files.begin(), f_files.end(),
-            [](File const& a, File const& b) { return a.path < b.path; });
+            [](storm::File const& a, storm::File const& b) { return a.path < b.path; });
   return f_files;
 }
 
@@ -172,6 +172,6 @@ std::vector<storm::File> storm::files_from_json_paths(std::string_view const& bo
                    };
                  });
   std::sort(f_files.begin(), f_files.end(),
-            [](File const& a, File const& b) { return a.path < b.path; });
+            [](storm::File const& a, storm::File const& b) { return a.path < b.path; });
   return f_files;
 }
