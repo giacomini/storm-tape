@@ -17,7 +17,7 @@ set(Boost_NO_WARN_NEW_VERSIONS 1)
 string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
 
 # abilita testing
-string(APPEND CMAKE_CXX_FLAGS " -DENABLE_TESTING")
+# string(APPEND CMAKE_CXX_FLAGS " -DENABLE_TESTING")
 
 # abilita l'address sanitizer in debug mode
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fno-omit-frame-pointer")
