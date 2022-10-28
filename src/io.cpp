@@ -77,7 +77,9 @@ storm::file_missing_to_json(std::vector<std::filesystem::path> const& missing,
   }
   boost::json::object jbody{
       {"title", "File missing from stage request"},
-      {"detail", "Files " + sfile + "do not belong to stage request " + id}};
+      {"status", 400},
+      {"detail", "The files " + sfile + "do not belong to STAGE request " + id
+                     + ". No modification has been made to this request."}};
   return jbody;
 }
 
