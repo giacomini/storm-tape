@@ -5,8 +5,8 @@
 #include "delete_response.hpp"
 #include "release_response.hpp"
 #include "stage_request.hpp"
-#include "status_response.hpp"
 #include "stage_response.hpp"
+#include "status_response.hpp"
 
 // Creates a JSON object with the given request ID, for a new stage request.
 boost::json::object storm::to_json(storm::StageResponse const& resp)
@@ -140,7 +140,7 @@ std::vector<storm::File> storm::from_json(std::string_view const& body)
 {
   auto const value =
       boost::json::parse(boost::json::string_view{body.data(), body.size()});
-      
+
   auto& jfiles = value.as_object().at("files").as_array();
   std::vector<storm::File> f_files;
   f_files.reserve(jfiles.size());
@@ -148,12 +148,15 @@ std::vector<storm::File> storm::from_json(std::string_view const& body)
                  [](auto& file) {
                    return storm::File{
                        std::filesystem::path{
-                           file.as_object().at("path").as_string().c_str()}.lexically_normal(),
+                           file.as_object().at("path").as_string().c_str()}
+                           .lexically_normal(),
                        // /storage/cms/...
                    };
                  });
   std::sort(f_files.begin(), f_files.end(),
-            [](storm::File const& a, storm::File const& b) { return a.path < b.path; });
+            [](storm::File const& a, storm::File const& b) {
+              return a.path < b.path;
+            });
   return f_files;
 }
 
@@ -167,13 +170,16 @@ std::vector<storm::File> storm::from_json_paths(std::string_view const& body)
 
   auto& jfiles = value.as_object().at("paths").as_array();
   f_files.reserve(jfiles.size());
-  std::transform(jfiles.begin(), jfiles.end(), std::back_inserter(f_files),
-                 [](auto& file) {
-                   return storm::File{
-                       std::filesystem::path{file.as_string().c_str()}.lexically_normal(),
-                   };
-                 });
+  std::transform(
+      jfiles.begin(), jfiles.end(), std::back_inserter(f_files),
+      [](auto& file) {
+        return storm::File{
+            std::filesystem::path{file.as_string().c_str()}.lexically_normal(),
+        };
+      });
   std::sort(f_files.begin(), f_files.end(),
-            [](storm::File const& a, storm::File const& b) { return a.path < b.path; });
+            [](storm::File const& a, storm::File const& b) {
+              return a.path < b.path;
+            });
   return f_files;
 }
