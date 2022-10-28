@@ -187,12 +187,12 @@ storm::TapeService::archive(storm::ArchiveInfo const& info)
 
     jbody = storm::archive_to_json(remaining, jbody);
 
-    storm::ArchiveResponse resp{jbody, invalid};
+    storm::ArchiveResponse resp{jbody, invalid, remaining};
     return resp;
   } else {
     jbody = storm::archive_to_json(info.paths, jbody);
 
-    storm::ArchiveResponse resp{jbody};
+    storm::ArchiveResponse resp{jbody, info.paths};
     return resp;
   }
 }
