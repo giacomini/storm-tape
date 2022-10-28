@@ -11,6 +11,12 @@ storm::ArchiveResponse::invalid() const
   return m_invalid;
 }
 
+std::vector<storm::File> const&
+storm::ArchiveResponse::valid() const
+{
+  return m_valid;
+}
+
 crow::response
 storm::ArchiveResponse::fetched_from_archive(boost::json::array jbody) const
 {
