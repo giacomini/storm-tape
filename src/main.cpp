@@ -19,18 +19,17 @@
 TEST_CASE("Test IO")
 {
   //IO for stage requests
-  CHECK(storm::from_json(R"({"files":[{"path":"/foo/bar"}]})").size() == 1); //OK, 201
-  CHECK(storm::from_json(R"({"files":[{"path":"/foo/bar"},{"path":"/bar/foo"}]})").size() == 2); //OK, 201
-  CHECK(storm::from_json(R"({"files":[{"path":"/foo//bar"}]})").at(0).path.lexically_normal() == "/foo/bar"); //sanitise path
-  CHECK(storm::from_json(R"({"files":[{"path":"/foo/.///bar/../"}]})").at(0).path.lexically_normal() == "/foo/"); //sanitise path
+  CHECK(storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"}]})").size() == 1); //OK, 201
+  CHECK(storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"},{"path":"/tmp/bar/foo.txt"}]})").size() == 2); //OK, 201
+  CHECK(storm::from_json(R"({"files":[{"path":"/tmp/foo//bar.txt"}]})").at(0).path.lexically_normal() == "/tmp/foo/bar.txt"); //sanitise path
+  CHECK(storm::from_json(R"({"files":[{"path":"/tmp/foo/.///bar/../"}]})").at(0).path.lexically_normal() == "/tmp/foo/"); //sanitise path
   CHECK_THROWS_AS(storm::from_json("{ }"), std::exception); //invalid stage request, 400
   CHECK_THROWS_AS(storm::from_json(""), std::exception); //invalid stage request, 400
-  CHECK_THROWS_AS(storm::from_json(R"({"files":[{"path":""}]})"), std::exception); //invalid stage request, 400
   //IO for cancel, release, and archive info requests
-  CHECK(storm::from_json_paths(R"({"paths":["/foo/bar"]})").size() == 1); //OK
-  CHECK(storm::from_json_paths(R"({"paths":["/foo/bar","/bar/foo"]})").size() == 2); //OK
-  CHECK(storm::from_json_paths(R"({"paths":["/foo//bar"]})").at(0).path.lexically_normal() == "/foo/bar"); //sanitise path
-  CHECK(storm::from_json_paths(R"({"paths":["/foo/.///bar/../"]})").at(0).path.lexically_normal() == "/foo/"); //sanitise path
+  CHECK(storm::from_json_paths(R"({"paths":["/tmp/foo/bar.txt"]})").size() == 1); //OK
+  CHECK(storm::from_json_paths(R"({"paths":["/tmp/foo/bar.txt","/tmp/bar/foo.txt"]})").size() == 2); //OK
+  CHECK(storm::from_json_paths(R"({"paths":["/tmp/foo//bar.txt"]})").at(0).path.lexically_normal() == "/tmp/foo/bar.txt"); //sanitise path
+  CHECK(storm::from_json_paths(R"({"paths":["/tmp/foo/.///bar/../"]})").at(0).path.lexically_normal() == "/tmp/foo/"); //sanitise path
   CHECK_THROWS_AS(storm::from_json_paths("{ }"), std::exception); //invalid cancel/release/archive request, 400
   CHECK_THROWS_AS(storm::from_json_paths(""), std::exception); //invalid cancel/release/archive request, 400
 }
@@ -39,12 +38,12 @@ TEST_CASE("Test with cancel request")
 {
   storm::MockDatabase db;
   storm::TapeService service{db};
-  auto files = storm::from_json(R"({"files":[{"path":"/foo/bar"}]})");
+  auto files = storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"}]})");
   storm::StageRequest request{files};
   auto stage_resp = service.stage(request);
-  storm::CancelRequest cancel{R"({"paths":["/not/foo/bar"]})"};
-  storm::CancelRequest cancel2{R"({"paths":["/foo/bar"]})"};
-  storm::CancelRequest cancel3{R"({"paths":["/foo/bar","/not/foo/bar"]})"};
+  storm::CancelRequest cancel{R"({"paths":["/tmp/not/foo/bar.txt"]})"};
+  storm::CancelRequest cancel2{R"({"paths":["/tmp/foo/bar.txt"]})"};
+  storm::CancelRequest cancel3{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
   auto cancel_resp  = service.cancel(stage_resp.id(), cancel);
   auto cancel_resp2 = service.cancel(stage_resp.id(), cancel2);
   auto cancel_resp3 = service.cancel(stage_resp.id(), cancel3);
@@ -58,12 +57,12 @@ TEST_CASE("Test when release request")
 {
   storm::MockDatabase db;
   storm::TapeService service{db};
-  auto files = storm::from_json(R"({"files":[{"path":"/foo/bar"}]})");
+  auto files = storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"}]})");
   storm::StageRequest request{files};
   auto stage_resp = service.stage(request);
-  storm::ReleaseRequest release{R"({"paths":["/not/foo/bar"]})"};
-  storm::ReleaseRequest release2{R"({"paths":["/foo/bar"]})"};
-  storm::ReleaseRequest release3{R"({"paths":["/foo/bar","/not/foo/bar"]})"};
+  storm::ReleaseRequest release{R"({"paths":["/tmp/not/foo/bar.txt"]})"};
+  storm::ReleaseRequest release2{R"({"paths":["/tmp/foo/bar.txt"]})"};
+  storm::ReleaseRequest release3{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
   auto release_resp  = service.release(stage_resp.id(), release);
   auto release_resp2 = service.release(stage_resp.id(), release2);
   auto release_resp3 = service.release(stage_resp.id(), release3);
@@ -77,12 +76,12 @@ TEST_CASE("Test with archive info")
 {
   storm::MockDatabase db;
   storm::TapeService service{db};
-  auto files = storm::from_json(R"({"files":[{"path":"/foo/bar"}]})");
+  auto files = storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"}]})");
   storm::StageRequest request{files};
   service.stage(request);
-  storm::ArchiveInfo info{R"({"paths":["/not/foo/bar"]})"};
-  storm::ArchiveInfo info2{R"({"paths":["/foo/bar"]})"};
-  storm::ArchiveInfo info3{R"({"paths":["/foo/bar","/not/foo/bar"]})"};
+  storm::ArchiveInfo info{R"({"paths":["/tmp/not/foo/bar.txt"]})"};
+  storm::ArchiveInfo info2{R"({"paths":["/tmp/foo/bar.txt"]})"};
+  storm::ArchiveInfo info3{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
   auto info_resp  = service.archive(info);
   auto info_resp2 = service.archive(info2);
   auto info_resp3 = service.archive(info3);
@@ -99,10 +98,10 @@ TEST_CASE("Test with archive info")
   CHECK(info_resp3.invalid().size() == 1);
   CHECK(info_resp3.valid().size() == 1);
 
-  auto files2 = storm::from_json(R"({"files":[{"path":"/not/foo/bar"}]})");
+  auto files2 = storm::from_json(R"({"files":[{"path":"/tmp/not/foo/bar.txt"}]})");
   storm::StageRequest request2{files2};
   service.stage(request2);
-  storm::ArchiveInfo info4{R"({"paths":["/foo/bar","/not/foo/bar"]})"};
+  storm::ArchiveInfo info4{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
   auto info_resp4 = service.archive(info4);
   // Adding new stage request. Same archive info as before, now all two in stage  
   CHECK(info_resp4.invalid().size() == 0);
