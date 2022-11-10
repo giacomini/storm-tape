@@ -49,7 +49,7 @@ NOTE: Before running the image, make sure to be correctly logged in on the balti
 To stage a request, using the dummy stage request JSON contained in this repo:
 
 ```shell
-$ curl -i -d @stage_request.json http://localhost:8080/api/v1/stage
+$ curl -i -d @example/stage_request.json http://localhost:8080/api/v1/stage
 HTTP/1.1 201 Created
 Location: https://localhost:8080/api/v1/stage/318640a8-424e-4071-adb8-abefad1bdbb3
 Content-Type: application/json
@@ -81,7 +81,7 @@ Connection: Keep-Alive
 To cancel a subset of files, listed in JSON format (a cancel request dummy JSON is provided in this repo), of a given stage request:
 
 ```shell
-$ curl -i -d @cancel_request.json http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f/cancel
+$ curl -i -d @example/cancel_request.json http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f/cancel
 HTTP/1.1 200 OK
 Content-Length: 0
 Server: Crow/1.0
@@ -107,7 +107,7 @@ Connection: Keep-Alive
 To request information about the progress of writing files to tape, given a JSON with the list of requested files (a dummy archive info JSON is provided in this repo):
 
 ```shell
-$ curl -i -d @archive_info.json http://localhost:8080/api/v1/archiveinfo
+$ curl -i -d @example/archive_info.json http://localhost:8080/api/v1/archiveinfo
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 147
@@ -133,7 +133,7 @@ Connection: Keep-Alive
 And again, requesting the archive information about the same files, now gives the following output:
 
 ```shell
-$ curl -i -d @archive_info.json http://localhost:8080/api/v1/archiveinfo
+$ curl -i -d @example/archive_info.json http://localhost:8080/api/v1/archiveinfo
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 199
