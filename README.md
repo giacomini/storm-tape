@@ -1,5 +1,4 @@
-# StoRM Tape
-Diotalevi's branch #ciao
+# StoRM Tape REST API
 
 ## Introduction
 
@@ -39,35 +38,43 @@ $ build/storm-tape
 ...
 ```
 
+## Install via Docker
+As an alternative, it is possible to run the REST API server via Docker, using the following command:
+```
+docker run -it baltig.infn.it:4567/giaco/storm-tape-poc
+```
+NOTE: Before running the image, make sure to be correctly logged in on the baltig Docker registry, via the docker [login](https://docs.docker.com/engine/reference/commandline/login/) command, using INFN-AAI credentials.
+
 ### Stage a request
 To stage a request, using the dummy stage request JSON contained in this repo:
 
 ```shell
 $ curl -i -d @stage_request.json http://localhost:8080/api/v1/stage
 HTTP/1.1 201 Created
-Location: https://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
+Location: https://localhost:8080/api/v1/stage/318640a8-424e-4071-adb8-abefad1bdbb3
 Content-Type: application/json
 Content-Length: 52
 Server: Crow/1.0
-Date: Mon, 22 Aug 2022 15:00:21 GMT
+Date: Thu, 10 Nov 2022 17:12:47 GMT
 Connection: Keep-Alive
 
-{"requestId":"6aa34070-d82c-49c5-b4c1-f48046625d2f"}
+{"requestId":"318640a8-424e-4071-adb8-abefad1bdbb3"}
 ```
+NOTE: Using the provided Docker container, the dummy files listed in the stage_request JSON have been already created. In alternative, make sure to provide existing filename(s). If a file is not present on the filesystem, or an invalid file is prompted, a stage request will still be created, but the files will be subsequently listed with "FAILED" state.
 
 ### Progress tracking
 To see the progress tracking of one request: 
 
 ```shell
-$ curl -i http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
+$ curl -i http://localhost:8080/api/v1/stage/318640a8-424e-4071-adb8-abefad1bdbb3
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 188
+Content-Length: 200
 Server: Crow/1.0
-Date: Mon, 22 Aug 2022 15:25:52 GMT
+Date: Thu, 10 Nov 2022 17:14:15 GMT
 Connection: Keep-Alive
 
-{"id":"6aa34070-d82c-49c5-b4c1-f48046625d2f","created_at":1661181803,"started_at":1661181803,"files":[{"path":"/data/pluto","state":"SUBMITTED"},{"path":"/tmp/pippo","state":"SUBMITTED"}]}
+{"id":"318640a8-424e-4071-adb8-abefad1bdbb3","created_at":1668100367,"started_at":1668100367,"files":[{"path":"/tmp/example.txt","state":"SUBMITTED"},{"path":"/tmp/example2.txt","state":"SUBMITTED"}]}
 ```
 
 ### Cancel a subset of files
@@ -78,22 +85,22 @@ $ curl -i -d @cancel_request.json http://localhost:8080/api/v1/stage/6aa34070-d8
 HTTP/1.1 200 OK
 Content-Length: 0
 Server: Crow/1.0
-Date: Mon, 22 Aug 2022 15:26:45 GMT
+Date: Thu, 10 Nov 2022 17:22:37 GMT
 Connection: Keep-Alive
 ```
 
 Requesting again a progress track of the stage request, now gives the following output:
 
 ```shell
-$ curl -i http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
+$ curl -i http://localhost:8080/api/v1/stage/318640a8-424e-4071-adb8-abefad1bdbb3
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 188
+Content-Length: 200
 Server: Crow/1.0
-Date: Mon, 22 Aug 2022 15:27:33 GMT
+Date: Thu, 10 Nov 2022 17:22:57 GMT
 Connection: Keep-Alive
 
-{"id":"6aa34070-d82c-49c5-b4c1-f48046625d2f","created_at":1661181803,"started_at":1661181803,"files":[{"path":"/data/pluto","state":"CANCELLED"},{"path":"/tmp/pippo","state":"SUBMITTED"}]}
+{"id":"318640a8-424e-4071-adb8-abefad1bdbb3","created_at":1668100367,"started_at":1668100367,"files":[{"path":"/tmp/example.txt","state":"CANCELLED"},{"path":"/tmp/example2.txt","state":"SUBMITTED"}]}
 ```
 
 ### Archive information
@@ -103,23 +110,23 @@ To request information about the progress of writing files to tape, given a JSON
 $ curl -i -d @archive_info.json http://localhost:8080/api/v1/archiveinfo
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 135
+Content-Length: 147
 Server: Crow/1.0
-Date: Mon, 22 Aug 2022 15:28:17 GMT
+Date: Thu, 10 Nov 2022 17:24:10 GMT
 Connection: Keep-Alive
 
-[{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/local/minni"},{"locality":"TAPE","path":"/tmp/pippo"}]
+[{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/tmp/example3.txt"},{"locality":"TAPE","path":"/tmp/example2.txt"}]
 ```
 
 ### Delete a stage request
 To delete a stage request, given its unique ID:
 
 ```shell
-$ curl -X "DELETE" -i http://localhost:8080/api/v1/stage/6aa34070-d82c-49c5-b4c1-f48046625d2f
+$ curl -X "DELETE" -i http://localhost:8080/api/v1/stage/318640a8-424e-4071-adb8-abefad1bdbb3
 HTTP/1.1 200 OK
 Content-Length: 0
 Server: Crow/1.0
-Date: Mon, 22 Aug 2022 15:29:21 GMT
+Date: Thu, 10 Nov 2022 17:24:56 GMT
 Connection: Keep-Alive
 ```
 
@@ -129,10 +136,23 @@ And again, requesting the archive information about the same files, now gives th
 $ curl -i -d @archive_info.json http://localhost:8080/api/v1/archiveinfo
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 187
+Content-Length: 199
 Server: Crow/1.0
-Date: Mon, 22 Aug 2022 15:30:49 GMT
+Date: Thu, 10 Nov 2022 17:25:23 GMT
 Connection: Keep-Alive
 
-[{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/local/minni"},{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/tmp/pippo"}]
+[{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/tmp/example2.txt"},{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/tmp/example3.txt"}]
+```
+
+As a cross check, progress tracking now the previous stage ID (now deleted) will result in a 404 response:
+
+```shell
+$ curl -i http://localhost:8080/api/v1/stage/318640a8-424e-4071-adb8-abefad1bdbb3
+HTTP/1.1 404 Not Found
+Content-Length: 15
+Server: Crow/1.0
+Date: Thu, 10 Nov 2022 17:33:39 GMT
+Connection: Keep-Alive
+
+404 Not Found
 ```
