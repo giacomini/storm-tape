@@ -13,11 +13,13 @@
 #  include "release_response.hpp"
 #  include "requests_with_paths.hpp"
 #  include "stage_response.hpp"
+#  include "fs_storage_test.hpp"
 #  include "../test/doctest.h"
 
 // clang-format off
 TEST_CASE("Test IO")
 {
+  storm::FsStorageTest::SetUp();
   //IO for stage requests
   CHECK(storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"}]})").size() == 1); //OK, 201
   CHECK(storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"},{"path":"/tmp/bar/foo.txt"}]})").size() == 2); //OK, 201
@@ -106,6 +108,8 @@ TEST_CASE("Test with archive info")
   // Adding new stage request. Same archive info as before, now all two in stage  
   CHECK(info_resp4.invalid().size() == 0);
   CHECK(info_resp4.valid().size() == 2);
+
+  storm::FsStorageTest::TearDown();
 }
 // clang-format on
 #else
