@@ -47,3 +47,6 @@ COPY docker/test_script.sh /test/
 #RUN /usr/local/bin/cmake --build /storm-tape-poc/build \
 #--config Debug --target all
 RUN chmod +x /test/test_script.sh
+
+## Create empty files for README tutorial
+RUN touch /tmp/example.txt /tmp/example2.txt
