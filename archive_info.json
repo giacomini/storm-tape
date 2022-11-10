@@ -1,6 +1,6 @@
 {
     "paths": [
-        "/tmp/pippo",
-        "/local/minni"
+        "/tmp/example2.txt",
+        "/tmp/example3.txt"
     ]
   }

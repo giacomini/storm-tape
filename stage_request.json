@@ -1,10 +1,10 @@
 {
   "files": [
     {
-      "path": "/data//pluto"
+      "path": "/tmp//example.txt"
     },
     {
-      "path": "/tmp/pippo"
+      "path": "/tmp/example2.txt"
     }
   ]
 }
