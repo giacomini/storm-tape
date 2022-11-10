@@ -146,12 +146,26 @@ std::vector<storm::File> storm::from_json(std::string_view const& body)
   f_files.reserve(jfiles.size());
   std::transform(jfiles.begin(), jfiles.end(), std::back_inserter(f_files),
                  [](auto& file) {
-                   return storm::File{
-                       std::filesystem::path{
+                   auto status =
+                       std::filesystem::status(std::filesystem::path{
                            file.as_object().at("path").as_string().c_str()}
-                           .lexically_normal(),
-                       // /storage/cms/...
-                   };
+                                                   .lexically_normal());
+                   if (std::filesystem::is_regular_file(status)) {
+                     return storm::File{
+                         std::filesystem::path{
+                             file.as_object().at("path").as_string().c_str()}
+                             .lexically_normal(),
+                         // /storage/cms/...
+                     };
+                   } else {
+                     return storm::File{
+                         std::filesystem::path{
+                             file.as_object().at("path").as_string().c_str()}
+                             .lexically_normal(),
+                         storm::File::State{storm::File::State::failed},
+                         // /storage/cms/...
+                     };
+                   }
                  });
   std::sort(f_files.begin(), f_files.end(),
             [](storm::File const& a, storm::File const& b) {
