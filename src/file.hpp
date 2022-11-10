@@ -20,8 +20,8 @@ struct File
     on_disk = 2
   };
   std::filesystem::path path;
-  Locality locality{Locality::on_tape};
   State state{State::submitted};
+  Locality locality{Locality::on_tape};
   void setState(State s){state = s;};
 };
 } // namespace storm
