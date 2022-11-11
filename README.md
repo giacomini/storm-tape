@@ -41,7 +41,7 @@ $ build/storm-tape
 ## Install via Docker
 As an alternative, it is possible to run the REST API server via Docker, using the following command:
 ```
-docker run -it baltig.infn.it:4567/giaco/storm-tape-poc
+docker run -it -p 8080:8080 baltig.infn.it:4567/giaco/storm-tape-poc
 ```
 NOTE: Before running the image, make sure to be correctly logged in on the baltig Docker registry, via the docker [login](https://docs.docker.com/engine/reference/commandline/login/) command, using INFN-AAI credentials.
 
