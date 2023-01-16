@@ -27,6 +27,20 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
+To build with presets:
+
+```shell
+cmake -S . -B build --preset ci-ubuntu
+cmake --build build
+```
+
+To perform linting (`clang-format`):
+```shell
+cmake -S . -B build [options]
+cmake --build build --target format-check 
+cmake --build build --target format-fix
+```
+
 ## How to run
 
 To run the server

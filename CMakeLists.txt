@@ -26,6 +26,9 @@ string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fno-omit-frame-pointer")
 string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fsanitize=address -fno-omit-frame-pointer")
 
+# aggiunge gli eseguibili "format-check" e "format-fix" per clang-format
+include(cmake/lint-targets.cmake)
+
 find_package(Crow CONFIG REQUIRED)
 # fix for "warning: ISO C++11 requires whitespace after the macro name", due to "g++ -D_CROW_ICD-NOTFOUND"
 if (NOT _CROW_ICD)
