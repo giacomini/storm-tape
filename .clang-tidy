@@ -11,6 +11,8 @@ Checks: "*,\
   -llvm-include-order,\
   -llvmlibc-*,\
   -modernize-use-nodiscard,\
+  -modernize-use-trailing-return-type,\
+  -readability-identifier-length,\
   -misc-non-private-member-variables-in-classes"
 WarningsAsErrors: ''
 CheckOptions:
@@ -71,9 +73,9 @@ CheckOptions:
   - key: 'readability-identifier-naming.ConstexprVariableCase'
     value: 'lower_case'
   - key: 'readability-identifier-naming.EnumCase'
-    value: 'lower_case'
+    value: 'CamelCase'
   - key: 'readability-identifier-naming.EnumConstantCase'
-    value: 'lower_case'
+    value: 'CamelCase'
   - key: 'readability-identifier-naming.FunctionCase'
     value: 'lower_case'
   - key: 'readability-identifier-naming.GlobalConstantCase'
