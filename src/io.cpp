@@ -17,10 +17,10 @@ boost::json::object storm::to_json(storm::StageResponse const& resp)
 
 // Creates the CROW response for the stage operation.
 crow::response storm::to_crow_response(storm::StageResponse const& resp,
-                                       storm::Configuration const& config)
+                                       std::string const& host)
 {
   auto jbody = to_json(resp);
-  return resp.staged(jbody, config);
+  return resp.staged(jbody, host);
 }
 
 // Creates a JSON object for an already staged request, with a certain
@@ -196,4 +196,9 @@ std::vector<storm::File> storm::from_json_paths(std::string_view const& body)
               return a.path < b.path;
             });
   return f_files;
+}
+
+std::string storm::get_host(crow::request const& req){
+  auto header = req.get_header_value("Forwarded");
+  return header;
 }

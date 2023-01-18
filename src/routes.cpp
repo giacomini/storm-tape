@@ -36,7 +36,7 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
           auto files = storm::from_json(req.body);
           storm::StageRequest request{files};
           auto resp = service.stage(request);
-          return storm::to_crow_response(resp, config);
+          return storm::to_crow_response(resp, storm::get_host(req));
         } catch (...) {
           return storm::StageResponse::bad_request();
         }

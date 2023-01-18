@@ -28,7 +28,7 @@ class StageResponse
   {}
 
   crow::response staged(boost::json::object const& jbody,
-                        Configuration const& config) const;
+                        std::string const& host) const;
   static crow::response bad_request();
 
   std::string const& id() const;
