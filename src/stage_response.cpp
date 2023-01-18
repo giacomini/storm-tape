@@ -7,7 +7,7 @@ storm::StageResponse::staged(boost::json::object const& jbody,
 {
   crow::response resp{crow::status::CREATED, "json",
                       boost::json::serialize(jbody)};
-  resp.add_header("Location", host + "/stage/" + m_id);
+  resp.add_header("Location", host + "/api/v1/stage/" + m_id);
   return resp;
 }
 
