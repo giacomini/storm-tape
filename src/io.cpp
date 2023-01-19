@@ -199,16 +199,22 @@ std::vector<storm::File> storm::from_json_paths(std::string_view const& body)
   return f_files;
 }
 
-std::map<std::string, std::string> storm::get_host(crow::request const& req){
+std::map<std::string, std::string>
+storm::get_host(crow::request const& req, storm::Configuration const& conf)
+{
+  std::map<std::string, std::string> header_map;
   const std::string header = req.get_header_value("Forwarded");
+  if (header.empty()) {
+    header_map["host"]  = conf.hostname + ":" + std::to_string(conf.port);
+    header_map["proto"] = "https";
+  }
   std::regex host_match("host=(.*?)(;|$)");
   std::regex proto_match("proto=(.*?)(;|$)");
   std::smatch match;
-  std::map<std::string, std::string> header_map;
   if (std::regex_search(header.begin(), header.end(), match, host_match))
-      header_map["host"] = match[1];
+    header_map["host"] = match[1];
   if (std::regex_search(header.begin(), header.end(), match, proto_match))
-      header_map["proto"] = match[1];
+    header_map["proto"] = match[1];
 
   return header_map;
 }
