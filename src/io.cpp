@@ -16,8 +16,9 @@ boost::json::object storm::to_json(storm::StageResponse const& resp)
 }
 
 // Creates the CROW response for the stage operation.
-crow::response storm::to_crow_response(storm::StageResponse const& resp,
-                                       std::map<std::string,std::string> const& map)
+crow::response
+storm::to_crow_response(storm::StageResponse const& resp,
+                        std::map<std::string, std::string> const& map)
 {
   auto jbody = to_json(resp);
   return resp.staged(jbody, map);

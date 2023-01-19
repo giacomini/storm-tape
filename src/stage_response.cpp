@@ -1,13 +1,13 @@
 #include "stage_response.hpp"
-#include "configuration.hpp"
 
-crow::response
-storm::StageResponse::staged(boost::json::object const& jbody,
-                             std::map<std::string,std::string> const& map) const
+crow::response storm::StageResponse::staged(
+    boost::json::object const& jbody,
+    std::map<std::string, std::string> const& map) const
 {
   crow::response resp{crow::status::CREATED, "json",
                       boost::json::serialize(jbody)};
-  resp.set_header("Location", map.at("proto") + "://" + map.at("host") + "/api/v1/stage/" + m_id);
+  resp.set_header("Location", map.at("proto") + "://" + map.at("host")
+                                  + "/api/v1/stage/" + m_id);
   return resp;
 }
 
