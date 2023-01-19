@@ -4,6 +4,7 @@
 #include "file.hpp"
 #include <boost/json.hpp>
 #include <crow.h>
+#include <regex>
 
 namespace storm {
 class StageRequest;
@@ -17,7 +18,7 @@ class Configuration;
 
 boost::json::object to_json(StageResponse const& resp);
 crow::response to_crow_response(StageResponse const& resp,
-                                std::string const& host);
+                                std::map<std::string,std::string> const& map);
 
 boost::json::object staged_to_json(StageRequest const* stage,
                                    std::string const& id);
@@ -39,7 +40,7 @@ crow::response to_crow_response(ArchiveResponse const& resp);
 std::vector<File> from_json(std::string_view const& body);
 std::vector<File> from_json_paths(std::string_view const& body);
 
-std::string get_host(crow::request const& req);
+std::map<std::string,std::string> get_host(crow::request const& req);
 
 template<class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept

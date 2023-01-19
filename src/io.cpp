@@ -17,10 +17,10 @@ boost::json::object storm::to_json(storm::StageResponse const& resp)
 
 // Creates the CROW response for the stage operation.
 crow::response storm::to_crow_response(storm::StageResponse const& resp,
-                                       std::string const& host)
+                                       std::map<std::string,std::string> const& map)
 {
   auto jbody = to_json(resp);
-  return resp.staged(jbody, host);
+  return resp.staged(jbody, map);
 }
 
 // Creates a JSON object for an already staged request, with a certain
@@ -198,7 +198,16 @@ std::vector<storm::File> storm::from_json_paths(std::string_view const& body)
   return f_files;
 }
 
-std::string storm::get_host(crow::request const& req){
-  auto header = req.get_header_value("Forwarded");
-  return header;
+std::map<std::string, std::string> storm::get_host(crow::request const& req){
+  const std::string header = req.get_header_value("Forwarded");
+  std::regex host_match("host=(.*?)(;|$)");
+  std::regex proto_match("proto=(.*?)(;|$)");
+  std::smatch match;
+  std::map<std::string, std::string> header_map;
+  if (std::regex_search(header.begin(), header.end(), match, host_match))
+      header_map["host"] = match[1];
+  if (std::regex_search(header.begin(), header.end(), match, proto_match))
+      header_map["proto"] = match[1];
+
+  return header_map;
 }
