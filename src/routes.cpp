@@ -115,6 +115,12 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
         }
       });
 
+//  CROW_ROUTE(app, "/shutdown")
+//  ([&app]() {
+//    app.stop();
+//    return "Server shutdown";
+//  });
+
   CROW_ROUTE(app, "/gemss")([] { return crow::response{crow::status::OK}; });
 
   CROW_ROUTE(app, "/favicon.ico")
