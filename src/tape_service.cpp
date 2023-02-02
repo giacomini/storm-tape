@@ -10,38 +10,27 @@
 
 namespace storm {
 
-StageResponse
-TapeService::stage(StageRequest const& stage_request)
+StageResponse TapeService::stage(StageRequest const& stage_request)
 {
-  // std::string id;
-  std::string const& id = m_db->insert(stage_request);
-  StageResponse resp{id};
-  return resp;
+  auto const id = m_db->insert(stage_request);
+  return StageResponse{id};
 }
 
 StatusResponse TapeService::status(std::string const& id)
 {
-  StageRequest const* stage = m_db->find(id);
-  if (stage == nullptr) {
-    StatusResponse resp{stage};
-    return resp;
-  }
-  StatusResponse resp{id, stage};
-  return resp;
+  auto stage = m_db->find(id);
+  return stage == nullptr ? StatusResponse{} : StatusResponse{id, stage};
 }
 
-CancelResponse
-TapeService::cancel(std::string const& id,
-                           CancelRequest const& cancel)
+CancelResponse TapeService::cancel(std::string const& id,
+                                   CancelRequest const& cancel)
 {
-  StageRequest* stage = m_db->find(id);
+  auto stage = m_db->find(id);
   if (stage == nullptr) {
-    CancelResponse resp{stage};
-    return resp;
+    return CancelResponse{};
   }
 
-  auto proj =
-      [](File const& stage_file) -> std::filesystem::path const& {
+  auto proj = [](File const& stage_file) -> std::filesystem::path const& {
     return stage_file.path;
   };
 
@@ -63,8 +52,7 @@ TapeService::cancel(std::string const& id,
         boost::make_transform_iterator(cancel.paths.end(), proj), both.begin(),
         both.end(), std::back_inserter(invalid));
 
-    CancelResponse resp{id, invalid};
-    return resp;
+    return CancelResponse{id, invalid};
   } else {
     auto m_files = stage->files();
     for (File const& pth : cancel.paths) {
@@ -78,8 +66,7 @@ TapeService::cancel(std::string const& id,
       }
     }
     stage->files() = m_files;
-    CancelResponse resp{};
-    return resp;
+    return CancelResponse{};
   }
 }
 
@@ -87,28 +74,23 @@ DeleteResponse TapeService::erase(std::string const& id)
 {
   StageRequest const* stage = m_db->find(id);
   if (stage == nullptr) {
-    DeleteResponse resp{stage};
-    return resp;
+    return DeleteResponse{};
   }
   auto const c = m_db->erase(id);
   assert(c == 1);
   m_id_buffer.clear();
-  DeleteResponse resp{};
-  return resp;
+  return DeleteResponse{};
 }
 
-ReleaseResponse
-TapeService::release(std::string const& id,
-                            ReleaseRequest const& release)
+ReleaseResponse TapeService::release(std::string const& id,
+                                     ReleaseRequest const& release)
 {
   StageRequest* stage = m_db->find(id);
   if (stage == nullptr) {
-    ReleaseResponse resp{stage};
-    return resp;
+    return ReleaseResponse{};
   }
 
-  auto proj =
-      [](File const& stage_file) -> std::filesystem::path const& {
+  auto proj = [](File const& stage_file) -> std::filesystem::path const& {
     return stage_file.path;
   };
 
@@ -129,23 +111,17 @@ TapeService::release(std::string const& id,
         boost::make_transform_iterator(release.paths.begin(), proj),
         boost::make_transform_iterator(release.paths.end(), proj), both.begin(),
         both.end(), std::back_inserter(invalid));
-    ReleaseResponse resp{id, invalid};
-    return resp;
+    return ReleaseResponse{id, invalid};
   } else {
     // .......DO SOMETHING?.......
-    ReleaseResponse resp{};
-    return resp;
+    return ReleaseResponse{};
   }
 }
 
-ArchiveResponse
-TapeService::archive(ArchiveInfo const& info)
+ArchiveResponse TapeService::archive(ArchiveInfo const& info)
 {
   boost::json::array jbody;
   std::vector<std::filesystem::path> file_buffer;
-  m_id_buffer =
-      static_cast<MockDatabase*>(m_db)->MockDatabase::m_id_buffer;
-  // m_id_buffer = id_buffer;
   file_buffer.reserve(m_id_buffer.size());
 
   for (auto& id : m_id_buffer) {
@@ -157,8 +133,7 @@ TapeService::archive(ArchiveInfo const& info)
 
   jbody.reserve(info.paths.size());
 
-  auto proj =
-      [](File const& stage_file) -> std::filesystem::path const& {
+  auto proj = [](File const& stage_file) -> std::filesystem::path const& {
     return stage_file.path;
   };
 
@@ -189,13 +164,11 @@ TapeService::archive(ArchiveInfo const& info)
 
     jbody = archive_to_json(remaining, jbody);
 
-    ArchiveResponse resp{jbody, invalid, remaining};
-    return resp;
+    return ArchiveResponse{jbody, invalid, remaining};
   } else {
     jbody = archive_to_json(info.paths, jbody);
 
-    ArchiveResponse resp{jbody, info.paths};
-    return resp;
+    return ArchiveResponse{jbody, info.paths};
   }
 }
 

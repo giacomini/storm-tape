@@ -14,19 +14,18 @@ class ReleaseResponse
 {
  private:
   std::string m_id;
-  StageRequest const* m_stage;
+  StageRequest const* m_stage{nullptr};
   std::vector<std::filesystem::path> m_invalid;
 
  public:
+  ReleaseResponse() = default;
   ReleaseResponse(StageRequest const* stage)
       : m_stage(stage)
   {}
-  ReleaseResponse(std::string const& id,
-                  std::vector<std::filesystem::path>& invalid)
+  ReleaseResponse(std::string id,
+                  std::vector<std::filesystem::path> invalid)
       : m_id(std::move(id))
       , m_invalid(std::move(invalid))
-  {}
-  ReleaseResponse()
   {}
 
   std::string const& id() const;

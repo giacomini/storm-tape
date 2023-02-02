@@ -14,15 +14,13 @@ class StatusResponse
 {
  private:
   std::string m_id;
-  StageRequest const* m_stage;
+  StageRequest const* m_stage{nullptr};
 
  public:
-  StatusResponse(std::string const& id, StageRequest const* stage)
+  StatusResponse() = default;
+  StatusResponse(std::string id, StageRequest const* stage)
       : m_id(std::move(id))
       , m_stage(stage)
-  {}
-  StatusResponse(StageRequest const* stage)
-      : m_stage(stage)
   {}
 
   crow::response status(boost::json::object const& jbody) const;

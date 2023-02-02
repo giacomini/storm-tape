@@ -11,13 +11,12 @@ class StageRequest;
 class DeleteResponse
 {
  private:
-  StageRequest const* m_stage;
+  StageRequest const* m_stage{nullptr};
 
  public:
+  DeleteResponse() = default;
   DeleteResponse(StageRequest const* stage)
       : m_stage(stage)
-  {}
-  DeleteResponse()
   {}
 
   StageRequest const* stage() const;

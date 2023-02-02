@@ -13,18 +13,10 @@ class StageResponse
 {
  private:
   std::string m_id;
-  std::vector<std::filesystem::path> m_invalid;
 
  public:
-  StageResponse(std::string const& id,
-                std::vector<std::filesystem::path>& invalid)
+  StageResponse(std::string id)
       : m_id(std::move(id))
-      , m_invalid(std::move(invalid))
-  {}
-  StageResponse(std::string const& id)
-      : m_id(std::move(id))
-  {}
-  StageResponse()
   {}
 
   crow::response staged(boost::json::object const& jbody,
