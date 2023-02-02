@@ -8,38 +8,40 @@
 #include "stage_response.hpp"
 #include "status_response.hpp"
 
-storm::StageResponse
-storm::TapeService::stage(storm::StageRequest const& stage_request)
+namespace storm {
+
+StageResponse
+TapeService::stage(StageRequest const& stage_request)
 {
   // std::string id;
   std::string const& id = m_db->insert(stage_request);
-  storm::StageResponse resp{id};
+  StageResponse resp{id};
   return resp;
 }
 
-storm::StatusResponse storm::TapeService::status(std::string const& id)
+StatusResponse TapeService::status(std::string const& id)
 {
-  storm::StageRequest const* stage = m_db->find(id);
+  StageRequest const* stage = m_db->find(id);
   if (stage == nullptr) {
-    storm::StatusResponse resp{stage};
+    StatusResponse resp{stage};
     return resp;
   }
-  storm::StatusResponse resp{id, stage};
+  StatusResponse resp{id, stage};
   return resp;
 }
 
-storm::CancelResponse
-storm::TapeService::cancel(std::string const& id,
-                           storm::CancelRequest const& cancel)
+CancelResponse
+TapeService::cancel(std::string const& id,
+                           CancelRequest const& cancel)
 {
-  storm::StageRequest* stage = m_db->find(id);
+  StageRequest* stage = m_db->find(id);
   if (stage == nullptr) {
-    storm::CancelResponse resp{stage};
+    CancelResponse resp{stage};
     return resp;
   }
 
   auto proj =
-      [](storm::File const& stage_file) -> std::filesystem::path const& {
+      [](File const& stage_file) -> std::filesystem::path const& {
     return stage_file.path;
   };
 
@@ -61,52 +63,52 @@ storm::TapeService::cancel(std::string const& id,
         boost::make_transform_iterator(cancel.paths.end(), proj), both.begin(),
         both.end(), std::back_inserter(invalid));
 
-    storm::CancelResponse resp{id, invalid};
+    CancelResponse resp{id, invalid};
     return resp;
   } else {
     auto m_files = stage->files();
-    for (storm::File const& pth : cancel.paths) {
+    for (File const& pth : cancel.paths) {
       int idx = 0;
-      for (storm::File& file : m_files) {
+      for (File& file : m_files) {
         if (pth.path == file.path) {
-          file.state   = storm::File::State::cancelled;
+          file.state   = File::State::cancelled;
           m_files[idx] = file;
         };
         idx++;
       }
     }
     stage->files() = m_files;
-    storm::CancelResponse resp{};
+    CancelResponse resp{};
     return resp;
   }
 }
 
-storm::DeleteResponse storm::TapeService::erase(std::string const& id)
+DeleteResponse TapeService::erase(std::string const& id)
 {
-  storm::StageRequest const* stage = m_db->find(id);
+  StageRequest const* stage = m_db->find(id);
   if (stage == nullptr) {
-    storm::DeleteResponse resp{stage};
+    DeleteResponse resp{stage};
     return resp;
   }
   auto const c = m_db->erase(id);
   assert(c == 1);
   m_id_buffer.clear();
-  storm::DeleteResponse resp{};
+  DeleteResponse resp{};
   return resp;
 }
 
-storm::ReleaseResponse
-storm::TapeService::release(std::string const& id,
-                            storm::ReleaseRequest const& release)
+ReleaseResponse
+TapeService::release(std::string const& id,
+                            ReleaseRequest const& release)
 {
-  storm::StageRequest* stage = m_db->find(id);
+  StageRequest* stage = m_db->find(id);
   if (stage == nullptr) {
-    storm::ReleaseResponse resp{stage};
+    ReleaseResponse resp{stage};
     return resp;
   }
 
   auto proj =
-      [](storm::File const& stage_file) -> std::filesystem::path const& {
+      [](File const& stage_file) -> std::filesystem::path const& {
     return stage_file.path;
   };
 
@@ -127,27 +129,27 @@ storm::TapeService::release(std::string const& id,
         boost::make_transform_iterator(release.paths.begin(), proj),
         boost::make_transform_iterator(release.paths.end(), proj), both.begin(),
         both.end(), std::back_inserter(invalid));
-    storm::ReleaseResponse resp{id, invalid};
+    ReleaseResponse resp{id, invalid};
     return resp;
   } else {
     // .......DO SOMETHING?.......
-    storm::ReleaseResponse resp{};
+    ReleaseResponse resp{};
     return resp;
   }
 }
 
-storm::ArchiveResponse
-storm::TapeService::archive(storm::ArchiveInfo const& info)
+ArchiveResponse
+TapeService::archive(ArchiveInfo const& info)
 {
   boost::json::array jbody;
   std::vector<std::filesystem::path> file_buffer;
   m_id_buffer =
-      static_cast<storm::MockDatabase*>(m_db)->storm::MockDatabase::m_id_buffer;
+      static_cast<MockDatabase*>(m_db)->MockDatabase::m_id_buffer;
   // m_id_buffer = id_buffer;
   file_buffer.reserve(m_id_buffer.size());
 
   for (auto& id : m_id_buffer) {
-    storm::StageRequest const* stage = m_db->find(id);
+    StageRequest const* stage = m_db->find(id);
     for (auto& file : stage->files()) {
       file_buffer.push_back(file.path);
     }
@@ -156,7 +158,7 @@ storm::TapeService::archive(storm::ArchiveInfo const& info)
   jbody.reserve(info.paths.size());
 
   auto proj =
-      [](storm::File const& stage_file) -> std::filesystem::path const& {
+      [](File const& stage_file) -> std::filesystem::path const& {
     return stage_file.path;
   };
 
@@ -176,23 +178,25 @@ storm::TapeService::archive(storm::ArchiveInfo const& info)
         boost::make_transform_iterator(info.paths.end(), proj), both.begin(),
         both.end(), std::back_inserter(invalid));
 
-    jbody = storm::not_in_archive_to_json(invalid, jbody);
+    jbody = not_in_archive_to_json(invalid, jbody);
 
-    std::vector<storm::File> remaining;
+    std::vector<File> remaining;
     for (auto& file : info.paths) {
       if (std::find(invalid.begin(), invalid.end(), file.path) != invalid.end())
         continue;
       remaining.push_back(file);
     }
 
-    jbody = storm::archive_to_json(remaining, jbody);
+    jbody = archive_to_json(remaining, jbody);
 
-    storm::ArchiveResponse resp{jbody, invalid, remaining};
+    ArchiveResponse resp{jbody, invalid, remaining};
     return resp;
   } else {
-    jbody = storm::archive_to_json(info.paths, jbody);
+    jbody = archive_to_json(info.paths, jbody);
 
-    storm::ArchiveResponse resp{jbody, info.paths};
+    ArchiveResponse resp{jbody, info.paths};
     return resp;
   }
 }
+
+} // namespace storm
