@@ -2,77 +2,68 @@
   "version": 2,
   "configurePresets": [
     {
-      "name": "debug",
-      "hidden": true,
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
       "name": "clang-tidy",
-      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clang-tidy",
       "cacheVariables": {
         "CMAKE_CXX_CLANG_TIDY": "clang-tidy;--header-filter=^${sourceDir}/"
       }
     },
     {
-      "name": "warnings",
-      "hidden": true,
-      "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast"
-      }
-    },
-    {
       "name": "coverage",
-      "binaryDir": "${sourceDir}/build/coverage",
-      "inherits": ["warnings"],
       "hidden": true,
       "cacheVariables": {
-        "ENABLE_COVERAGE": "ON",
-        "CMAKE_BUILD_TYPE": "Coverage",
-        "CMAKE_CXX_FLAGS_COVERAGE": "-Og -g --coverage -fkeep-inline-functions -fkeep-static-functions",
-        "CMAKE_EXE_LINKER_FLAGS_COVERAGE": "--coverage",
-        "CMAKE_SHARED_LINKER_FLAGS_COVERAGE": "--coverage",
-        "CMAKE_MAP_IMPORTED_CONFIG_COVERAGE": "Coverage;RelWithDebInfo;Release;Debug;"
-      }
-    },
-    {
-      "name": "sanitize-base",
-      "binaryDir": "${sourceDir}/build/sanitize",
-      "inherits": ["warnings"],
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Sanitize",
-        "CMAKE_CXX_FLAGS_SANITIZE": "-O2 -g -fno-omit-frame-pointer -fno-common",
-        "CMAKE_MAP_IMPORTED_CONFIG_SANITIZE": "Sanitize;RelWithDebInfo;Release;Debug;"
+        "STORM_ENABLE_COVERAGE": "ON"
       }
     },
     {
       "name": "sanitize-address",
+      "hidden": true,
       "cacheVariables": {
-        "SANITIZE_ADDRESS": "ON"
+        "STORM_SANITIZE_ADDRESS": "ON"
       }
     },
     {
       "name": "sanitize-undefined",
+      "hidden": true,
       "cacheVariables": {
-        "SANITIZE_UNDEFINED": "ON"
+        "STORM_SANITIZE_UNDEFINED": "ON"
       }
     },
     {
       "name": "sanitize-thread",
+      "hidden": true,
       "cacheVariables": {
-        "SANITIZE_THREAD": "ON"
+        "STORM_SANITIZE_THREAD": "ON"
       }
     },
     {
-      "name": "dev",
-      "inherits": ["debug", "sanitize"]
+      "name": "debug",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "binaryDir": "${sourceDir}/build/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     },
     {
       "name": "test",
-      "inherits": ["debug", "coverage", "sanitize"],
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/test",
+      "inherits": [
+        "coverage",
+        "sanitize-address",
+        "sanitize-undefined"
+      ],
       "cacheVariables": {
-        "BUILD_TESTING": "ON"
+        "STORM_BUILD_TESTING": "ON"
       }
     }
   ]

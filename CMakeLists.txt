@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 
+if (NOT DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  message(FATAL_ERROR "You must set VCPKG_ROOT env variable or pass CMAKE_TOOLCHAIN_FILE")
+endif()
+
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-      CACHE STRING "")
+  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 endif()
 
 project(storm-tape VERSION 0.1.0)
@@ -15,18 +18,41 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(Boost_NO_WARN_NEW_VERSIONS 1)
 
+# Add all warnings
+string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast")
 
-# compila sempre con i warning abilitati
-string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
+# Enable Coverage
+option(STORM_ENABLE_COVERAGE "Enable testing w/ coverage")
+if (STORM_ENABLE_COVERAGE)
+  string(APPEND CMAKE_CXX_FLAGS " -Og -g --coverage")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " --coverage")
+endif()
 
-# abilita testing
-# string(APPEND CMAKE_CXX_FLAGS " -DENABLE_TESTING")
+# Enable Testing
+option(STORM_BUILD_TESTING "Enable testing")
+if (STORM_BUILD_TESTING)
+  string(APPEND CMAKE_CXX_FLAGS " -DENABLE_TESTING=ON")
+endif()
 
-# abilita l'address sanitizer in debug mode
-string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fno-omit-frame-pointer")
-string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fsanitize=address -fno-omit-frame-pointer")
+# Enable sanitizers
+option(STORM_SANITIZE_ADDRESS   "Enable address sanitizer")
+option(STORM_SANITIZE_UNDEFINED "Enable undefined-behaviour sanitizer")
+option(STORM_SANITIZE_THREAD    "Enable thread sanitizer")
 
-# aggiunge gli eseguibili "format-check" e "format-fix" per clang-format
+if (STORM_SANITIZE_ADDRESS)
+  string(APPEND CMAKE_CXX_FLAGS_SANITIZE " -fsanitize=address -fno-omit-frame-pointer")
+endif()
+
+if (STORM_SANITIZE_UNDEFINED)
+  string(APPEND CMAKE_CXX_FLAGS_SANITIZE " -fsanitize=undefined -fno-omit-frame-pointer")
+endif()
+
+if (STORM_SANITIZE_THREAD)
+  # TODO: add compatibility check with other sanitizers
+  string(APPEND CMAKE_CXX_FLAGS_SANITIZE " -fsanitize=thread -fno-omit-frame-pointer")
+endif()
+
+# Add "format-check" e "format-fix" executables for clang-format
 include(cmake/lint-targets.cmake)
 
 find_package(Crow CONFIG REQUIRED)
