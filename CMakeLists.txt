@@ -6,6 +6,7 @@ if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 endif()
 
 project(storm-tape VERSION 0.1.0)
+include(CTest)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -24,8 +25,6 @@ string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
 # abilita l'address sanitizer in debug mode
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fno-omit-frame-pointer")
 string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fsanitize=address -fno-omit-frame-pointer")
-
-#include(CTest)
 
 find_package(Crow CONFIG REQUIRED)
 # fix for "warning: ISO C++11 requires whitespace after the macro name", due to "g++ -D_CROW_ICD-NOTFOUND"
@@ -62,18 +61,11 @@ target_link_libraries(
 )
 
 add_executable(storm-tape src/main.cpp)
-
-target_include_directories(
-  storm-tape 
-  PRIVATE 
-  ${CROW_INCLUDE_DIRS} 
-  ${MYSQL_INCLUDE_DIR})
-
 target_link_libraries(
   storm-tape 
   PRIVATE
   libtaperestapi 
-  )
+)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
