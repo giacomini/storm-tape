@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 namespace storm {
 class Database;
@@ -22,6 +24,7 @@ class File;
 
 class TapeService
 {
+  boost::uuids::random_generator m_uuid_gen;
   Database* m_db;
   std::vector<std::string> m_id_buffer;
 

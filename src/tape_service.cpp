@@ -12,8 +12,10 @@ namespace storm {
 
 StageResponse TapeService::stage(StageRequest const& stage_request)
 {
-  auto const id = m_db->insert(stage_request);
-  return StageResponse{id};
+  auto const uuid     = m_uuid_gen();
+  auto const id       = to_string(uuid);
+  auto const inserted = m_db->insert(id, stage_request);
+  return inserted ? StageResponse{id} : StageResponse{};
 }
 
 StatusResponse TapeService::status(std::string const& id)

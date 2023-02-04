@@ -15,6 +15,7 @@ class StageResponse
   std::string m_id;
 
  public:
+  StageResponse() = default;
   StageResponse(std::string id)
       : m_id(std::move(id))
   {}

@@ -13,7 +13,7 @@ namespace storm {
 class Database
 {
  public:
-  virtual std::string insert(StageRequest stage)                = 0;
+  virtual bool insert(std::string const& id, StageRequest stage)                = 0;
   virtual StageRequest const* find(std::string const& id) const = 0;
   virtual StageRequest* find(std::string const& id)             = 0;
   virtual int erase(std::string const& id)                      = 0;
@@ -25,13 +25,10 @@ class MockDatabase : public Database
   boost::uuids::random_generator m_uuid_gen;
 
  public:
-  std::string insert(StageRequest stage) override
+  bool insert(std::string const& id, StageRequest stage) override
   {
-    auto const uuid = m_uuid_gen();
-    auto const id   = to_string(uuid);
     auto const ret  = m_db.insert({id, std::move(stage)});
-    assert(ret.second == true);
-    return id;
+    return ret.second == true;
   }
   StageRequest const* find(std::string const& id) const override
   {
