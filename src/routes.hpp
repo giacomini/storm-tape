@@ -7,9 +7,9 @@ namespace storm {
 class Configuration;
 class Database;
 class TapeService;
-} // namespace storm
 
 void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
                    storm::TapeService& service);
+} // namespace storm
 
 #endif

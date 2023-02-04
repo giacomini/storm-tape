@@ -12,6 +12,7 @@
 #include "status_response.hpp"
 #include "tape_service.hpp"
 
+namespace storm {
 void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
                    storm::TapeService& service)
 {
@@ -126,3 +127,4 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
   CROW_ROUTE(app, "/favicon.ico")
   ([] { return crow::response{crow::status::NO_CONTENT}; });
 }
+} // namespace storm

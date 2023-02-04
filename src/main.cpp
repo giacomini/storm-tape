@@ -122,7 +122,7 @@ int main(int, char*[])
   storm::Configuration config{};
   storm::TapeService service{db};
 
-  create_routes(app, config, service);
+  storm::create_routes(app, config, service);
   app.port(config.port).run();
 }
 
