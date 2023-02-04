@@ -2,27 +2,26 @@
 #define DELETE_RESPONSE_HPP
 
 #include <crow.h>
-#include <string>
 
 namespace storm {
+
 class Configuration;
-class StageRequest;
 
 class DeleteResponse
 {
- private:
-  StageRequest const* m_stage{nullptr};
+  bool m_found{};
 
  public:
-  DeleteResponse() = default;
-  DeleteResponse(StageRequest const* stage)
-      : m_stage(stage)
+  DeleteResponse(bool found)
+      : m_found(found)
   {}
-
-  StageRequest const* stage() const;
+  bool found() const
+  {
+    return m_found;
+  }
   static crow::response bad_request();
   static crow::response not_found();
-  static crow::response erased(); 
+  static crow::response erased();
 };
 
 } // namespace storm

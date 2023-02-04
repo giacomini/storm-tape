@@ -74,14 +74,9 @@ CancelResponse TapeService::cancel(std::string const& id,
 
 DeleteResponse TapeService::erase(std::string const& id)
 {
-  StageRequest const* stage = m_db->find(id);
-  if (stage == nullptr) {
-    return DeleteResponse{};
-  }
-  auto const c = m_db->erase(id);
-  assert(c == 1);
-  m_id_buffer.clear();
-  return DeleteResponse{};
+  // TODO cancel file stage requests?
+  auto const erased = m_db->erase(id);
+  return DeleteResponse{erased};
 }
 
 ReleaseResponse TapeService::release(std::string const& id,

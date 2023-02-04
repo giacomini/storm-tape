@@ -2,8 +2,6 @@
 #define DATABASE_HPP
 
 #include "stage_request.hpp"
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <map>
@@ -16,13 +14,12 @@ class Database
   virtual bool insert(std::string const& id, StageRequest stage)                = 0;
   virtual StageRequest const* find(std::string const& id) const = 0;
   virtual StageRequest* find(std::string const& id)             = 0;
-  virtual int erase(std::string const& id)                      = 0;
+  virtual bool erase(std::string const& id)                      = 0;
 };
 
 class MockDatabase : public Database
 {
   std::map<std::string, StageRequest> m_db;
-  boost::uuids::random_generator m_uuid_gen;
 
  public:
   bool insert(std::string const& id, StageRequest stage) override
@@ -40,9 +37,9 @@ class MockDatabase : public Database
     auto it = m_db.find(id);
     return it == m_db.end() ? nullptr : &it->second;
   }
-  int erase(std::string const& id) override
+  bool erase(std::string const& id) override
   {
-    return m_db.erase(id);
+    return m_db.erase(id) == 1;
   }
 };
 } // namespace storm

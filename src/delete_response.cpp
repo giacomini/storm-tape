@@ -1,10 +1,5 @@
 #include "delete_response.hpp"
 
-storm::StageRequest const* storm::DeleteResponse::stage() const
-{
-  return m_stage;
-}
-
 crow::response storm::DeleteResponse::bad_request()
 {
   return crow::response(crow::status::BAD_REQUEST);
