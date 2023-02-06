@@ -19,18 +19,17 @@ class ArchiveResponse
   std::vector<File> m_valid;
 
  public:
-  ArchiveResponse(boost::json::array& jbody, std::vector<File> const& valid)
+  ArchiveResponse() = default;
+  ArchiveResponse(boost::json::array jbody, std::vector<File> valid)
       : m_jbody(std::move(jbody))
       , m_valid(std::move(valid))
   {}
-  ArchiveResponse(boost::json::array& jbody,
-                  std::vector<std::filesystem::path> const& invalid,
-                  std::vector<File> const& valid)
+  ArchiveResponse(boost::json::array jbody,
+                  std::vector<std::filesystem::path> invalid,
+                  std::vector<File> valid)
       : m_jbody(std::move(jbody))
       , m_invalid(std::move(invalid))
       , m_valid(std::move(valid))
-  {}
-  ArchiveResponse()
   {}
 
   boost::json::array const& jbody() const;

@@ -14,14 +14,14 @@ class CancelResponse
 {
  private:
   std::string m_id;
-  std::vector<std::filesystem::path> m_invalid;
   StageRequest const* m_stage{nullptr};
+  std::vector<std::filesystem::path> m_invalid;
 
  public:
-  CancelResponse() = default;
-  CancelResponse(std::string id,
-                 std::vector<std::filesystem::path> invalid)
+  CancelResponse(std::string id, StageRequest const* stage,
+                 std::vector<std::filesystem::path> invalid = {})
       : m_id(std::move(id))
+      , m_stage(stage)
       , m_invalid(std::move(invalid))
   {}
 

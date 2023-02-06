@@ -11,7 +11,7 @@ class StageRequest;
 struct RequestWithPaths
 {
   std::vector<storm::File> paths;
-  RequestWithPaths(std::string_view const& body)
+  RequestWithPaths(std::string_view body)
   {
     paths = from_json_paths(body);
   }

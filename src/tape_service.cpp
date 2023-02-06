@@ -29,7 +29,7 @@ CancelResponse TapeService::cancel(std::string const& id,
 {
   auto stage = m_db->find(id);
   if (stage == nullptr) {
-    return CancelResponse{};
+    return CancelResponse{id, stage};
   }
 
   auto proj = [](File const& stage_file) -> std::filesystem::path const& {
@@ -54,7 +54,7 @@ CancelResponse TapeService::cancel(std::string const& id,
         boost::make_transform_iterator(cancel.paths.end(), proj), both.begin(),
         both.end(), std::back_inserter(invalid));
 
-    return CancelResponse{id, invalid};
+    return CancelResponse{id, stage, invalid};
   } else {
     auto m_files = stage->files();
     for (File const& pth : cancel.paths) {
@@ -68,7 +68,7 @@ CancelResponse TapeService::cancel(std::string const& id,
       }
     }
     stage->files() = m_files;
-    return CancelResponse{};
+    return CancelResponse{id, stage};
   }
 }
 
