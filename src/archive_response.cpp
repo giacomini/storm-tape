@@ -11,8 +11,7 @@ storm::ArchiveResponse::invalid() const
   return m_invalid;
 }
 
-std::vector<storm::File> const&
-storm::ArchiveResponse::valid() const
+std::vector<storm::File> const& storm::ArchiveResponse::valid() const
 {
   return m_valid;
 }

@@ -11,9 +11,9 @@ namespace storm {
 class Database
 {
  public:
-  virtual bool insert(std::string const& id, StageRequest stage)                = 0;
-  virtual StageRequest const* find(std::string const& id) const = 0;
-  virtual StageRequest* find(std::string const& id)             = 0;
+  virtual bool insert(std::string const& id, StageRequest stage) = 0;
+  virtual StageRequest const* find(std::string const& id) const  = 0;
+  virtual StageRequest* find(std::string const& id)              = 0;
   virtual bool erase(std::string const& id)                      = 0;
 };
 
@@ -24,7 +24,7 @@ class MockDatabase : public Database
  public:
   bool insert(std::string const& id, StageRequest stage) override
   {
-    auto const ret  = m_db.insert({id, std::move(stage)});
+    auto const ret = m_db.insert({id, std::move(stage)});
     return ret.second == true;
   }
   StageRequest const* find(std::string const& id) const override

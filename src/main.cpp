@@ -9,11 +9,11 @@
 
 #  include "archive_response.hpp"
 #  include "cancel_response.hpp"
+#  include "fs_storage_test.hpp"
 #  include "io.hpp"
 #  include "release_response.hpp"
 #  include "requests_with_paths.hpp"
 #  include "stage_response.hpp"
-#  include "fs_storage_test.hpp"
 #  include "../test/doctest.h"
 
 // clang-format off
