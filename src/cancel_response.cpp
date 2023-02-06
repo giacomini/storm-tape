@@ -5,7 +5,7 @@ std::string const& storm::CancelResponse::id() const
   return m_id;
 }
 
-storm::StageRequest const* storm::CancelResponse::stage() const
+std::optional<storm::StageRequest> const storm::CancelResponse::stage() const
 {
   return m_stage;
 }

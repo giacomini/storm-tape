@@ -5,15 +5,14 @@
 namespace storm {
 struct File
 {
-  enum class State : unsigned char
-  {
+  enum class State {
     submitted,
     started,
     cancelled,
     failed,
     completed
   };
-  enum class Locality : unsigned char
+  enum class Locality
   {
     unknown,
     on_tape = 1,

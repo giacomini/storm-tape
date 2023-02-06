@@ -21,15 +21,17 @@ StageResponse TapeService::stage(StageRequest const& stage_request)
 StatusResponse TapeService::status(std::string const& id)
 {
   auto stage = m_db->find(id);
-  return stage == nullptr ? StatusResponse{} : StatusResponse{id, stage};
+  // FIXME: what about StatusResponse with id but stage value is empty?
+  return stage.has_value() ? StatusResponse{id, stage.value()}
+                           : StatusResponse{};
 }
 
 CancelResponse TapeService::cancel(std::string const& id,
                                    CancelRequest const& cancel)
 {
   auto stage = m_db->find(id);
-  if (stage == nullptr) {
-    return CancelResponse{id, stage};
+  if (!stage.has_value()) {
+    return CancelResponse{id, std::nullopt};
   }
 
   auto proj = [](File const& stage_file) -> std::filesystem::path const& {
@@ -54,7 +56,7 @@ CancelResponse TapeService::cancel(std::string const& id,
         boost::make_transform_iterator(cancel.paths.end(), proj), both.begin(),
         both.end(), std::back_inserter(invalid));
 
-    return CancelResponse{id, stage, invalid};
+    return CancelResponse{id, stage.value(), invalid};
   } else {
     auto m_files = stage->files();
     for (File const& pth : cancel.paths) {
@@ -63,12 +65,12 @@ CancelResponse TapeService::cancel(std::string const& id,
         if (pth.path == file.path) {
           file.state   = File::State::cancelled;
           m_files[idx] = file;
-        };
+        }
         idx++;
       }
     }
     stage->files() = m_files;
-    return CancelResponse{id, stage};
+    return CancelResponse{id, stage.value()};
   }
 }
 
@@ -82,8 +84,8 @@ DeleteResponse TapeService::erase(std::string const& id)
 ReleaseResponse TapeService::release(std::string const& id,
                                      ReleaseRequest const& release)
 {
-  StageRequest* stage = m_db->find(id);
-  if (stage == nullptr) {
+  auto stage = m_db->find(id);
+  if (!stage.has_value()) {
     return ReleaseResponse{};
   }
 
@@ -122,7 +124,9 @@ ArchiveResponse TapeService::archive(ArchiveInfo const& info)
   file_buffer.reserve(m_id_buffer.size());
 
   for (auto& id : m_id_buffer) {
-    StageRequest const* stage = m_db->find(id);
+    auto stage = m_db->find(id);
+    if (!stage.has_value())
+      continue;
     for (auto& file : stage->files()) {
       file_buffer.push_back(file.path);
     }

@@ -80,6 +80,7 @@ add_library(
   src/delete_response.cpp
   src/release_response.cpp
   src/archive_response.cpp
+  src/database_soci.cpp
   src/io.cpp
 )
 
