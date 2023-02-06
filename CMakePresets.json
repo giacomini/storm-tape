@@ -1,0 +1,70 @@
+{
+  "version": 2,
+  "configurePresets": [
+    {
+      "name": "clang-tidy",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clang-tidy",
+      "cacheVariables": {
+        "CMAKE_CXX_CLANG_TIDY": "clang-tidy;--header-filter=^${sourceDir}/"
+      }
+    },
+    {
+      "name": "coverage",
+      "hidden": true,
+      "cacheVariables": {
+        "STORM_ENABLE_COVERAGE": "ON"
+      }
+    },
+    {
+      "name": "sanitize-address",
+      "hidden": true,
+      "cacheVariables": {
+        "STORM_SANITIZE_ADDRESS": "ON"
+      }
+    },
+    {
+      "name": "sanitize-undefined",
+      "hidden": true,
+      "cacheVariables": {
+        "STORM_SANITIZE_UNDEFINED": "ON"
+      }
+    },
+    {
+      "name": "sanitize-thread",
+      "hidden": true,
+      "cacheVariables": {
+        "STORM_SANITIZE_THREAD": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "binaryDir": "${sourceDir}/build/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "test",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/test",
+      "inherits": [
+        "coverage",
+        "sanitize-address",
+        "sanitize-undefined"
+      ],
+      "cacheVariables": {
+        "STORM_BUILD_TESTING": "ON"
+      }
+    }
+  ]
+}

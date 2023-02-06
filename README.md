@@ -27,6 +27,40 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
+To build with presets:
+
+```shell
+cmake --preset <preset>
+cmake --build build/<preset>
+```
+
+For example, to build the `debug` configuration:
+```shell
+cmake --preset debug
+cmake --build build/debug
+```
+
+To list all available presets:
+
+```shell
+cmake --list-presets
+
+Available configure presets:
+
+  "clang-tidy"
+  "debug"
+  "release"
+  "test"
+```
+
+To perform linting (`clang-format`):
+
+```shell
+cmake -S . -B build [options]
+cmake --build build --target format-check 
+cmake --build build --target format-fix
+```
+
 ## How to run
 
 To run the server
@@ -43,10 +77,13 @@ As an alternative, it is possible to run the REST API server via Docker, using t
 ```
 docker run -it -p 8080:8080 baltig.infn.it:4567/giaco/storm-tape-poc
 ```
-NOTE: Before running the image, make sure to be correctly logged in on the baltig Docker registry, via the docker [login](https://docs.docker.com/engine/reference/commandline/login/) command, using INFN-AAI credentials.
+NOTE:
+Before running the image, make sure to be correctly logged in on the Baltig Docker registry,
+via the docker [login](https://docs.docker.com/engine/reference/commandline/login/) command,
+using INFN-AAI credentials.
 
 ### Stage a request
-To stage a request, using the dummy stage request JSON contained in this repo:
+To stage a request, use the dummy stage request JSON contained in this repo:
 
 ```shell
 $ curl -i -d @example/stage_request.json http://localhost:8080/api/v1/stage
@@ -60,7 +97,10 @@ Connection: Keep-Alive
 
 {"requestId":"318640a8-424e-4071-adb8-abefad1bdbb3"}
 ```
-NOTE: Using the provided Docker container, the dummy files listed in the stage_request JSON have been already created. In alternative, make sure to provide existing filename(s). If a file is not present on the filesystem, or an invalid file is prompted, a stage request will still be created, but the files will be subsequently listed with "FAILED" state.
+NOTE: Using the provided Docker container, the dummy files listed in the stage_request JSON have been created. 
+In alternative, make sure to provide existing filename(s).
+If a file is not present on the filesystem, or an invalid file is prompted, a stage request will still be created,
+but the files will be subsequently listed with "FAILED" state.
 
 ### Progress tracking
 To see the progress tracking of one request: 
@@ -144,7 +184,7 @@ Connection: Keep-Alive
 [{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/tmp/example2.txt"},{"error":"USER ERROR: file does not exist or is not accessible to you","path":"/tmp/example3.txt"}]
 ```
 
-As a cross check, progress tracking now the previous stage ID (now deleted) will result in a 404 response:
+As a cross-check, progress tracking now the previous stage ID (now deleted) will result in a 404 response:
 
 ```shell
 $ curl -i http://localhost:8080/api/v1/stage/318640a8-424e-4071-adb8-abefad1bdbb3
