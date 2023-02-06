@@ -26,6 +26,7 @@ option(STORM_ENABLE_COVERAGE "Enable testing w/ coverage")
 if (STORM_ENABLE_COVERAGE)
   string(APPEND CMAKE_CXX_FLAGS " -Og -g --coverage")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " --coverage")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " --coverage")
 endif()
 
 # Enable Testing
@@ -40,16 +41,19 @@ option(STORM_SANITIZE_UNDEFINED "Enable undefined-behaviour sanitizer")
 option(STORM_SANITIZE_THREAD    "Enable thread sanitizer")
 
 if (STORM_SANITIZE_ADDRESS)
-  string(APPEND CMAKE_CXX_FLAGS_SANITIZE " -fsanitize=address -fno-omit-frame-pointer")
+  string(APPEND CMAKE_CXX_FLAGS " -fsanitize=address -fno-omit-frame-pointer")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fsanitize=address -fno-omit-frame-pointer")
 endif()
 
 if (STORM_SANITIZE_UNDEFINED)
-  string(APPEND CMAKE_CXX_FLAGS_SANITIZE " -fsanitize=undefined -fno-omit-frame-pointer")
+  string(APPEND CMAKE_CXX_FLAGS " -fsanitize=undefined -fno-omit-frame-pointer")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fsanitize=undefined -fno-omit-frame-pointer")
 endif()
 
 if (STORM_SANITIZE_THREAD)
   # TODO: add compatibility check with other sanitizers
-  string(APPEND CMAKE_CXX_FLAGS_SANITIZE " -fsanitize=thread -fno-omit-frame-pointer")
+  string(APPEND CMAKE_CXX_FLAGS " -fsanitize=thread -fno-omit-frame-pointer")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fsanitize=thread -fno-omit-frame-pointer")
 endif()
 
 # Add "format-check" e "format-fix" executables for clang-format
