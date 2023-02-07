@@ -31,10 +31,8 @@ class Database
  public:
   virtual ~Database() = default;
   virtual bool insert(std::string const& id, StageRequest const& stage) = 0;
-  virtual std::optional<StageRequest const>
-  find(std::string const& id) const                               = 0;
-  virtual std::optional<StageRequest> find(std::string const& id) = 0;
-  virtual bool erase(std::string const& id)                       = 0;
+  virtual std::optional<StageRequest> find(std::string const& id) const = 0;
+  virtual bool erase(std::string const& id)                             = 0;
 };
 
 class MockDatabase : public Database
@@ -47,12 +45,8 @@ class MockDatabase : public Database
     auto const ret = m_db.insert({id, stage});
     return ret.second;
   }
-  std::optional<StageRequest const> find(std::string const& id) const override
-  {
-    auto it = m_db.find(id);
-    return it == m_db.end() ? std::nullopt : std::optional(it->second);
-  }
-  std::optional<StageRequest> find(std::string const& id) override
+
+  std::optional<StageRequest> find(std::string const& id) const override
   {
     auto it = m_db.find(id);
     return it == m_db.end() ? std::nullopt : std::optional(it->second);

@@ -111,26 +111,7 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
   return true;
 }
 
-std::optional<StageRequest const> SociDatabase::find(StageId const& id) const
-{
-  StageEntity s_entity{};
-  m_sql << storm::sql::Stage::FIND, soci::into(s_entity), soci::use(id);
-
-  if (s_entity.id != id)
-    return std::nullopt;
-
-  const auto f_entities = find_file_entities(id, m_sql);
-  std::vector<File> files;
-  std::transform(f_entities.begin(), f_entities.end(),
-                 std::back_inserter(files), [](auto& fe) {
-                   return File{fe.path, fe.state, fe.locality};
-                 });
-
-  return std::optional<StageRequest>{StageRequest{
-      files}}; // FIXME: created_at and started_at cannot be initialized
-}
-
-std::optional<StageRequest> SociDatabase::find(StageId const& id)
+std::optional<StageRequest> SociDatabase::find(StageId const& id) const
 {
   StageEntity s_entity{};
   m_sql << storm::sql::Stage::FIND, soci::into(s_entity), soci::use(id);
