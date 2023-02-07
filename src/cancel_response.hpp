@@ -4,21 +4,23 @@
 #include <boost/json.hpp>
 #include <crow.h>
 #include <filesystem>
+#include <optional>
 #include <string>
+
+#include "stage_request.hpp"
 
 namespace storm {
 class Configuration;
-class StageRequest;
 
 class CancelResponse
 {
  private:
   std::string m_id;
-  StageRequest const* m_stage{nullptr};
+  std::optional<StageRequest> const m_stage{std::nullopt};
   std::vector<std::filesystem::path> m_invalid;
 
  public:
-  CancelResponse(std::string id, StageRequest const* stage,
+  CancelResponse(std::string id, std::optional<StageRequest> const stage,
                  std::vector<std::filesystem::path> invalid = {})
       : m_id(std::move(id))
       , m_stage(stage)
@@ -26,7 +28,7 @@ class CancelResponse
   {}
 
   std::string const& id() const;
-  StageRequest const* stage() const;
+  std::optional<StageRequest> const stage() const;
   std::vector<std::filesystem::path> const& invalid() const;
   static crow::response bad_request_with_body(boost::json::object jbody);
   static crow::response bad_request();

@@ -26,7 +26,7 @@ storm::to_crow_response(storm::StageResponse const& resp,
 
 // Creates a JSON object for an already staged request, with a certain
 // requestId.
-boost::json::object storm::staged_to_json(storm::StageRequest const* stage,
+boost::json::object storm::staged_to_json(std::optional<storm::StageRequest> const stage,
                                           std::string const& id)
 {
   boost::json::array files;

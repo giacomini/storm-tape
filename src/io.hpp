@@ -20,7 +20,7 @@ boost::json::object to_json(StageResponse const& resp);
 crow::response to_crow_response(StageResponse const& resp,
                                 std::map<std::string, std::string> const& map);
 
-boost::json::object staged_to_json(StageRequest const* stage,
+boost::json::object staged_to_json(std::optional<StageRequest> const stage,
                                    std::string const& id);
 crow::response to_crow_response(StatusResponse const& resp);
 

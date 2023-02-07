@@ -5,27 +5,29 @@
 #include <crow.h>
 #include <filesystem>
 #include <string>
+#include <optional>
+
+#include "stage_request.hpp"
 
 namespace storm {
 class Configuration;
-class StageRequest;
 
 class StatusResponse
 {
  private:
   std::string m_id;
-  StageRequest const* m_stage{nullptr};
+  std::optional<StageRequest> const m_stage{std::nullopt};
 
  public:
   StatusResponse() = default;
-  StatusResponse(std::string id, StageRequest const* stage)
+  StatusResponse(std::string id, std::optional<StageRequest> const stage)
       : m_id(std::move(id))
-      , m_stage(stage)
+      , m_stage(std::move(stage))
   {}
 
   crow::response status(boost::json::object const& jbody) const;
   std::string const& id() const;
-  StageRequest const* stage() const;
+  std::optional<StageRequest> const stage() const;
 
   static crow::response bad_request();
   static crow::response not_found();

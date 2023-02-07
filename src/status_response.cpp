@@ -12,7 +12,7 @@ std::string const& storm::StatusResponse::id() const
   return m_id;
 }
 
-storm::StageRequest const* storm::StatusResponse::stage() const
+std::optional<storm::StageRequest> const storm::StatusResponse::stage() const
 {
   return m_stage;
 }

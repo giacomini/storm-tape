@@ -48,7 +48,7 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
   ([&](std::string const& id) {
     try {
       auto resp = service.status(id);
-      if (resp.stage() == nullptr) {
+      if (resp.stage() == std::nullopt) {
         return storm::StatusResponse::not_found();
       }
       return storm::to_crow_response(resp);
@@ -63,7 +63,7 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
             try {
               storm::CancelRequest cancel{req.body};
               auto resp = service.cancel(id, cancel);
-              if (resp.stage() == nullptr) {
+              if (!resp.stage().has_value()) {
                 return storm::CancelResponse::not_found();
               }
               if (resp.invalid().empty()) {
