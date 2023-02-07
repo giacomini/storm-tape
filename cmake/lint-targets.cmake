@@ -1,3 +1,11 @@
+find_program(FORMAT_COMMAND clang-format)
+if (NOT FORMAT_COMMAND)
+    message("-- Could NOT find clang-format")
+    return()
+else()
+    message("-- Found clang-format: ${FORMAT_COMMAND}")
+endif()
+
 set(
     FORMAT_PATTERNS
     src/*.hpp src/*cpp

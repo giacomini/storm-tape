@@ -21,7 +21,10 @@ struct File
   std::filesystem::path path;
   State state{State::submitted};
   Locality locality{Locality::on_tape};
-  void setState(State s){state = s;};
+  void setState(State s)
+  {
+    state = s;
+  }
 };
 } // namespace storm
 

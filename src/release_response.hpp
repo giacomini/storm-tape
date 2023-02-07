@@ -22,8 +22,7 @@ class ReleaseResponse
   ReleaseResponse(StageRequest const* stage)
       : m_stage(stage)
   {}
-  ReleaseResponse(std::string id,
-                  std::vector<std::filesystem::path> invalid)
+  ReleaseResponse(std::string id, std::vector<std::filesystem::path> invalid)
       : m_id(std::move(id))
       , m_invalid(std::move(invalid))
   {}
