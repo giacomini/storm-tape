@@ -1,7 +1,3 @@
-//
-// Created by Jacopo Gasparetto on 06/02/23.
-//
-
 #ifndef STORM_TAPE_DATABASE_SOCI_HPP
 #define STORM_TAPE_DATABASE_SOCI_HPP
 
