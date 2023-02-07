@@ -89,7 +89,7 @@ SociDatabase::SociDatabase(soci::session& sql)
   m_sql << storm::sql::File::CREATE_IF_NOT_EXISTS;
 }
 
-bool SociDatabase::insert(StageId const& id, StageRequest stage)
+bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 {
   using namespace std::chrono;
   StageEntity s_entity{id, stage.created_at(), stage.started_at()};

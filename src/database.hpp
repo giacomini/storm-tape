@@ -29,8 +29,8 @@ struct FileEntity
 class Database
 {
  public:
-  virtual ~Database()                                            = default;
-  virtual bool insert(std::string const& id, StageRequest stage) = 0;
+  virtual ~Database() = default;
+  virtual bool insert(std::string const& id, StageRequest const& stage) = 0;
   virtual std::optional<StageRequest const>
   find(std::string const& id) const                               = 0;
   virtual std::optional<StageRequest> find(std::string const& id) = 0;
@@ -42,9 +42,9 @@ class MockDatabase : public Database
   std::map<std::string, StageRequest> m_db;
 
  public:
-  bool insert(std::string const& id, StageRequest stage) override
+  bool insert(std::string const& id, const StageRequest& stage) override
   {
-    auto const ret = m_db.insert({id, std::move(stage)});
+    auto const ret = m_db.insert({id, stage});
     return ret.second;
   }
   std::optional<StageRequest const> find(std::string const& id) const override
