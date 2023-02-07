@@ -9,7 +9,7 @@ namespace storm {
 
 using StageId   = std::string;
 using Filename  = std::string;
-using TimePoint = std::chrono::system_clock::time_point;
+using TimePoint = long long;
 
 struct StageEntity
 {

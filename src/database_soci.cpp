@@ -6,30 +6,23 @@ namespace soci {
 template<>
 struct type_conversion<storm::StageEntity>
 {
-  using base_type = values;
+  using base_type = soci::values;
   static void from_base(const soci::values& v, soci::indicator ind,
                         storm::StageEntity& req)
   {
     using namespace std::chrono;
     req.id = v.get<storm::StageId>("id");
 
-    req.created_at =
-        storm::TimePoint{std::chrono::seconds{v.get<long long>("created_at")}};
-    req.started_at =
-        storm::TimePoint{std::chrono::seconds{v.get<long long>("started_at")}};
+    req.created_at = v.get<long long>("created_at");
+    req.started_at = v.get<long long>("started_at");
   }
 
   static void to_base(const storm::StageEntity& req, soci::values& v,
                       soci::indicator ind)
   {
-    using namespace std::chrono;
-    long long created_at =
-        duration_cast<seconds>(req.created_at.time_since_epoch()).count();
-    long long started_at =
-        duration_cast<seconds>(req.started_at.time_since_epoch()).count();
     v.set("id", req.id);
-    v.set("created_at", created_at);
-    v.set("started_at", started_at);
+    v.set("created_at", req.created_at);
+    v.set("started_at", req.started_at);
     ind = i_ok;
   }
 };
@@ -92,7 +85,11 @@ SociDatabase::SociDatabase(soci::session& sql)
 bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 {
   using namespace std::chrono;
-  StageEntity s_entity{id, stage.created_at(), stage.started_at()};
+  using namespace std::chrono_literals;
+
+  auto created_at = duration_cast<seconds>(stage.created_at().time_since_epoch()).count();
+  auto started_at = duration_cast<seconds>(stage.started_at().time_since_epoch()).count();
+  StageEntity s_entity{id, created_at, started_at};
 
   try {
     // Insert stage
