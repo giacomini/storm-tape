@@ -15,18 +15,18 @@ class Configuration;
 class StatusResponse
 {
  private:
-  std::string m_id;
+  StageId m_id;
   std::optional<StageRequest> const m_stage{std::nullopt};
 
  public:
   StatusResponse() = default;
-  StatusResponse(std::string id, std::optional<StageRequest> const stage)
+  StatusResponse(StageId id, std::optional<StageRequest> const stage)
       : m_id(std::move(id))
       , m_stage(std::move(stage))
   {}
 
   crow::response status(boost::json::object const& jbody) const;
-  std::string const& id() const;
+  StageId const& id() const;
   std::optional<StageRequest> const stage() const;
 
   static crow::response bad_request();

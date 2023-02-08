@@ -14,8 +14,8 @@
 
 namespace storm {
 
-void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
-                   storm::TapeService& service)
+void create_routes(crow::SimpleApp& app, Configuration const& config,
+                   TapeService& service)
 {
   namespace fs   = std::filesystem;
   namespace json = boost::json;
@@ -35,25 +35,25 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
   CROW_ROUTE(app, "/api/v1/stage")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
-          auto files = storm::from_json(req.body);
-          storm::StageRequest request{files};
+          auto files = from_json(req.body);
+          StageRequest request{files};
           auto resp = service.stage(request);
-          return storm::to_crow_response(resp, storm::get_host(req, config));
+          return to_crow_response(resp, get_host(req, config));
         } catch (...) {
-          return storm::StageResponse::bad_request();
+          return StageResponse::bad_request();
         }
       });
 
   CROW_ROUTE(app, "/api/v1/stage/<string>")
-  ([&](std::string const& id) {
+  ([&](StageId const& id) {
     try {
       auto resp = service.status(id);
       if (resp.stage() == std::nullopt) {
-        return storm::StatusResponse::not_found();
+        return StatusResponse::not_found();
       }
-      return storm::to_crow_response(resp);
+      return to_crow_response(resp);
     } catch (...) {
-      return storm::StatusResponse::bad_request();
+      return StatusResponse::bad_request();
     }
   });
 
@@ -61,24 +61,24 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
       .methods("POST"_method)(
           [&](crow::request const& req, std::string const& id) {
             try {
-              storm::CancelRequest cancel{req.body};
-              auto resp = service.cancel(id, cancel);
-              if (!resp.stage().has_value()) {
-                return storm::CancelResponse::not_found();
+              CancelRequest const cancel{req.body};
+              auto resp = service.cancel(StageId{id}, cancel);
+              if (resp.id().empty()) {
+                return CancelResponse::not_found();
               }
               if (resp.invalid().empty()) {
-                return storm::CancelResponse::cancelled();
+                return CancelResponse::cancelled();
               }
-              return storm::to_crow_response(resp);
+              return to_crow_response(resp);
             } catch (...) {
-              return storm::CancelResponse::bad_request();
+              return CancelResponse::bad_request();
             }
           });
 
   CROW_ROUTE(app, "/api/v1/stage/<string>")
       .methods("DELETE"_method)([&](std::string const& id) {
         try {
-          auto resp = service.erase(id);
+          auto resp = service.erase(StageId{id});
           return resp.found() ? DeleteResponse::erased()
                               : DeleteResponse::not_found();
         } catch (...) {
@@ -90,28 +90,28 @@ void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
       .methods("POST"_method)(
           [&](crow::request const& req, std::string const& id) {
             try {
-              storm::ReleaseRequest release{req.body};
-              auto resp = service.release(id, release);
+              ReleaseRequest const release{req.body};
+              auto resp = service.release(StageId{id}, release);
               if (resp.stage() == nullptr) {
-                return storm::ReleaseResponse::not_found();
+                return ReleaseResponse::not_found();
               }
               if (resp.invalid().empty()) {
-                return storm::ReleaseResponse::released();
+                return ReleaseResponse::released();
               }
-              return storm::to_crow_response(resp);
+              return to_crow_response(resp);
             } catch (...) {
-              return storm::ReleaseResponse::bad_request();
+              return ReleaseResponse::bad_request();
             }
           });
 
   CROW_ROUTE(app, "/api/v1/archiveinfo")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
-          storm::ArchiveInfo info{req.body};
+          ArchiveInfo const info{req.body};
           auto resp = service.archive(info);
-          return storm::to_crow_response(resp);
+          return to_crow_response(resp);
         } catch (...) {
-          return storm::ArchiveResponse::bad_request();
+          return ArchiveResponse::bad_request();
         }
       });
 

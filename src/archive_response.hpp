@@ -2,20 +2,21 @@
 #define ARCHIVE_RESPONSE_HPP
 
 #include "file.hpp"
+#include "types.hpp"
 #include <boost/json.hpp>
 #include <crow.h>
 #include <filesystem>
 #include <string>
 
 namespace storm {
+
 class Configuration;
 class StageRequest;
 
 class ArchiveResponse
 {
- private:
   boost::json::array m_jbody;
-  std::vector<std::filesystem::path> m_invalid;
+  Paths m_invalid;
   std::vector<File> m_valid;
 
  public:
@@ -25,7 +26,7 @@ class ArchiveResponse
       , m_valid(std::move(valid))
   {}
   ArchiveResponse(boost::json::array jbody,
-                  std::vector<std::filesystem::path> invalid,
+                  Paths invalid,
                   std::vector<File> valid)
       : m_jbody(std::move(jbody))
       , m_invalid(std::move(invalid))
@@ -33,7 +34,7 @@ class ArchiveResponse
   {}
 
   boost::json::array const& jbody() const;
-  std::vector<std::filesystem::path> const& invalid() const;
+  Paths const& invalid() const;
   std::vector<File> const& valid() const;
 
   crow::response fetched_from_archive(boost::json::array jbody) const;

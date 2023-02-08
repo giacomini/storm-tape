@@ -7,7 +7,7 @@ template<>
 struct type_conversion<storm::StageEntity>
 {
   using base_type = soci::values;
-  static void from_base(const soci::values& v, soci::indicator ind,
+  static void from_base(const soci::values& v, soci::indicator,
                         storm::StageEntity& req)
   {
     using namespace std::chrono;
@@ -18,7 +18,7 @@ struct type_conversion<storm::StageEntity>
   }
 
   static void to_base(const storm::StageEntity& req, soci::values& v,
-                      soci::indicator ind)
+                      soci::indicator& ind)
   {
     v.set("id", req.id);
     v.set("created_at", req.created_at);
@@ -31,7 +31,7 @@ template<>
 struct type_conversion<storm::FileEntity>
 {
   using base_type = values;
-  static void from_base(const soci::values& v, soci::indicator ind,
+  static void from_base(const soci::values& v, soci::indicator,
                         storm::FileEntity& file)
   {
     file.stage_id = v.get<storm::StageId>("stage_id");
@@ -41,7 +41,7 @@ struct type_conversion<storm::FileEntity>
   }
 
   static void to_base(const storm::FileEntity& file, soci::values& v,
-                      soci::indicator ind)
+                      soci::indicator& ind)
   {
     v.set("stage_id", file.stage_id);
     v.set("path", file.path);
@@ -87,8 +87,10 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
   using namespace std::chrono;
   using namespace std::chrono_literals;
 
-  auto created_at = duration_cast<seconds>(stage.created_at().time_since_epoch()).count();
-  auto started_at = duration_cast<seconds>(stage.started_at().time_since_epoch()).count();
+  auto created_at =
+      duration_cast<seconds>(stage.created_at().time_since_epoch()).count();
+  auto started_at =
+      duration_cast<seconds>(stage.started_at().time_since_epoch()).count();
   StageEntity s_entity{id, created_at, started_at};
 
   try {
@@ -97,15 +99,12 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 
     // Insert files
     const auto& files = stage.files();
-    std::for_each(files.begin(), files.end(), [&](auto const f) {
-      FileEntity fileEntity{id, f.path, f.state, f.locality};
-      m_sql << storm::sql::File::INSERT, soci::use(fileEntity);
+    std::for_each(files.begin(), files.end(), [&](auto&& f) {
+      FileEntity const entity{id, f.path, f.state, f.locality};
+      m_sql << storm::sql::File::INSERT, soci::use(entity);
     });
-  } catch (soci::sqlite3_soci_error e) {
+  } catch (soci::sqlite3_soci_error const& e) {
     std::cerr << "Sqlite3 error: " << e.what() << '\n';
-    return false;
-  } catch (std::exception e) {
-    std::cerr << "Uncaught exception: " << e.what() << '\n';
     return false;
   }
   return true;
@@ -145,11 +144,8 @@ bool SociDatabase::erase(StageId const& id)
     }
     // Delete stage record
     m_sql << storm::sql::Stage::DELETE, soci::use(id);
-  } catch (soci::sqlite3_soci_error e) {
+  } catch (soci::sqlite3_soci_error const& e) {
     std::cerr << "Sqlite3 error: " << e.what() << '\n';
-    return false;
-  } catch (std::exception e) {
-    std::cerr << "Uncaught exception: " << e.what() << '\n';
     return false;
   }
   return true;

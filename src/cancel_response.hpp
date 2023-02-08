@@ -14,22 +14,17 @@ class Configuration;
 
 class CancelResponse
 {
- private:
-  std::string m_id;
-  std::optional<StageRequest> const m_stage{std::nullopt};
-  std::vector<std::filesystem::path> m_invalid;
+  StageId m_id;
+  Paths m_invalid;
 
  public:
-  CancelResponse(std::string id, std::optional<StageRequest> const stage,
-                 std::vector<std::filesystem::path> invalid = {})
+  CancelResponse(StageId id = {}, Paths invalid = {})
       : m_id(std::move(id))
-      , m_stage(stage)
       , m_invalid(std::move(invalid))
   {}
 
-  std::string const& id() const;
-  std::optional<StageRequest> const stage() const;
-  std::vector<std::filesystem::path> const& invalid() const;
+  StageId const& id() const;
+  Paths const& invalid() const;
   static crow::response bad_request_with_body(boost::json::object jbody);
   static crow::response bad_request();
   static crow::response not_found();

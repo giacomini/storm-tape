@@ -1,28 +1,32 @@
 #include "status_response.hpp"
 
+namespace storm {
+
 crow::response
-storm::StatusResponse::status(boost::json::object const& jbody) const
+StatusResponse::status(boost::json::object const& jbody) const
 {
   return crow::response{crow::status::OK, "json",
                         boost::json::serialize(jbody)};
 }
 
-std::string const& storm::StatusResponse::id() const
+StageId const& StatusResponse::id() const
 {
   return m_id;
 }
 
-std::optional<storm::StageRequest> const storm::StatusResponse::stage() const
+std::optional<StageRequest> const StatusResponse::stage() const
 {
   return m_stage;
 }
 
-crow::response storm::StatusResponse::bad_request()
+crow::response StatusResponse::bad_request()
 {
   return crow::response(crow::status::BAD_REQUEST);
 }
 
-crow::response storm::StatusResponse::not_found()
+crow::response StatusResponse::not_found()
 {
   return crow::response(crow::status::NOT_FOUND);
 }
+
+} // namespace storm

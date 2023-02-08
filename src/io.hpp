@@ -7,6 +7,7 @@
 #include <regex>
 
 namespace storm {
+
 class StageRequest;
 class StageResponse;
 class StatusResponse;
@@ -17,22 +18,27 @@ class ArchiveResponse;
 class Configuration;
 
 boost::json::object to_json(StageResponse const& resp);
+
+struct HostInfo
+{
+  std::string proto;
+  std::string host;
+};
+
 crow::response to_crow_response(StageResponse const& resp,
-                                std::map<std::string, std::string> const& map);
+                                HostInfo const& info);
 
 boost::json::object staged_to_json(std::optional<StageRequest> const stage,
                                    std::string const& id);
 crow::response to_crow_response(StatusResponse const& resp);
 
-boost::json::object
-file_missing_to_json(std::vector<std::filesystem::path> const& missing,
-                     std::string const& id);
+boost::json::object file_missing_to_json(Paths const& missing,
+                                         std::string const& id);
 crow::response to_crow_response(CancelResponse const& resp);
 crow::response to_crow_response(ReleaseResponse const& resp);
 
-boost::json::array
-not_in_archive_to_json(std::vector<std::filesystem::path> const& missing,
-                       boost::json::array& jbody);
+boost::json::array not_in_archive_to_json(Paths const& missing,
+                                          boost::json::array& jbody);
 boost::json::array archive_to_json(std::vector<File> const& file,
                                    boost::json::array& jbody);
 crow::response to_crow_response(ArchiveResponse const& resp);
@@ -40,8 +46,7 @@ crow::response to_crow_response(ArchiveResponse const& resp);
 std::vector<File> from_json(std::string_view const& body);
 std::vector<File> from_json_paths(std::string_view const& body);
 
-std::map<std::string, std::string> get_host(crow::request const& req,
-                                            Configuration const& conf);
+HostInfo get_host(crow::request const& req, Configuration const& conf);
 
 template<class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
@@ -72,7 +77,7 @@ inline std::string to_string(File::Locality locality)
   using namespace std::string_literals;
   static std::string const localities[]{"UNKNOWN"s, "TAPE"s, "DISK"s,
                                         "DISK_AND_TAPE"s};
-  auto const index = to_underlying(locality);
+  std::size_t const index = to_underlying(locality);
   return index < std::size(localities) ? localities[index] : "UNKNOWN"s;
 }
 } // namespace storm

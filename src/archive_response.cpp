@@ -1,29 +1,32 @@
 #include "archive_response.hpp"
 
-boost::json::array const& storm::ArchiveResponse::jbody() const
+namespace storm {
+
+boost::json::array const& ArchiveResponse::jbody() const
 {
   return m_jbody;
 }
 
-std::vector<std::filesystem::path> const&
-storm::ArchiveResponse::invalid() const
+Paths const& ArchiveResponse::invalid() const
 {
   return m_invalid;
 }
 
-std::vector<storm::File> const& storm::ArchiveResponse::valid() const
+std::vector<File> const& ArchiveResponse::valid() const
 {
   return m_valid;
 }
 
 crow::response
-storm::ArchiveResponse::fetched_from_archive(boost::json::array jbody) const
+ArchiveResponse::fetched_from_archive(boost::json::array jbody) const
 {
   return crow::response{crow::status::OK, "json",
                         boost::json::serialize(jbody)};
 }
 
-crow::response storm::ArchiveResponse::bad_request()
+crow::response ArchiveResponse::bad_request()
 {
   return crow::response(crow::status::BAD_REQUEST);
 }
+
+} // namespace storm
