@@ -98,7 +98,7 @@ ReleaseResponse TapeService::release(StageId const& id,
   }
 }
 
-ArchiveResponse TapeService::archive(ArchiveInfo const& info)
+ArchiveResponse TapeService::archive(ArchiveInfo const& /*info*/)
 {
   // boost::json::array jbody;
   // Paths file_buffer;

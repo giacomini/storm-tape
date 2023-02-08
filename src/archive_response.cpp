@@ -7,16 +7,6 @@ boost::json::array const& ArchiveResponse::jbody() const
   return m_jbody;
 }
 
-Paths const& ArchiveResponse::invalid() const
-{
-  return m_invalid;
-}
-
-std::vector<File> const& ArchiveResponse::valid() const
-{
-  return m_valid;
-}
-
 crow::response
 ArchiveResponse::fetched_from_archive(boost::json::array jbody) const
 {
