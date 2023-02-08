@@ -70,18 +70,20 @@ find_package(Boost REQUIRED)
 add_library(
   libtaperestapi
   OBJECT
+  src/archive_response.cpp
+  src/cancel_response.cpp
+  src/database.cpp
+  src/database_soci.cpp
+  src/delete_response.cpp
+  src/io.cpp
   src/json.cpp
+  src/release_response.cpp
   src/routes.cpp
   src/stage_request.cpp
-  src/tape_service.cpp
   src/stage_response.cpp
   src/status_response.cpp
-  src/cancel_response.cpp
-  src/delete_response.cpp
-  src/release_response.cpp
-  src/archive_response.cpp
-  src/database_soci.cpp
-  src/io.cpp
+  src/tape_service.cpp
+  src/types.cpp
 )
 
 target_link_libraries(
