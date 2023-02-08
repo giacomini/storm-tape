@@ -3,3 +3,5 @@ vcpkg
 .vscode/
 .idea/
 CMakeUserPresets.json
+*.db
+*.sqlite
