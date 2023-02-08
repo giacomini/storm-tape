@@ -17,8 +17,6 @@ class ReleaseResponse;
 class ArchiveResponse;
 class Configuration;
 
-boost::json::object to_json(StageResponse const& resp);
-
 struct HostInfo
 {
   std::string proto;
@@ -28,8 +26,6 @@ struct HostInfo
 crow::response to_crow_response(StageResponse const& resp,
                                 HostInfo const& info);
 
-boost::json::object staged_to_json(std::optional<StageRequest> const stage,
-                                   std::string const& id);
 crow::response to_crow_response(StatusResponse const& resp);
 
 boost::json::object file_missing_to_json(Paths const& missing,

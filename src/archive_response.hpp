@@ -5,13 +5,8 @@
 #include "types.hpp"
 #include <boost/json.hpp>
 #include <crow.h>
-#include <filesystem>
-#include <string>
 
 namespace storm {
-
-class Configuration;
-class StageRequest;
 
 class ArchiveResponse
 {
@@ -34,11 +29,10 @@ class ArchiveResponse
   {}
 
   boost::json::array const& jbody() const;
-  Paths const& invalid() const;
-  std::vector<File> const& valid() const;
+  Paths const& invalid() const { return m_invalid; }
+  std::vector<File> const& valid() const {return m_valid; }
 
   crow::response fetched_from_archive(boost::json::array jbody) const;
-  static crow::response bad_request();
 };
 
 } // namespace storm

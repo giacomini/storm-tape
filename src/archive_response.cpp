@@ -24,9 +24,4 @@ ArchiveResponse::fetched_from_archive(boost::json::array jbody) const
                         boost::json::serialize(jbody)};
 }
 
-crow::response ArchiveResponse::bad_request()
-{
-  return crow::response(crow::status::BAD_REQUEST);
-}
-
 } // namespace storm

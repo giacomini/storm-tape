@@ -19,9 +19,6 @@ class DeleteResponse
   {
     return m_found;
   }
-  static crow::response bad_request();
-  static crow::response not_found();
-  static crow::response erased();
 };
 
 } // namespace storm

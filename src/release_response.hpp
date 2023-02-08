@@ -28,13 +28,9 @@ class ReleaseResponse
       , m_invalid(std::move(invalid))
   {}
 
-  StageId const& id() const;
-  StageRequest const* stage() const;
-  Paths const& invalid() const;
-  static crow::response bad_request_with_body(boost::json::object jbody);
-  static crow::response bad_request();
-  static crow::response not_found();
-  static crow::response released();
+  StageId const& id() const { return m_id; }
+  StageRequest const* stage() const { return m_stage; }
+  Paths const& invalid() const {return m_invalid; }
 };
 
 } // namespace storm

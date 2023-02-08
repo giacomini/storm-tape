@@ -12,17 +12,15 @@ namespace storm {
 class StageResponse
 {
  private:
-  StageId m_id;
+  StageId m_id{};
 
  public:
   StageResponse() = default;
-  StageResponse(StageId id)
+  explicit StageResponse(StageId id)
       : m_id(std::move(id))
   {}
 
-  static crow::response bad_request();
-
-  StageId const& id() const;
+  StageId const& id() const { return m_id; }
 };
 
 } // namespace storm

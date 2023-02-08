@@ -23,12 +23,8 @@ class CancelResponse
       , m_invalid(std::move(invalid))
   {}
 
-  StageId const& id() const;
-  Paths const& invalid() const;
-  static crow::response bad_request_with_body(boost::json::object jbody);
-  static crow::response bad_request();
-  static crow::response not_found();
-  static crow::response cancelled();
+  StageId const& id() const { return m_id; }
+  Paths const& invalid() const { return m_invalid; }
 };
 
 } // namespace storm

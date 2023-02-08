@@ -17,7 +17,6 @@ namespace storm {
 void create_routes(crow::SimpleApp& app, Configuration const& config,
                    TapeService& service)
 {
-  namespace fs   = std::filesystem;
   namespace json = boost::json;
 
   app.route_dynamic(config.well_known_uri.c_str())([&] {
@@ -36,24 +35,24 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
       .methods("POST"_method)([&](crow::request const& req) {
         try {
           auto files = from_json(req.body);
-          StageRequest request{files};
+          StageRequest const request{files};
           auto resp = service.stage(request);
           return to_crow_response(resp, get_host(req, config));
         } catch (...) {
-          return StageResponse::bad_request();
+          return crow::response(crow::status::BAD_REQUEST);
         }
       });
 
   CROW_ROUTE(app, "/api/v1/stage/<string>")
-  ([&](StageId const& id) {
+  ([&](std::string const& id) {
     try {
-      auto resp = service.status(id);
-      if (resp.stage() == std::nullopt) {
-        return StatusResponse::not_found();
+      auto resp = service.status(StageId{id});
+      if (resp.id().empty()) {
+        return crow::response(crow::status::NOT_FOUND);
       }
       return to_crow_response(resp);
     } catch (...) {
-      return StatusResponse::bad_request();
+      return crow::response(crow::status::BAD_REQUEST);
     }
   });
 
@@ -64,14 +63,14 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
               CancelRequest const cancel{req.body};
               auto resp = service.cancel(StageId{id}, cancel);
               if (resp.id().empty()) {
-                return CancelResponse::not_found();
+                return crow::response(crow::status::NOT_FOUND);
               }
               if (resp.invalid().empty()) {
-                return CancelResponse::cancelled();
+                return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
             } catch (...) {
-              return CancelResponse::bad_request();
+              return crow::response(crow::status::BAD_REQUEST);
             }
           });
 
@@ -79,10 +78,10 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
       .methods("DELETE"_method)([&](std::string const& id) {
         try {
           auto resp = service.erase(StageId{id});
-          return resp.found() ? DeleteResponse::erased()
-                              : DeleteResponse::not_found();
+          return resp.found() ? crow::response{crow::status::OK}
+                              : crow::response(crow::status::NOT_FOUND);
         } catch (...) {
-          return DeleteResponse::bad_request();
+          return crow::response(crow::status::BAD_REQUEST);
         }
       });
 
@@ -93,14 +92,14 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
               ReleaseRequest const release{req.body};
               auto resp = service.release(StageId{id}, release);
               if (resp.stage() == nullptr) {
-                return ReleaseResponse::not_found();
+                return crow::response(crow::status::NOT_FOUND);
               }
               if (resp.invalid().empty()) {
-                return ReleaseResponse::released();
+                return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
             } catch (...) {
-              return ReleaseResponse::bad_request();
+              return crow::response(crow::status::BAD_REQUEST);
             }
           });
 
@@ -111,7 +110,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           auto resp = service.archive(info);
           return to_crow_response(resp);
         } catch (...) {
-          return ArchiveResponse::bad_request();
+          return crow::response(crow::status::BAD_REQUEST);
         }
       });
 

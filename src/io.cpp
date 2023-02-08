@@ -7,35 +7,43 @@
 #include "stage_request.hpp"
 #include "stage_response.hpp"
 #include "status_response.hpp"
-
+#include <chrono>
+#include <iomanip>
+#include <numeric>
+#include <sstream>
 namespace storm {
 
-// Creates a JSON object with the given request ID, for a new stage request.
 boost::json::object to_json(StageResponse const& resp)
 {
-  boost::json::object jbody{{"requestId", resp.id()}};
-  return jbody;
+  return boost::json::object{{"requestId", resp.id()}};
 }
 
-// Creates the CROW response for the stage operation.
-crow::response to_crow_response(StageResponse const& sresp, HostInfo const& info)
+crow::response to_crow_response(StageResponse const& sresp,
+                                HostInfo const& info)
 {
   auto jbody = to_json(sresp);
   // return resp.staged(jbody, info);
   crow::response resp{crow::status::CREATED, "json",
                       boost::json::serialize(jbody)};
-  resp.set_header("Location",
-                  info.proto + "://" + info.host + "/api/v1/stage/" + sresp.id());
+  resp.set_header("Location", info.proto + "://" + info.host + "/api/v1/stage/"
+                                  + sresp.id());
   return resp;
 }
 
-// Creates a JSON object for an already staged request, with a certain
-// requestId.
-boost::json::object staged_to_json(std::optional<StageRequest> const stage,
-                                   std::string const& id)
+template<class TP>
+auto to_seconds(TP time_point)
 {
+  return std::chrono::duration_cast<std::chrono::seconds>(
+             time_point.time_since_epoch())
+      .count();
+}
+crow::response to_crow_response(StatusResponse const& resp)
+{
+  auto& stage   = resp.stage();
+  auto& m_files = stage.files();
+  auto& id      = resp.id();
+
   boost::json::array files;
-  auto m_files = stage->files();
   files.reserve(m_files.size());
   std::transform( //
       m_files.begin(), m_files.end(), std::back_inserter(files),
@@ -50,23 +58,12 @@ boost::json::object staged_to_json(std::optional<StageRequest> const stage,
       });
   boost::json::object jbody;
   jbody["id"]         = id;
-  jbody["created_at"] = //
-      std::chrono::duration_cast<std::chrono::seconds>(
-          stage->created_at().time_since_epoch())
-          .count();
-  jbody["started_at"] = //
-      std::chrono::duration_cast<std::chrono::seconds>(
-          stage->started_at().time_since_epoch())
-          .count();
-  jbody["files"] = files;
+  jbody["created_at"] = to_seconds(stage.created_at());
+  jbody["started_at"] = to_seconds(stage.started_at());
+  jbody["files"]      = files;
 
-  return jbody;
-}
-
-crow::response to_crow_response(StatusResponse const& resp)
-{
-  auto jbody = staged_to_json(resp.stage(), resp.id());
-  return resp.status(jbody);
+  return crow::response{crow::status::OK, "json",
+                        boost::json::serialize(jbody)};
 }
 
 // Creates a JSON object when one or more files targeted for cancellation do
@@ -74,30 +71,36 @@ crow::response to_crow_response(StatusResponse const& resp)
 boost::json::object file_missing_to_json(Paths const& missing,
                                          std::string const& id)
 {
-  std::string sfile;
-  for (auto&& file : missing) {
-    sfile += '\'';
-    sfile += file;
-    sfile += "' ";
-  }
-  boost::json::object jbody{
-      {"title", "File missing from stage request"},
-      {"status", 400},
-      {"detail", "The files " + sfile + "do not belong to STAGE request " + id
-                     + ". No modification has been made to this request."}};
-  return jbody;
+  std::string const sfile = std::accumulate(
+      missing.begin(), missing.end(), std::string{}, [](auto acc, auto s) {
+        std::ostringstream os{acc};
+        os << std::quoted(s.string(), '\'') << ' ';
+        return os.str();
+      });
+
+  std::ostringstream message;
+  message << "The file" << (missing.size() > 1 ? "s " : " ") << sfile
+          << (missing.size() > 1 ? " do " : " does ")
+          << "not belong to the STAGE request " << id
+          << ". No modification has been made to this request.";
+
+  return boost::json::object{{"title", "File missing from stage request"},
+                             {"status", crow::status::BAD_REQUEST},
+                             {"detail", message.str()}};
 }
 
 crow::response to_crow_response(CancelResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid(), resp.id());
-  return CancelResponse::bad_request_with_body(jbody);
+  return crow::response(crow::status::BAD_REQUEST, "json",
+                        boost::json::serialize(jbody));
 }
 
 crow::response to_crow_response(ReleaseResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid(), resp.id());
-  return ReleaseResponse::bad_request_with_body(jbody);
+  return crow::response(crow::status::BAD_REQUEST, "json",
+                        boost::json::serialize(jbody));
 }
 
 // Given a JSON array, appends the missing or not accessible files in JSON
@@ -196,24 +199,25 @@ std::vector<File> from_json_paths(std::string_view const& body)
 
 HostInfo get_host(crow::request const& req, Configuration const& conf)
 {
-  std::string const header = req.get_header_value("Forwarded");
+  HostInfo result{"http", conf.hostname + ':' + std::to_string(conf.port)};
 
-  if (header.empty()) {
-    return {"https", conf.hostname + ':' + std::to_string(conf.port)};
+  if (auto const http_forwarded = req.get_header_value("Forwarded");
+      !http_forwarded.empty()) {
+    std::regex const host_match("host=(.*?)(;|$)");
+    std::regex const proto_match("proto=(.*?)(;|$)");
+    std::smatch match;
+    if (std::regex_search(http_forwarded.begin(), http_forwarded.end(), match, host_match)) {
+      result.host = match[1];
+    }
+    if (std::regex_search(http_forwarded.begin(), http_forwarded.end(), match, proto_match)) {
+      result.proto = match[1];
+    }
+  } else if (auto const http_host = req.get_header_value("Host");
+             !http_host.empty()) {
+    result.host = http_host;
   }
 
-  HostInfo info;
-  std::regex host_match("host=(.*?)(;|$)");
-  std::regex proto_match("proto=(.*?)(;|$)");
-  std::smatch match;
-  if (std::regex_search(header.begin(), header.end(), match, host_match)) {
-    info.host = match[1];
-  }
-  if (std::regex_search(header.begin(), header.end(), match, proto_match)) {
-    info.proto = match[1];
-  }
-
-  return info;
+  return result;
 }
 
 } // namespace storm
