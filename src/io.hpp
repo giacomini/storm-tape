@@ -14,7 +14,7 @@ class StatusResponse;
 class CancelResponse;
 class DeleteResponse;
 class ReleaseResponse;
-class ArchiveResponse;
+class ArchiveInfoResponse;
 class Configuration;
 
 struct HostInfo
@@ -37,7 +37,7 @@ boost::json::array not_in_archive_to_json(Paths const& missing,
                                           boost::json::array& jbody);
 boost::json::array archive_to_json(std::vector<File> const& file,
                                    boost::json::array& jbody);
-crow::response to_crow_response(ArchiveResponse const& resp);
+crow::response to_crow_response(ArchiveInfoResponse const& resp);
 
 std::vector<File> from_json(std::string_view const& body);
 std::vector<File> from_json_paths(std::string_view const& body);

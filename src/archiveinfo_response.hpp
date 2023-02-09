@@ -1,5 +1,5 @@
-#ifndef ARCHIVE_RESPONSE_HPP
-#define ARCHIVE_RESPONSE_HPP
+#ifndef ARCHIVEINFO_RESPONSE_HPP
+#define ARCHIVEINFO_RESPONSE_HPP
 
 #include "file.hpp"
 #include "types.hpp"
@@ -8,19 +8,19 @@
 
 namespace storm {
 
-class ArchiveResponse
+class ArchiveInfoResponse
 {
   boost::json::array m_jbody;
   Paths m_invalid;
   std::vector<File> m_valid;
 
  public:
-  ArchiveResponse() = default;
-  ArchiveResponse(boost::json::array jbody, std::vector<File> valid)
+  ArchiveInfoResponse() = default;
+  ArchiveInfoResponse(boost::json::array jbody, std::vector<File> valid)
       : m_jbody(std::move(jbody))
       , m_valid(std::move(valid))
   {}
-  ArchiveResponse(boost::json::array jbody,
+  ArchiveInfoResponse(boost::json::array jbody,
                   Paths invalid,
                   std::vector<File> valid)
       : m_jbody(std::move(jbody))

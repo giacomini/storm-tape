@@ -6,7 +6,6 @@
 #include <filesystem>
 
 namespace storm {
-class StageRequest;
 
 struct RequestWithPaths
 {
@@ -27,7 +26,7 @@ struct ReleaseRequest : RequestWithPaths
   using RequestWithPaths::RequestWithPaths;
 };
 
-struct ArchiveInfo : RequestWithPaths
+struct ArchiveInfoRequest : RequestWithPaths
 {
   using RequestWithPaths::RequestWithPaths;
 };

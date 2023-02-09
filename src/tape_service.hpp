@@ -14,13 +14,13 @@ class StageRequest;
 class CancelRequest;
 class ReleaseRequest;
 class RequestWithPaths;
-class ArchiveInfo;
+class ArchiveInfoRequest;
 class StageResponse;
 class StatusResponse;
 class CancelResponse;
 class DeleteResponse;
 class ReleaseResponse;
-class ArchiveResponse;
+class ArchiveInfoResponse;
 class File;
 
 class TapeService
@@ -38,7 +38,7 @@ class TapeService
   CancelResponse cancel(StageId const& id, CancelRequest const& cancel);
   DeleteResponse erase(StageId const& id);
   ReleaseResponse release(StageId const& id, ReleaseRequest const& release);
-  ArchiveResponse archive(ArchiveInfo const& info);
+  ArchiveInfoResponse archive(ArchiveInfoRequest const& info);
 };
 
 } // namespace storm

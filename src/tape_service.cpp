@@ -1,5 +1,5 @@
 #include "tape_service.hpp"
-#include "archive_response.hpp"
+#include "archiveinfo_response.hpp"
 #include "cancel_response.hpp"
 #include "database.hpp"
 #include "delete_response.hpp"
@@ -98,7 +98,7 @@ ReleaseResponse TapeService::release(StageId const& id,
   }
 }
 
-ArchiveResponse TapeService::archive(ArchiveInfo const& /*info*/)
+ArchiveInfoResponse TapeService::archive(ArchiveInfoRequest const& /*info*/)
 {
   // boost::json::array jbody;
   // Paths file_buffer;
@@ -147,13 +147,13 @@ ArchiveResponse TapeService::archive(ArchiveInfo const& /*info*/)
 
   //   jbody = archive_to_json(remaining, jbody);
 
-  //   return ArchiveResponse{jbody, invalid, remaining};
+  //   return ArchiveInfoResponse{jbody, invalid, remaining};
   // } else {
   //   jbody = archive_to_json(info.paths, jbody);
 
-  //   return ArchiveResponse{jbody, info.paths};
+  //   return ArchiveInfoResponse{jbody, info.paths};
   // }
-  return ArchiveResponse{};
+  return ArchiveInfoResponse{};
 }
 
 } // namespace storm

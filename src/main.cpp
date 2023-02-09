@@ -8,7 +8,7 @@
 
 #  define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#  include "archive_response.hpp"
+#  include "archiveinfo_response.hpp"
 #  include "cancel_response.hpp"
 #  include "fs_storage_test.hpp"
 #  include "io.hpp"
@@ -90,14 +90,14 @@ TEST_CASE("Test with archive info")
   auto files = storm::from_json(R"({"files":[{"path":"/tmp/foo/bar.txt"}]})");
   storm::StageRequest request{files};
   service.stage(request);
-  storm::ArchiveInfo info{R"({"paths":["/tmp/not/foo/bar.txt"]})"};
-  storm::ArchiveInfo info2{R"({"paths":["/tmp/foo/bar.txt"]})"};
-  storm::ArchiveInfo info3{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
+  storm::ArchiveInfoRequest info{R"({"paths":["/tmp/not/foo/bar.txt"]})"};
+  storm::ArchiveInfoRequest info2{R"({"paths":["/tmp/foo/bar.txt"]})"};
+  storm::ArchiveInfoRequest info3{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
   auto info_resp  = service.archive(info);
   auto info_resp2 = service.archive(info2);
   auto info_resp3 = service.archive(info3);
-  // Invalid determines the files in the ArchiveInfo request, not in StageRequest. OK 200, error in body message.
-  // Valid determines the files in the ArchiveInfo request, and in StageRequest. OK 200, shows locality and path in body.
+  // Invalid determines the files in the ArchiveInfoRequest request, not in StageRequest. OK 200, error in body message.
+  // Valid determines the files in the ArchiveInfoRequest request, and in StageRequest. OK 200, shows locality and path in body.
   //
   // One archive info, not in stage
   CHECK(info_resp.invalid().size() == 1);
@@ -112,7 +112,7 @@ TEST_CASE("Test with archive info")
   auto files2 = storm::from_json(R"({"files":[{"path":"/tmp/not/foo/bar.txt"}]})");
   storm::StageRequest request2{files2};
   service.stage(request2);
-  storm::ArchiveInfo info4{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
+  storm::ArchiveInfoRequest info4{R"({"paths":["/tmp/foo/bar.txt","/tmp/not/foo/bar.txt"]})"};
   auto info_resp4 = service.archive(info4);
   // Adding new stage request. Same archive info as before, now all two in stage
   CHECK(info_resp4.invalid().size() == 0);

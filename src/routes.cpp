@@ -1,5 +1,5 @@
 #include "routes.hpp"
-#include "archive_response.hpp"
+#include "archiveinfo_response.hpp"
 #include "cancel_response.hpp"
 #include "configuration.hpp"
 #include "database.hpp"
@@ -106,7 +106,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
   CROW_ROUTE(app, "/api/v1/archiveinfo")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
-          ArchiveInfo const info{req.body};
+          ArchiveInfoRequest const info{req.body};
           auto resp = service.archive(info);
           return to_crow_response(resp);
         } catch (...) {

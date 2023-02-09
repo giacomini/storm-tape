@@ -1,14 +1,14 @@
-#include "archive_response.hpp"
+#include "archiveinfo_response.hpp"
 
 namespace storm {
 
-boost::json::array const& ArchiveResponse::jbody() const
+boost::json::array const& ArchiveInfoResponse::jbody() const
 {
   return m_jbody;
 }
 
 crow::response
-ArchiveResponse::fetched_from_archive(boost::json::array jbody) const
+ArchiveInfoResponse::fetched_from_archive(boost::json::array jbody) const
 {
   return crow::response{crow::status::OK, "json",
                         boost::json::serialize(jbody)};

@@ -1,5 +1,5 @@
 #include "io.hpp"
-#include "archive_response.hpp"
+#include "archiveinfo_response.hpp"
 #include "cancel_response.hpp"
 #include "configuration.hpp"
 #include "delete_response.hpp"
@@ -136,7 +136,7 @@ boost::json::array archive_to_json(std::vector<File> const& files,
   return jbody;
 }
 
-crow::response to_crow_response(ArchiveResponse const& resp)
+crow::response to_crow_response(ArchiveInfoResponse const& resp)
 {
   return resp.fetched_from_archive(resp.jbody());
 }

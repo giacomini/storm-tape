@@ -70,7 +70,7 @@ find_package(Boost REQUIRED)
 add_library(
   libtaperestapi
   OBJECT
-  src/archive_response.cpp
+  src/archiveinfo_response.cpp
   src/cancel_response.cpp
   src/database.cpp
   src/database_soci.cpp
@@ -78,6 +78,7 @@ add_library(
   src/io.cpp
   src/json.cpp
   src/release_response.cpp
+  src/requests_with_paths.cpp
   src/routes.cpp
   src/stage_request.cpp
   src/stage_response.cpp
