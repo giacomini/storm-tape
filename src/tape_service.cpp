@@ -7,11 +7,30 @@
 #include "requests_with_paths.hpp"
 #include "stage_response.hpp"
 #include "status_response.hpp"
+#include "storage.hpp"
+#include <string>
 
 namespace storm {
 
-StageResponse TapeService::stage(StageRequest const& stage_request)
+StageResponse TapeService::stage(StageRequest stage_request)
 {
+  auto& files = stage_request.files;
+  // de-duplication is needed because the path is a primary key of the db
+  std::sort(files.begin(), files.end(),
+            [](File const& a, File const& b) { return a.path < b.path; });
+  files.erase(std::unique(files.begin(), files.end(),
+                          [](File const& a, File const& b) {
+                            return a.path == b.path;
+                          }),
+              files.end());
+
+  for (auto& file : files) {
+    std::error_code ec;
+    auto status = fs::status(file.path, ec);
+    if (ec || !fs::is_regular_file(status)) {
+      file.state = File::State::failed;
+    }
+  }
   auto const uuid     = m_uuid_gen();
   auto const id       = to_string(uuid);
   auto const inserted = m_db->insert(id, stage_request);
@@ -20,14 +39,44 @@ StageResponse TapeService::stage(StageRequest const& stage_request)
 
 StatusResponse TapeService::status(StageId const& id)
 {
-  auto stage = m_db->find(id);
+  auto maybe_stage = m_db->find(id);
+
   // FIXME: what about StatusResponse with id but stage value is empty?
-  return stage.has_value() ? StatusResponse{id, stage.value()}
-                           : StatusResponse{};
+
+  if (!maybe_stage.has_value()) {
+    return StatusResponse{};
+  }
+
+  // update each file locality
+  auto& stage = maybe_stage.value();
+  auto& files = stage.files;
+  for (auto& file : files) {
+    switch (file.state) {
+    case File::State::completed:
+      file.locality = Locality::disk; // even if it can be disk_and_tape
+      break;
+    case File::State::started: {
+      // TODO is this the way to know if a file has been staged?
+      auto const locality = m_storage->locality(file.path);
+      if (locality == Locality::disk || locality == Locality::disk_and_tape) {
+        file.state    = File::State::completed;
+        file.locality = Locality::disk; // even if it can be disk_and_tape
+        // TODO update state to completed in the db
+      }
+      break;
+    }
+    case File::State::cancelled:
+    case File::State::failed:
+    case File::State::submitted:
+      // do nothing
+      break;
+    }
+  }
+
+  return StatusResponse{id, std::move(stage)};
 }
 
-CancelResponse TapeService::cancel(StageId const& id,
-                                   CancelRequest const& cancel)
+CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
 {
   auto stage = m_db->find(id);
   if (!stage.has_value()) {
@@ -38,19 +87,20 @@ CancelResponse TapeService::cancel(StageId const& id,
     return stage_file.path;
   };
 
-  std::vector<std::filesystem::path> invalid{};
+  Paths invalid{};
   std::set_difference(
-      boost::make_transform_iterator(cancel.paths.begin(), proj),
-      boost::make_transform_iterator(cancel.paths.end(), proj),
-      boost::make_transform_iterator(stage->files().begin(), proj),
-      boost::make_transform_iterator(stage->files().end(), proj),
+      cancel.paths.begin(), cancel.paths.end(),
+      boost::make_transform_iterator(stage->files.begin(), proj),
+      boost::make_transform_iterator(stage->files.end(), proj),
       std::back_inserter(invalid));
 
   if (!invalid.empty()) {
     return CancelResponse{id, std::move(invalid)};
   }
 
-  // TODO set the status of files to cancelled
+  for (auto& path : cancel.paths) {
+    m_db->update(id, path, File::State::cancelled);
+  }
 
   return CancelResponse{id};
 }
@@ -62,8 +112,7 @@ DeleteResponse TapeService::erase(StageId const& id)
   return DeleteResponse{erased};
 }
 
-ReleaseResponse TapeService::release(StageId const& id,
-                                     ReleaseRequest const& release)
+ReleaseResponse TapeService::release(StageId const& id, ReleaseRequest release)
 {
   auto stage = m_db->find(id);
   if (!stage.has_value()) {
@@ -77,83 +126,52 @@ ReleaseResponse TapeService::release(StageId const& id,
   Paths both;
   both.reserve(release.paths.size());
   std::set_intersection(
-      boost::make_transform_iterator(release.paths.begin(), proj),
-      boost::make_transform_iterator(release.paths.end(), proj),
-      boost::make_transform_iterator(stage->files().begin(), proj),
-      boost::make_transform_iterator(stage->files().end(), proj),
+      release.paths.begin(), release.paths.end(),
+      boost::make_transform_iterator(stage->files.begin(), proj),
+      boost::make_transform_iterator(stage->files.end(), proj),
       std::back_inserter(both));
 
   if (release.paths.size() != both.size()) {
     Paths invalid;
     assert(release.paths.size() > both.size());
     invalid.reserve(release.paths.size() - both.size());
-    std::set_difference(
-        boost::make_transform_iterator(release.paths.begin(), proj),
-        boost::make_transform_iterator(release.paths.end(), proj), both.begin(),
-        both.end(), std::back_inserter(invalid));
+    std::set_difference(release.paths.begin(), release.paths.end(),
+                        both.begin(), both.end(), std::back_inserter(invalid));
     return ReleaseResponse{id, invalid};
-  } else {
-    // .......DO SOMETHING?.......
-    return ReleaseResponse{};
   }
+
+  // TODO do something?
+
+  return ReleaseResponse{};
 }
 
-ArchiveInfoResponse TapeService::archive(ArchiveInfoRequest const& /*info*/)
+ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
 {
-  // boost::json::array jbody;
-  // Paths file_buffer;
-  // file_buffer.reserve(m_id_buffer.size());
+  PathInfos infos;
+  auto const& paths = info.paths;
+  infos.reserve(paths.size());
+  std::transform( //
+      paths.begin(), paths.end(), std::back_inserter(infos),
+      [&](Path const& path) {
+        using namespace std::string_literals;
+        std::error_code ec;
+        auto status = fs::status(path, ec);
+        if (ec) {
+          return PathInfo{path, Locality::unavailable};
+        }
+        if (!fs::exists(status)) {
+          return PathInfo{path, "path doesn't exist"s};
+        }
+        if (fs::is_directory(status)) {
+          return PathInfo{path, "path is a directory"s};
+        }
+        if (!fs::is_regular_file(status)) {
+          return PathInfo{path, "path is not a regular file"s};
+        }
+        return PathInfo{path, m_storage->locality(path)};
+      });
 
-  // for (auto& id : m_id_buffer) {
-  //   auto stage = m_db->find(id);
-  //   if (!stage.has_value())
-  //     continue;
-  //   for (auto& file : stage->files()) {
-  //     file_buffer.push_back(file.path);
-  //   }
-  // }
-
-  // jbody.reserve(info.paths.size());
-
-  // auto proj = [](File const& stage_file) -> Path const& {
-  //   return stage_file.path;
-  // };
-
-  // Paths both;
-  // both.reserve(info.paths.size());
-  // std::set_intersection(
-  //     boost::make_transform_iterator(info.paths.begin(), proj),
-  //     boost::make_transform_iterator(info.paths.end(), proj),
-  //     file_buffer.begin(), file_buffer.end(), std::back_inserter(both));
-
-  // if (info.paths.size() != both.size()) {
-  //   Paths invalid;
-  //   assert(info.paths.size() > both.size());
-  //   invalid.reserve(info.paths.size() - both.size());
-  //   std::set_difference(
-  //       boost::make_transform_iterator(info.paths.begin(), proj),
-  //       boost::make_transform_iterator(info.paths.end(), proj), both.begin(),
-  //       both.end(), std::back_inserter(invalid));
-
-  //   jbody = not_in_archive_to_json(invalid, jbody);
-
-  //   std::vector<File> remaining;
-  //   for (auto& file : info.paths) {
-  //     if (std::find(invalid.begin(), invalid.end(), file.path) !=
-  //     invalid.end())
-  //       continue;
-  //     remaining.push_back(file);
-  //   }
-
-  //   jbody = archive_to_json(remaining, jbody);
-
-  //   return ArchiveInfoResponse{jbody, invalid, remaining};
-  // } else {
-  //   jbody = archive_to_json(info.paths, jbody);
-
-  //   return ArchiveInfoResponse{jbody, info.paths};
-  // }
-  return ArchiveInfoResponse{};
+  return ArchiveInfoResponse{infos};
 }
 
 } // namespace storm

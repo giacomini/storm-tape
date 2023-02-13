@@ -9,7 +9,9 @@
 #include <vector>
 
 namespace storm {
+
 class Database;
+class Storage;
 class StageRequest;
 class CancelRequest;
 class ReleaseRequest;
@@ -27,18 +29,19 @@ class TapeService
 {
   boost::uuids::random_generator m_uuid_gen;
   Database* m_db;
+  Storage* m_storage;
 
  public:
-  TapeService(Database& db)
-      : m_db(&db)
+  TapeService(Database& db, Storage& storage)
+      : m_db(&db), m_storage(&storage)
   {}
 
-  StageResponse stage(StageRequest const& stage_request);
+  StageResponse stage(StageRequest stage_request);
   StatusResponse status(StageId const& id);
-  CancelResponse cancel(StageId const& id, CancelRequest const& cancel);
+  CancelResponse cancel(StageId const& id, CancelRequest cancel);
   DeleteResponse erase(StageId const& id);
-  ReleaseResponse release(StageId const& id, ReleaseRequest const& release);
-  ArchiveInfoResponse archive(ArchiveInfoRequest const& info);
+  ReleaseResponse release(StageId const& id, ReleaseRequest release);
+  ArchiveInfoResponse archive_info(ArchiveInfoRequest info);
 };
 
 } // namespace storm

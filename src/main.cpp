@@ -1,6 +1,7 @@
 #include "configuration.hpp"
 #include "database.hpp"
 #include "database_soci.hpp"
+#include "local_storage.hpp"
 #include "routes.hpp"
 #include "tape_service.hpp"
 
@@ -124,16 +125,26 @@ TEST_CASE("Test with archive info")
 // clang-format on
 #else
 
-int main(int, char*[])
+int main()
 {
-  soci::session sql(soci::sqlite3, "storm-tape.db");
-  crow::SimpleApp app;
-  storm::SociDatabase db{sql};
-  storm::Configuration config{};
-  storm::TapeService service{db};
+  try {
+    soci::session sql(soci::sqlite3, "storm-tape.sqlite");
+    crow::SimpleApp app;
+    app.loglevel(crow::LogLevel::Debug);
+    storm::SociDatabase db{sql};
+    storm::Configuration const config{};
+    storm::LocalStorage storage{};
+    storm::TapeService service{db, storage};
 
-  storm::create_routes(app, config, service);
-  app.port(config.port).run();
+    storm::create_routes(app, config, service);
+    app.port(config.port).run();
+  } catch (std::exception const& e) {
+    std::cerr << "Caught exception: " << e.what() << '\n';
+    return EXIT_FAILURE;
+  } catch (...) {
+    std::cerr << "Caught unknown exception\n";
+    return EXIT_FAILURE;
+  }
 }
 
 #endif
