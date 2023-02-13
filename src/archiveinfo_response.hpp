@@ -1,38 +1,23 @@
 #ifndef ARCHIVEINFO_RESPONSE_HPP
 #define ARCHIVEINFO_RESPONSE_HPP
 
-#include "file.hpp"
 #include "types.hpp"
-#include <boost/json.hpp>
-#include <crow.h>
+#include <boost/variant2.hpp>
+#include <string>
 
 namespace storm {
 
-class ArchiveInfoResponse
+struct PathInfo
 {
-  boost::json::array m_jbody;
-  Paths m_invalid;
-  std::vector<File> m_valid;
+  Path path;
+  boost::variant2::variant<Locality, std::string> info;
+};
 
- public:
-  ArchiveInfoResponse() = default;
-  ArchiveInfoResponse(boost::json::array jbody, std::vector<File> valid)
-      : m_jbody(std::move(jbody))
-      , m_valid(std::move(valid))
-  {}
-  ArchiveInfoResponse(boost::json::array jbody,
-                  Paths invalid,
-                  std::vector<File> valid)
-      : m_jbody(std::move(jbody))
-      , m_invalid(std::move(invalid))
-      , m_valid(std::move(valid))
-  {}
+using PathInfos = std::vector<PathInfo>;
 
-  boost::json::array const& jbody() const;
-  Paths const& invalid() const { return m_invalid; }
-  std::vector<File> const& valid() const {return m_valid; }
-
-  crow::response fetched_from_archive(boost::json::array jbody) const;
+struct ArchiveInfoResponse
+{
+  PathInfos infos;
 };
 
 } // namespace storm

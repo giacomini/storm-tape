@@ -1,35 +1,29 @@
 #ifndef REQUEST_WITH_PATHS_HPP
 #define REQUEST_WITH_PATHS_HPP
 
-#include "io.hpp"
-#include <boost/json.hpp>
-#include <filesystem>
+#include "types.hpp"
 
 namespace storm {
 
 struct RequestWithPaths
 {
-  std::vector<storm::File> paths;
-  RequestWithPaths(std::string_view body)
-  {
-    paths = from_json_paths(body);
-  }
+  inline static struct Tag {} tag{};
+
+  Paths paths;
 };
 
 struct CancelRequest : RequestWithPaths
 {
-  using RequestWithPaths::RequestWithPaths;
 };
 
 struct ReleaseRequest : RequestWithPaths
 {
-  using RequestWithPaths::RequestWithPaths;
 };
 
 struct ArchiveInfoRequest : RequestWithPaths
 {
-  using RequestWithPaths::RequestWithPaths;
 };
+
 } // namespace storm
 
 #endif

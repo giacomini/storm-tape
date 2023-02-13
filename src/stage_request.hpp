@@ -2,37 +2,23 @@
 #define STAGE_REQUEST_HPP
 
 #include "file.hpp"
-#include <vector>
+#include <chrono>
 
 namespace storm {
-class StageRequest
+struct StageRequest
 {
-  std::chrono::system_clock::time_point m_created_at;
-  std::chrono::system_clock::time_point m_started_at;
-  std::vector<File> m_files;
+  Files files;
+  std::chrono::system_clock::time_point created_at;
+  std::chrono::system_clock::time_point started_at;
 
- public:
-  explicit StageRequest(std::vector<File> files = {})
-      : m_created_at(std::chrono::system_clock::now())
-      , m_started_at(m_created_at)
-      , m_files(std::move(files))
+  inline static struct Tag
+  {
+  } tag{};
+  explicit StageRequest(Files f = {})
+      : files(std::move(f))
+      , created_at{std::chrono::system_clock::now()}
+      , started_at{created_at}
   {}
-  std::vector<File> const& files() const
-  {
-    return m_files;
-  }
-  std::vector<File>& files()
-  {
-    return m_files;
-  }
-  auto created_at() const
-  {
-    return m_created_at;
-  }
-  auto started_at() const
-  {
-    return m_started_at;
-  }
 };
 
 } // namespace storm

@@ -34,9 +34,8 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
   CROW_ROUTE(app, "/api/v1/stage")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
-          auto files = from_json(req.body);
-          StageRequest const request{files};
-          auto resp = service.stage(request);
+          StageRequest request{from_json(req.body, StageRequest::tag)};
+          auto resp = service.stage(std::move(request));
           return to_crow_response(resp, get_host(req, config));
         } catch (...) {
           return crow::response(crow::status::BAD_REQUEST);
@@ -60,12 +59,12 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
       .methods("POST"_method)(
           [&](crow::request const& req, std::string const& id) {
             try {
-              CancelRequest const cancel{req.body};
-              auto resp = service.cancel(StageId{id}, cancel);
-              if (resp.id().empty()) {
+              CancelRequest cancel{from_json(req.body, CancelRequest::tag)};
+              auto resp = service.cancel(StageId{id}, std::move(cancel));
+              if (resp.id.empty()) {
                 return crow::response(crow::status::NOT_FOUND);
               }
-              if (resp.invalid().empty()) {
+              if (resp.invalid.empty()) {
                 return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
@@ -79,7 +78,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
         try {
           auto resp = service.erase(StageId{id});
           return resp.found() ? crow::response{crow::status::OK}
-                              : crow::response(crow::status::NOT_FOUND);
+                              : crow::response{crow::status::NOT_FOUND};
         } catch (...) {
           return crow::response(crow::status::BAD_REQUEST);
         }
@@ -89,8 +88,8 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
       .methods("POST"_method)(
           [&](crow::request const& req, std::string const& id) {
             try {
-              ReleaseRequest const release{req.body};
-              auto resp = service.release(StageId{id}, release);
+              ReleaseRequest release{from_json(req.body, ReleaseRequest::tag)};
+              auto resp = service.release(StageId{id}, std::move(release));
               if (resp.stage() == nullptr) {
                 return crow::response(crow::status::NOT_FOUND);
               }
@@ -106,8 +105,8 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
   CROW_ROUTE(app, "/api/v1/archiveinfo")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
-          ArchiveInfoRequest const info{req.body};
-          auto resp = service.archive(info);
+          ArchiveInfoRequest info{from_json(req.body, ArchiveInfoRequest::tag)};
+          auto const resp = service.archive_info(std::move(info));
           return to_crow_response(resp);
         } catch (...) {
           return crow::response(crow::status::BAD_REQUEST);

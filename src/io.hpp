@@ -5,10 +5,11 @@
 #include <boost/json.hpp>
 #include <crow.h>
 #include <regex>
+#include "stage_request.hpp"
+#include "requests_with_paths.hpp"
 
 namespace storm {
 
-class StageRequest;
 class StageResponse;
 class StatusResponse;
 class CancelResponse;
@@ -35,12 +36,12 @@ crow::response to_crow_response(ReleaseResponse const& resp);
 
 boost::json::array not_in_archive_to_json(Paths const& missing,
                                           boost::json::array& jbody);
-boost::json::array archive_to_json(std::vector<File> const& file,
+boost::json::array archive_to_json(Files const& file,
                                    boost::json::array& jbody);
 crow::response to_crow_response(ArchiveInfoResponse const& resp);
 
-std::vector<File> from_json(std::string_view const& body);
-std::vector<File> from_json_paths(std::string_view const& body);
+Files from_json(std::string_view const& body, StageRequest::Tag);
+Paths from_json(std::string_view const& body, RequestWithPaths::Tag);
 
 HostInfo get_host(crow::request const& req, Configuration const& conf);
 
@@ -50,32 +51,6 @@ constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
   return static_cast<std::underlying_type_t<Enum>>(e);
 }
 
-inline std::string to_string(File::State state)
-{
-  switch (state) {
-  case File::State::submitted:
-    return "SUBMITTED";
-  case File::State::started:
-    return "STARTED";
-  case File::State::cancelled:
-    return "CANCELLED";
-  case File::State::failed:
-    return "FAILED";
-  case File::State::completed:
-    return "COMPLETED";
-  default:
-    return "UNKNOWN";
-  }
-}
-
-inline std::string to_string(File::Locality locality)
-{
-  using namespace std::string_literals;
-  static std::string const localities[]{"UNKNOWN"s, "TAPE"s, "DISK"s,
-                                        "DISK_AND_TAPE"s};
-  std::size_t const index = to_underlying(locality);
-  return index < std::size(localities) ? localities[index] : "UNKNOWN"s;
-}
 } // namespace storm
 
 #endif
