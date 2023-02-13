@@ -14,6 +14,18 @@ using Paths     = std::vector<Path>;
 using TimePoint = long long int;
 using StageId   = std::string;
 
+enum class Locality : unsigned char
+{
+  unavailable, // this is zero to optimize the initialization of Localities
+  disk,
+  tape,
+  disk_and_tape,
+  lost,
+  none
+};
+
+std::string to_string(Locality locality);
+
 } // namespace storm
 
 #endif

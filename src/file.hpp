@@ -2,6 +2,8 @@
 #define STORM_FILE_HPP
 
 #include "types.hpp"
+#include <vector>
+#include <string>
 namespace storm {
 struct File
 {
@@ -13,17 +15,15 @@ struct File
     failed,
     completed
   };
-  enum class Locality : unsigned char
-  {
-    unknown,
-    on_tape = 1,
-    on_disk = 2
-  };
-
   Path path;
   State state{State::submitted};
-  Locality locality{Locality::on_tape};
+  Locality locality{Locality::unavailable};
 };
+
+std::string to_string(File::State state);
+
+using Files = std::vector<File>;
+
 } // namespace storm
 
 #endif

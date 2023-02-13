@@ -75,8 +75,10 @@ add_library(
   src/database.cpp
   src/database_soci.cpp
   src/delete_response.cpp
+  src/file.cpp
   src/io.cpp
   src/json.cpp
+  src/local_storage.cpp
   src/release_response.cpp
   src/requests_with_paths.cpp
   src/routes.cpp
