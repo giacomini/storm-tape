@@ -16,6 +16,7 @@ class SociDatabase : public Database
   explicit SociDatabase(soci::session& sql);
   bool insert(StageId const& id, StageRequest const& stage) override;
   std::optional<StageRequest> find(std::string const& id) const override;
+  bool update(StageId const& id, Path const& path, File::State state) override;
   bool erase(std::string const& id) override;
 };
 

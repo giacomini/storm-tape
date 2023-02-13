@@ -37,7 +37,7 @@ struct type_conversion<storm::FileEntity>
     file.stage_id = v.get<storm::StageId>("stage_id");
     file.path     = v.get<storm::Filename>("path");
     file.state    = static_cast<storm::File::State>(v.get<int>("state"));
-    file.locality = static_cast<storm::File::Locality>(v.get<int>("locality"));
+    file.locality = storm::Locality::unavailable;
   }
 
   static void to_base(const storm::FileEntity& file, soci::values& v,
@@ -45,8 +45,9 @@ struct type_conversion<storm::FileEntity>
   {
     v.set("stage_id", file.stage_id);
     v.set("path", file.path);
-    v.set("locality", storm::to_underlying(file.locality));
     v.set("state", storm::to_underlying(file.state));
+    using uchar = unsigned char;
+    v.set("locality", uchar{});
     ind = i_ok;
   }
 };
@@ -61,8 +62,9 @@ std::vector<FileEntity> find_file_entities(const StageId& id,
   sql << storm::sql::File::COUNT_BY_STAGE_ID, soci::use(id),
       soci::into(n_files);
 
-  if (n_files == 0)
+  if (n_files == 0) {
     return files;
+  }
   files.reserve(n_files);
 
   soci::rowset<FileEntity> rs_f =
@@ -84,13 +86,10 @@ SociDatabase::SociDatabase(soci::session& sql)
 
 bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 {
-  using namespace std::chrono;
-  using namespace std::chrono_literals;
-
   auto created_at =
-      duration_cast<seconds>(stage.created_at().time_since_epoch()).count();
+      duration_cast<std::chrono::seconds>(stage.created_at.time_since_epoch()).count();
   auto started_at =
-      duration_cast<seconds>(stage.started_at().time_since_epoch()).count();
+      duration_cast<std::chrono::seconds>(stage.started_at.time_since_epoch()).count();
   StageEntity s_entity{id, created_at, started_at};
 
   try {
@@ -98,7 +97,7 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
     m_sql << storm::sql::Stage::INSERT, soci::use(s_entity);
 
     // Insert files
-    const auto& files = stage.files();
+    const auto& files = stage.files;
     std::for_each(files.begin(), files.end(), [&](auto&& f) {
       FileEntity const entity{id, f.path, f.state, f.locality};
       m_sql << storm::sql::File::INSERT, soci::use(entity);
@@ -115,11 +114,12 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
   StageEntity s_entity{};
   m_sql << storm::sql::Stage::FIND, soci::into(s_entity), soci::use(id);
 
-  if (s_entity.id != id)
+  if (s_entity.id != id) {
     return std::nullopt;
+  }
 
   const auto f_entities = find_file_entities(id, m_sql);
-  std::vector<File> files;
+  Files files;
   files.reserve(f_entities.size());
   std::transform(f_entities.begin(), f_entities.end(),
                  std::back_inserter(files), [](auto& fe) {
@@ -128,6 +128,20 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
 
   return std::optional<StageRequest>{StageRequest{
       files}}; // FIXME: created_at and started_at cannot be initialized
+}
+
+bool SociDatabase::update(StageId const& id, Path const& path,
+                          File::State state)
+{
+  try {
+    auto const state_ = to_underlying(state);
+    auto const path_ = path.string();
+    m_sql << "UPDATE File SET state = :state WHERE stage_id = :id AND path = :path;", soci::use(state_), soci::use(id), soci::use(path_);
+  } catch (soci::sqlite3_soci_error const& e) {
+    std::cerr << "Sqlite3 error: " << e.what() << '\n';
+    return false;
+  }
+  return true;
 }
 
 bool SociDatabase::erase(StageId const& id)
