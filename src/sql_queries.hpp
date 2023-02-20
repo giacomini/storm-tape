@@ -10,6 +10,7 @@ static constexpr auto CREATE_IF_NOT_EXISTS = R"(
     id          TEXT   PRIMARY KEY,
     created_at  BIGINT NOT NULL,
     started_at  BIGINT NOT NULL
+    completed_at  BIGINT NOT NULL
   );
 )";
 
@@ -18,7 +19,7 @@ static constexpr auto DROP_IF_EXISTS = R"(
 )";
 
 static constexpr auto INSERT = R"(
-  INSERT INTO Stage VALUES (:id, :created_at, :started_at)
+  INSERT INTO Stage VALUES (:id, :created_at, :started_at, :completed_at)
 )";
 
 static constexpr auto FIND = R"(
@@ -41,6 +42,8 @@ static constexpr auto CREATE_IF_NOT_EXISTS = R"(
     path      TEXT    NOT NULL,
     state     INTEGER NOT NULL,
     locality  INTEGER NOT NULL,
+    started_at  BIGINT NOT NULL
+    finished_at  BIGINT NOT NULL,
     PRIMARY KEY (stage_id, path),
     FOREIGN KEY(stage_id) REFERENCES Stage(id)
   );
@@ -51,7 +54,7 @@ static constexpr auto DROP_IF_EXISTS = R"(
 )";
 
 static constexpr auto INSERT = R"(
-  INSERT INTO File VALUES (:stage_id, :path, :state, :locality)
+  INSERT INTO File VALUES (:stage_id, :path, :state, :locality, :started_at, :finished_at)
 )";
 
 static constexpr auto COUNT_BY_STAGE_ID = R"(

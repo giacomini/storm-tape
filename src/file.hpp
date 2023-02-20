@@ -18,6 +18,8 @@ struct File
   Path path;
   State state{State::submitted};
   Locality locality{Locality::unavailable};
+  TimePoint started_at{0};
+  TimePoint finished_at{0};
 };
 
 std::string to_string(File::State state);

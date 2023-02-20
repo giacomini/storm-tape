@@ -18,6 +18,7 @@ struct StageEntity
   StageId id;
   TimePoint created_at{0};
   TimePoint started_at{0};
+  TimePoint completed_at{0};
 };
 
 struct FileEntity
@@ -26,6 +27,8 @@ struct FileEntity
   Filename path;
   File::State state{File::State::submitted};
   Locality locality{Locality::unavailable}; // TODO is it needed in the db?
+  TimePoint started_at{0};
+  TimePoint finished_at{0};
 };
 
 class Database
