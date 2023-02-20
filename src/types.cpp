@@ -17,7 +17,6 @@ std::string to_string(Locality locality)
   case Locality::none:
     return "NONE"s;
   case Locality::unavailable:
-    return "UNAVAILABLE";
   default:
     return "UNAVAILABLE";
   }

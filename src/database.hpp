@@ -4,7 +4,9 @@
 #include "stage_request.hpp"
 #include "storage.hpp"
 #include <algorithm>
+#include <cassert>
 #include <map>
+#include <numeric>
 #include <optional>
 
 namespace storm {
@@ -34,10 +36,14 @@ struct FileEntity
 class Database
 {
  public:
-  virtual ~Database()                                               = default;
-  virtual bool insert(StageId const& id, StageRequest const& stage) = 0;
-  virtual std::optional<StageRequest> find(StageId const& id) const = 0;
+  virtual ~Database()                                                = default;
+  virtual bool insert(StageId const& id, StageRequest const& stage)  = 0;
+  virtual std::optional<StageRequest> find(StageId const& id) const  = 0;
   virtual bool update(StageId const& id, Path const& path,
+                      File::State state)                             = 0;
+  virtual std::size_t update(Path const& path, File::State state,
+                             TimePoint tp)                           = 0;
+  virtual bool erase(StageId const& id)                              = 0;
   virtual std::size_t count_files(File::State state) const           = 0;
   virtual std::vector<Filename> get_files(File::State state,
                                           std::size_t n_files) const = 0;
@@ -79,6 +85,41 @@ class MockDatabase : public Database
     }
 
     return false;
+  }
+
+  std::size_t update(Path const& path, File::State state, TimePoint tp) override
+  {
+    std::size_t result{0};
+
+    for (auto&& [id, stage] : m_db) {
+      File file{path};
+      auto it =
+          std::lower_bound(stage.files.begin(), stage.files.end(), file,
+                           [](File const& file1, File const& file2) {
+                             return file1.path.string() < file2.path.string();
+                           });
+      if (it->path == path) {
+        it->state = state;
+        switch (state) {
+        case File::State::started:
+          it->started_at = tp;
+          break;
+        case File::State::completed:
+        case File::State::cancelled:
+        case File::State::failed:
+          it->finished_at = tp;
+          break;
+        case File::State::submitted:
+          // this transition is not foreseen, ignore
+          break;
+        default:
+          assert(false);
+        }
+        ++result;
+      }
+    }
+
+    return result;
   }
 
   bool erase(StageId const& id) override

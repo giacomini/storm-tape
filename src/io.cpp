@@ -3,15 +3,22 @@
 #include "cancel_response.hpp"
 #include "configuration.hpp"
 #include "delete_response.hpp"
+#include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "stage_request.hpp"
 #include "stage_response.hpp"
 #include "status_response.hpp"
+#include "takeover_request.hpp"
+#include "takeover_response.hpp"
 #include "types.hpp"
+#include <boost/algorithm/string/join.hpp>
+#include <boost/url/parse.hpp>
 #include <boost/variant2.hpp>
+#include <charconv>
 #include <chrono>
 #include <iomanip>
 #include <numeric>
+#include <regex>
 #include <sstream>
 
 namespace storm {
@@ -21,16 +28,15 @@ boost::json::object to_json(StageResponse const& resp)
   return boost::json::object{{"requestId", resp.id()}};
 }
 
-crow::response to_crow_response(StageResponse const& sresp,
-                                HostInfo const& info)
+crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
 {
-  auto jbody = to_json(sresp);
+  auto jbody = to_json(resp);
   // return resp.staged(jbody, info);
-  crow::response resp{crow::status::CREATED, "json",
-                      boost::json::serialize(jbody)};
-  resp.set_header("Location", info.proto + "://" + info.host + "/api/v1/stage/"
-                                  + sresp.id());
-  return resp;
+  crow::response cresp{crow::status::CREATED, "json",
+                       boost::json::serialize(jbody)};
+  cresp.set_header("Location", info.proto + "://" + info.host + "/api/v1/stage/"
+                                   + resp.id());
+  return cresp;
 }
 
 template<class TP>
@@ -107,7 +113,7 @@ crow::response to_crow_response(ReleaseResponse const& resp)
 
 struct PathInfoVisitor
 {
-  std::string_view path;
+  std::string path;
   auto operator()(Locality locality) const
   {
     return boost::json::object{{"path", path},
@@ -133,6 +139,17 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
 
   return crow::response{crow::status::OK, "json",
                         boost::json::serialize(jbody)};
+}
+
+crow::response to_crow_response(ReadyTakeOverResponse const& resp)
+{
+  return crow::response{crow::status::OK, "txt", std::to_string(resp.n_ready)};
+}
+
+crow::response to_crow_response(TakeOverResponse const& resp)
+{
+  return crow::response{crow::status::OK, "txt",
+                        boost::algorithm::join(resp.paths, "\n")};
 }
 
 Files from_json(std::string_view const& body, StageRequest::Tag)
@@ -197,4 +214,26 @@ HostInfo get_host(crow::request const& req, Configuration const& conf)
   return result;
 }
 
+std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
+{
+  std::size_t n_files{1};
+  if (!body.empty()) {
+    auto const dummy_url = std::string("/a?").append(body);
+    auto url_view        = boost::urls::parse_origin_form(dummy_url);
+    if (!url_view.has_value()) {
+      return TakeOverRequest::invalid;
+    }
+    auto params = url_view.value().params();
+    auto it     = params.find("first");
+    if (it != params.end()) {
+      auto p  = *it;
+      auto& v = p.value;
+      auto [ptr, ec]{std::from_chars(v.data(), v.data() + v.size(), n_files)};
+      if (ptr != v.data() + v.size()) { // not all input has been consumed
+        return TakeOverRequest::invalid;
+      }
+    }
+  }
+  return n_files;
+}
 } // namespace storm

@@ -23,6 +23,9 @@ class CancelResponse;
 class DeleteResponse;
 class ReleaseResponse;
 class ArchiveInfoResponse;
+class ReadyTakeOverResponse;
+class TakeOverRequest;
+class TakeOverResponse;
 class File;
 
 class TapeService
@@ -42,6 +45,10 @@ class TapeService
   DeleteResponse erase(StageId const& id);
   ReleaseResponse release(StageId const& id, ReleaseRequest release);
   ArchiveInfoResponse archive_info(ArchiveInfoRequest info);
+
+  // for GEMSS
+  ReadyTakeOverResponse ready_take_over();
+  TakeOverResponse take_over(TakeOverRequest);
 };
 
 } // namespace storm

@@ -5,11 +5,14 @@
 #include "database.hpp"
 #include "delete_response.hpp"
 #include "io.hpp"
+#include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "requests_with_paths.hpp"
 #include "stage_request.hpp"
 #include "stage_response.hpp"
 #include "status_response.hpp"
+#include "takeover_request.hpp"
+#include "takeover_response.hpp"
 #include "tape_service.hpp"
 
 namespace storm {
@@ -119,10 +122,26 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
   //    return "Server shutdown";
   //  });
 
-  CROW_ROUTE(app, "/gemss")([] { return crow::response{crow::status::OK}; });
-
   CROW_ROUTE(app, "/favicon.ico")
   ([] { return crow::response{crow::status::NO_CONTENT}; });
+}
+
+void create_internal_routes(crow::SimpleApp& app,
+                            storm::Configuration const&,
+                            storm::TapeService& service)
+{
+  CROW_ROUTE(app, "/recalltable/cardinality/tasks/readyTakeOver")
+  ([&] {
+    auto const resp = service.ready_take_over();
+    return to_crow_response(resp);
+  });
+
+  CROW_ROUTE(app, "/recalltable/tasks")
+      .methods("PUT"_method)([&](crow::request const& req) {
+        TakeOverRequest const take_over{from_body_params(req.body, TakeOverRequest::tag)};
+        auto const resp = service.take_over(take_over);
+        return to_crow_response(resp);
+      });
 }
 
 } // namespace storm

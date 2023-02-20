@@ -10,6 +10,9 @@ class TapeService;
 
 void create_routes(crow::SimpleApp& app, storm::Configuration const& config,
                    storm::TapeService& service);
+void create_internal_routes(crow::SimpleApp& app,
+                            storm::Configuration const& config,
+                            storm::TapeService& service);
 } // namespace storm
 
 #endif

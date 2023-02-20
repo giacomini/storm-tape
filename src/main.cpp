@@ -137,6 +137,8 @@ int main()
     storm::TapeService service{db, storage};
 
     storm::create_routes(app, config, service);
+    storm::create_internal_routes(app, config, service);
+
     app.port(config.port).run();
   } catch (std::exception const& e) {
     std::cerr << "Caught exception: " << e.what() << '\n';

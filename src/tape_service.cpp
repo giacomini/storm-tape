@@ -3,11 +3,14 @@
 #include "cancel_response.hpp"
 #include "database.hpp"
 #include "delete_response.hpp"
+#include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "requests_with_paths.hpp"
 #include "stage_response.hpp"
 #include "status_response.hpp"
 #include "storage.hpp"
+#include "takeover_request.hpp"
+#include "takeover_response.hpp"
 #include <string>
 
 namespace storm {
@@ -148,30 +151,72 @@ ReleaseResponse TapeService::release(StageId const& id, ReleaseRequest release)
 ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
 {
   PathInfos infos;
-  auto const& paths = info.paths;
+  auto& paths = info.paths;
   infos.reserve(paths.size());
   std::transform( //
-      paths.begin(), paths.end(), std::back_inserter(infos),
-      [&](Path const& path) {
+      paths.begin(), paths.end(), std::back_inserter(infos), [&](Path& path) {
         using namespace std::string_literals;
         std::error_code ec;
         auto status = fs::status(path, ec);
         if (ec) {
-          return PathInfo{path, Locality::unavailable};
+          return PathInfo{std::move(path), Locality::unavailable};
         }
         if (!fs::exists(status)) {
-          return PathInfo{path, "path doesn't exist"s};
+          return PathInfo{std::move(path), "path doesn't exist"s};
         }
         if (fs::is_directory(status)) {
-          return PathInfo{path, "path is a directory"s};
+          return PathInfo{std::move(path), "path is a directory"s};
         }
         if (!fs::is_regular_file(status)) {
-          return PathInfo{path, "path is not a regular file"s};
+          return PathInfo{std::move(path), "path is not a regular file"s};
         }
-        return PathInfo{path, m_storage->locality(path)};
+        auto const loc = m_storage->locality(path);
+        return PathInfo{std::move(path), loc};
       });
 
   return ArchiveInfoResponse{infos};
+}
+
+ReadyTakeOverResponse TapeService::ready_take_over()
+{
+  auto const n = m_db->count_files(File::State::submitted);
+  return ReadyTakeOverResponse{n};
+}
+
+TakeOverResponse TapeService::take_over(TakeOverRequest req)
+{
+  auto files = m_db->get_files(File::State::submitted, req.n_files);
+  std::vector<std::pair<std::string, Locality>> file_localities;
+  file_localities.reserve(files.size());
+  for (auto&& file : files) {
+    Path const p{file};
+    file_localities.emplace_back(std::move(file), m_storage->locality(p));
+  }
+
+  auto it = std::partition(
+      file_localities.begin(), file_localities.end(),
+      [&](auto const& file_loc) { return file_loc.second == Locality::tape; });
+
+  auto const now = std::time(nullptr);
+
+  // update the state of files already on disk to Completed
+  std::for_each(it, file_localities.end(), [&](auto const& file_loc) {
+    m_db->update(file_loc.first, File::State::completed, now);
+  });
+
+  // don't pass files already on disk to GEMSS
+  file_localities.erase(it, file_localities.end());
+
+  // update the state of files to be passed to GEMSS to Started
+  // and restore the original vector of filenames
+  files.clear();
+  files.reserve(file_localities.size());
+  for (auto const& [file, loc] : file_localities) {
+    m_db->update(Path{file}, File::State::started, now);
+    files.push_back(std::move(file));
+  }
+
+  return TakeOverResponse{std::move(files)};
 }
 
 } // namespace storm

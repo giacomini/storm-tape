@@ -2,11 +2,11 @@
 #define IO_HPP
 
 #include "file.hpp"
+#include "requests_with_paths.hpp"
+#include "stage_request.hpp"
+#include "takeover_request.hpp"
 #include <boost/json.hpp>
 #include <crow.h>
-#include <regex>
-#include "stage_request.hpp"
-#include "requests_with_paths.hpp"
 
 namespace storm {
 
@@ -16,6 +16,8 @@ class CancelResponse;
 class DeleteResponse;
 class ReleaseResponse;
 class ArchiveInfoResponse;
+class ReadyTakeOverResponse;
+class TakeOverResponse;
 class Configuration;
 
 struct HostInfo
@@ -40,6 +42,9 @@ boost::json::array archive_to_json(Files const& file,
                                    boost::json::array& jbody);
 crow::response to_crow_response(ArchiveInfoResponse const& resp);
 
+crow::response to_crow_response(ReadyTakeOverResponse const& resp);
+crow::response to_crow_response(TakeOverResponse const& resp);
+
 Files from_json(std::string_view const& body, StageRequest::Tag);
 Paths from_json(std::string_view const& body, RequestWithPaths::Tag);
 
@@ -50,6 +55,8 @@ constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
 {
   return static_cast<std::underlying_type_t<Enum>>(e);
 }
+
+std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag);
 
 } // namespace storm
 
