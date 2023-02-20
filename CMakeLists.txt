@@ -87,6 +87,7 @@ add_library(
   src/status_response.cpp
   src/tape_service.cpp
   src/types.cpp
+  src/url.cpp
 )
 
 target_link_libraries(
