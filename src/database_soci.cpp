@@ -144,6 +144,27 @@ bool SociDatabase::update(StageId const& id, Path const& path,
   return true;
 }
 
+std::size_t SociDatabase::count_files(File::State state) const
+{
+  std::size_t count{};
+  auto const cstate = to_underlying(state);
+  m_sql << "SELECT COUNT(*) FROM File WHERE state = :state;", soci::into(count),
+      soci::use(cstate);
+  return std::size_t{count};
+}
+
+std::vector<Filename> SociDatabase::get_files(File::State state,
+                                              std::size_t n_files) const
+{
+  std::vector<Filename> result;
+  auto const cstate = to_underlying(state);
+
+  m_sql << "SELECT path FROM File WHERE state = :state LIMIT :n_files;",
+      soci::into(result), soci::use(cstate), soci::use(n_files);
+
+  return result;
+}
+
 bool SociDatabase::erase(StageId const& id)
 {
   try {

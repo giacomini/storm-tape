@@ -35,8 +35,9 @@ class Database
   virtual bool insert(StageId const& id, StageRequest const& stage) = 0;
   virtual std::optional<StageRequest> find(StageId const& id) const = 0;
   virtual bool update(StageId const& id, Path const& path,
-                      File::State state)                            = 0;
-  virtual bool erase(StageId const& id)                             = 0;
+  virtual std::size_t count_files(File::State state) const           = 0;
+  virtual std::vector<Filename> get_files(File::State state,
+                                          std::size_t n_files) const = 0;
 };
 
 class MockDatabase : public Database
@@ -80,6 +81,34 @@ class MockDatabase : public Database
   bool erase(StageId const& id) override
   {
     return m_db.erase(id) == 1;
+  }
+
+  std::size_t count_files(File::State state) const override
+  {
+    return std::accumulate( //
+        m_db.begin(), m_db.end(), std::size_t{},
+        [&](std::size_t acc, auto&& v) {
+          StageRequest const& req = v.second;
+          return acc
+               + static_cast<std::size_t>(std::count_if(
+                   req.files.begin(), req.files.end(),
+                   [&](File const& file) { return file.state == state; }));
+        });
+  }
+
+  std::vector<Filename> get_files(File::State state,
+                                  std::size_t n_files) const override
+  {
+    std::vector<Filename> result;
+    result.reserve(std::min(n_files, std::size_t{1'000}));
+    for (auto&& stage : m_db) {
+      for (auto&& file : stage.second.files) {
+        if (file.state == state) {
+          result.push_back(file.path);
+        }
+      }
+    }
+    return result;
   }
 };
 

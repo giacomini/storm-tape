@@ -18,6 +18,8 @@ class SociDatabase : public Database
   std::optional<StageRequest> find(std::string const& id) const override;
   bool update(StageId const& id, Path const& path, File::State state) override;
   bool erase(std::string const& id) override;
+  std::size_t count_files(File::State state) const override;
+  std::vector<Filename> get_files(File::State state, std::size_t n_files) const override;
 };
 
 } // namespace storm
