@@ -42,7 +42,7 @@ static constexpr auto CREATE_IF_NOT_EXISTS = R"(
     path      TEXT    NOT NULL,
     state     INTEGER NOT NULL,
     locality  INTEGER NOT NULL,
-    started_at  BIGINT NOT NULL
+    started_at  BIGINT NOT NULL,
     finished_at  BIGINT NOT NULL,
     PRIMARY KEY (stage_id, path),
     FOREIGN KEY(stage_id) REFERENCES Stage(id)
