@@ -9,7 +9,7 @@ static constexpr auto CREATE_IF_NOT_EXISTS = R"(
   CREATE TABLE IF NOT EXISTS Stage (
     id          TEXT   PRIMARY KEY,
     created_at  BIGINT NOT NULL,
-    started_at  BIGINT NOT NULL
+    started_at  BIGINT NOT NULL,
     completed_at  BIGINT NOT NULL
   );
 )";
