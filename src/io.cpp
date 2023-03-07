@@ -31,7 +31,6 @@ boost::json::object to_json(StageResponse const& resp)
 crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
 {
   auto jbody = to_json(resp);
-  // return resp.staged(jbody, info);
   crow::response cresp{crow::status::CREATED, "json",
                        boost::json::serialize(jbody)};
   cresp.set_header("Location", info.proto + "://" + info.host + "/api/v1/stage/"
@@ -148,8 +147,20 @@ crow::response to_crow_response(ReadyTakeOverResponse const& resp)
 
 crow::response to_crow_response(TakeOverResponse const& resp)
 {
-  return crow::response{crow::status::OK, "txt",
-                        boost::algorithm::join(resp.paths, "\n")};
+  auto it   = resp.paths.begin();
+  auto last = resp.paths.end();
+
+  // join the paths
+  std::string body;
+  if (it != last) {
+    body += it->string();
+    ++it;
+  }
+  for (; it != last; ++it) {
+    body += '\n';
+    body += it->string();
+  }
+  return crow::response{crow::status::OK, "txt", body};
 }
 
 Files from_json(std::string_view const& body, StageRequest::Tag)
@@ -179,7 +190,7 @@ Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
   auto const value =
       boost::json::parse(boost::json::string_view{body.data(), body.size()});
 
-  auto& jpaths = value.as_object().at("paths").as_array();
+  auto const& jpaths = value.as_object().at("paths").as_array();
   paths.reserve(jpaths.size());
   std::transform(jpaths.begin(), jpaths.end(), std::back_inserter(paths),
                  [](auto& path) {
@@ -226,10 +237,11 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
     auto params = url_view.value().params();
     auto it     = params.find("first");
     if (it != params.end()) {
-      auto p  = *it;
-      auto& v = p.value;
-      auto [ptr, ec]{std::from_chars(v.data(), v.data() + v.size(), n_files)};
-      if (ptr != v.data() + v.size()) { // not all input has been consumed
+      auto p         = *it;
+      auto& v        = p.value;
+      auto [ptr, ec] = std::from_chars(std::to_address(v.begin()),
+                                       std::to_address(v.end()), n_files);
+      if (ptr != std::to_address(v.end())) { // not all input has been consumed
         return TakeOverRequest::invalid;
       }
     }
