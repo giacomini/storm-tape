@@ -7,10 +7,7 @@ namespace storm {
 
 struct LocalStorage : Storage
 {
-  Locality locality(Path const&) override
-  {
-    return Locality::disk;
-  }
+  Locality locality(Path const&) override;
 };
 
 } // namespace storm
