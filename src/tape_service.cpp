@@ -52,19 +52,18 @@ StatusResponse TapeService::status(StageId const& id)
 
   // update each file locality
   auto& stage = maybe_stage.value();
-  auto& files = stage.files;
-  for (auto& file : files) {
+  for (auto& files = stage.files; auto& file : files) {
     switch (file.state) {
     case File::State::completed:
       file.locality = Locality::disk; // even if it can be disk_and_tape
       break;
     case File::State::started: {
       // TODO is this the way to know if a file has been staged?
-      auto const locality = m_storage->locality(file.path);
-      if (locality == Locality::disk || locality == Locality::disk_and_tape) {
+      if (auto const locality = m_storage->locality(file.path);
+          locality == Locality::disk || locality == Locality::disk_and_tape) {
         file.state    = File::State::completed;
         file.locality = Locality::disk; // even if it can be disk_and_tape
-        // TODO update state to completed in the db
+        m_db->update(file.path, file.state, std::time(nullptr));
       }
       break;
     }
@@ -101,7 +100,7 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
     return CancelResponse{id, std::move(invalid)};
   }
 
-  for (auto& path : cancel.paths) {
+  for (auto const& path : cancel.paths) {
     m_db->update(id, path, File::State::cancelled);
   }
 
@@ -186,37 +185,40 @@ ReadyTakeOverResponse TapeService::ready_take_over()
 TakeOverResponse TapeService::take_over(TakeOverRequest req)
 {
   auto files = m_db->get_files(File::State::submitted, req.n_files);
-  std::vector<std::pair<std::string, Locality>> file_localities;
-  file_localities.reserve(files.size());
+  std::sort(files.begin(), files.end());
+
+  std::vector<std::pair<Path, Locality>> path_localities;
+  path_localities.reserve(files.size());
   for (auto&& file : files) {
-    Path const p{file};
-    file_localities.emplace_back(std::move(file), m_storage->locality(p));
+    Path p{std::move(file)};
+    auto const locality{m_storage->locality(p)};
+    path_localities.emplace_back(std::move(p), locality);
   }
 
   auto it = std::partition(
-      file_localities.begin(), file_localities.end(),
+      path_localities.begin(), path_localities.end(),
       [&](auto const& file_loc) { return file_loc.second == Locality::tape; });
 
   auto const now = std::time(nullptr);
 
-  // update the state of files already on disk to Completed
-  std::for_each(it, file_localities.end(), [&](auto const& file_loc) {
+  // update the state of files already on disk to Completed // TODO don't
+  // consider unavailable/lost
+  std::for_each(it, path_localities.end(), [&](auto const& file_loc) {
     m_db->update(file_loc.first, File::State::completed, now);
   });
 
   // don't pass files already on disk to GEMSS
-  file_localities.erase(it, file_localities.end());
+  path_localities.erase(it, path_localities.end());
 
   // update the state of files to be passed to GEMSS to Started
-  // and restore the original vector of filenames
-  files.clear();
-  files.reserve(file_localities.size());
-  for (auto const& [file, loc] : file_localities) {
-    m_db->update(Path{file}, File::State::started, now);
-    files.push_back(std::move(file));
+  Paths paths;
+  paths.reserve(path_localities.size());
+  for (auto& [path, loc] : path_localities) {
+    m_db->update(path, File::State::started, now);
+    paths.push_back(std::move(path));
   }
 
-  return TakeOverResponse{std::move(files)};
+  return TakeOverResponse{std::move(paths)};
 }
 
 } // namespace storm

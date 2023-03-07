@@ -7,7 +7,7 @@ namespace storm {
 
 struct TakeOverResponse
 {
-  std::vector<std::string> paths;
+  Paths paths;
 };
 
 } // namespace storm
