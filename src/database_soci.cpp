@@ -166,7 +166,7 @@ std::size_t SociDatabase::count_files(File::State state) const
 {
   std::size_t count{};
   auto const cstate = to_underlying(state);
-  m_sql << "SELECT COUNT(*) FROM File WHERE state = :state;", soci::into(count),
+  m_sql << "SELECT COUNT(DISTINCT path) FROM File WHERE state = :state;", soci::into(count),
       soci::use(cstate);
   return std::size_t{count};
 }
@@ -177,7 +177,7 @@ std::vector<Filename> SociDatabase::get_files(File::State state,
   std::vector<Filename> result;
   auto const cstate = to_underlying(state);
 
-  m_sql << "SELECT path FROM File WHERE state = :state LIMIT :n_files;",
+  m_sql << "SELECT DISTINCT path FROM File WHERE state = :state LIMIT :n_files;",
       soci::into(result), soci::use(cstate), soci::use(n_files);
 
   return result;
