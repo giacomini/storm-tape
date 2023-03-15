@@ -71,6 +71,7 @@ if (NOT _CROW_ICD)
 endif()
 find_package(SOCI CONFIG REQUIRED)
 find_package(Boost REQUIRED)
+find_package(Fmt REQUIRED)
 
 add_library(
   libtaperestapi
@@ -101,10 +102,11 @@ target_link_libraries(
   libtaperestapi
   PUBLIC
   Crow::Crow 
-  SOCI::soci_sqlite3_static 
   SOCI::soci_core_static 
   SOCI::soci_empty_static 
+  SOCI::soci_sqlite3_static 
   Boost::boost
+  fmt::fmt
 )
 
 add_executable(storm-tape src/main.cpp)
