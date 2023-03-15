@@ -98,6 +98,9 @@ class XAttr
 
 std::ostream& operator<<(std::ostream& os, XAttrName const& n);
 
+void create_xattr(fs::path const& path, XAttrName const& name,
+                  std::error_code& ec);
+
 void set_xattr(fs::path const& path, XAttrName const& name,
                XAttrValue const& value, std::error_code& ec);
 

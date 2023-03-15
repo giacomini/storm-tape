@@ -43,7 +43,7 @@ class TapeService
   StatusResponse status(StageId const& id);
   CancelResponse cancel(StageId const& id, CancelRequest cancel);
   DeleteResponse erase(StageId const& id);
-  ReleaseResponse release(StageId const& id, ReleaseRequest release);
+  ReleaseResponse release(StageId const& id, ReleaseRequest release) const;
   ArchiveInfoResponse archive_info(ArchiveInfoRequest info);
 
   // for GEMSS

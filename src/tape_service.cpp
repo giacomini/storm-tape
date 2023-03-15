@@ -3,6 +3,7 @@
 #include "cancel_response.hpp"
 #include "database.hpp"
 #include "delete_response.hpp"
+#include "extended_attributes.hpp"
 #include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "requests_with_paths.hpp"
@@ -11,6 +12,8 @@
 #include "storage.hpp"
 #include "takeover_request.hpp"
 #include "takeover_response.hpp"
+#include <fmt/core.h>
+#include <span>
 #include <string>
 
 namespace storm {
@@ -40,11 +43,17 @@ StageResponse TapeService::stage(StageRequest stage_request)
   return inserted ? StageResponse{id} : StageResponse{};
 }
 
+static bool recall_in_progress(Path const& path)
+{
+  XAttrName const tsm_rect{"user.TSMRecT"};
+  std::error_code ec;
+  auto const in_progress = has_xattr(path, tsm_rect, ec);
+  return ec == std::error_code{} && in_progress;
+}
+
 StatusResponse TapeService::status(StageId const& id)
 {
   auto maybe_stage = m_db->find(id);
-
-  // FIXME: what about StatusResponse with id but stage value is empty?
 
   if (!maybe_stage.has_value()) {
     return StatusResponse{};
@@ -58,13 +67,23 @@ StatusResponse TapeService::status(StageId const& id)
       file.locality = Locality::disk; // even if it can be disk_and_tape
       break;
     case File::State::started: {
-      // TODO is this the way to know if a file has been staged?
-      if (auto const locality = m_storage->locality(file.path);
-          locality == Locality::disk || locality == Locality::disk_and_tape) {
-        file.state    = File::State::completed;
-        file.locality = Locality::disk; // even if it can be disk_and_tape
-        m_db->update(file.path, file.state, std::time(nullptr));
+      if (recall_in_progress(file.path)) {
+        break;
       }
+      auto locality = m_storage->locality(file.path);
+      if (locality == Locality::lost) {
+        CROW_LOG_ERROR << fmt::format(
+            "The file {} appears lost, check stubbification and presence of "
+            "user.storm.migrated xattr",
+            file.path.string());
+        // do not scare the client
+        locality = Locality::unavailable;
+      }
+      auto const on_disk =
+          locality == Locality::disk || locality == Locality::disk_and_tape;
+      file.state    = on_disk ? File::State::completed : File::State::failed;
+      file.locality = locality;
+      m_db->update(file.path, file.state, std::time(nullptr));
       break;
     }
     case File::State::cancelled:
@@ -104,17 +123,21 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
     m_db->update(id, path, File::State::cancelled);
   }
 
+  // do not bother cancelling the recalls in progress
+
   return CancelResponse{id};
 }
 
 DeleteResponse TapeService::erase(StageId const& id)
 {
-  // TODO cancel file stage requests?
+  // do not bother cancelling the recalls in progress
+
   auto const erased = m_db->erase(id);
   return DeleteResponse{erased};
 }
 
-ReleaseResponse TapeService::release(StageId const& id, ReleaseRequest release)
+ReleaseResponse TapeService::release(StageId const& id,
+                                     ReleaseRequest release) const
 {
   auto stage = m_db->find(id);
   if (!stage.has_value()) {
@@ -142,7 +165,7 @@ ReleaseResponse TapeService::release(StageId const& id, ReleaseRequest release)
     return ReleaseResponse{id, invalid};
   }
 
-  // TODO do something?
+  // do nothing
 
   return ReleaseResponse{};
 }
@@ -157,11 +180,14 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
         using namespace std::string_literals;
         std::error_code ec;
         auto status = fs::status(path, ec);
-        if (ec) {
-          return PathInfo{std::move(path), Locality::unavailable};
-        }
+
+        // if the file doesn't exist, fs::status sets ec, so check first for
+        // existence
         if (!fs::exists(status)) {
           return PathInfo{std::move(path), "path doesn't exist"s};
+        }
+        if (ec != std::error_code{}) {
+          return PathInfo{std::move(path), Locality::unavailable};
         }
         if (fs::is_directory(status)) {
           return PathInfo{std::move(path), "path is a directory"s};
@@ -169,8 +195,14 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
         if (!fs::is_regular_file(status)) {
           return PathInfo{std::move(path), "path is not a regular file"s};
         }
-        auto const loc = m_storage->locality(path);
-        return PathInfo{std::move(path), loc};
+        auto locality = m_storage->locality(path);
+        if (locality == Locality::lost) {
+          CROW_LOG_ERROR << fmt::format("The file {} appears lost",
+                                        path.string());
+          // do not scare the client
+          locality = Locality::unavailable;
+        }
+        return PathInfo{std::move(path), locality};
       });
 
   return ArchiveInfoResponse{infos};
@@ -185,7 +217,6 @@ ReadyTakeOverResponse TapeService::ready_take_over()
 TakeOverResponse TapeService::take_over(TakeOverRequest req)
 {
   auto files = m_db->get_files(File::State::submitted, req.n_files);
-  std::sort(files.begin(), files.end());
 
   std::vector<std::pair<Path, Locality>> path_localities;
   path_localities.reserve(files.size());
@@ -195,27 +226,55 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
     path_localities.emplace_back(std::move(p), locality);
   }
 
-  auto it = std::partition(
-      path_localities.begin(), path_localities.end(),
-      [&](auto const& file_loc) { return file_loc.second == Locality::tape; });
+  auto const it = std::partition(path_localities.begin(), path_localities.end(),
+                                 [&](auto const& file_loc) {
+                                   return file_loc.second == Locality::tape
+                                       || file_loc.second == Locality::lost;
+                                 });
+
+  std::span const on_tape_or_lost{path_localities.begin(), it};
+
+  auto const it2 =
+      std::partition(it, path_localities.end(), [](auto const& file_loc) {
+        return file_loc.second == Locality::disk
+            || file_loc.second == Locality::disk_and_tape;
+      });
+  std::span const on_disk{it, it2};
+  std::span const the_rest{it2, path_localities.end()};
 
   auto const now = std::time(nullptr);
 
-  // update the state of files already on disk to Completed // TODO don't
-  // consider unavailable/lost
-  std::for_each(it, path_localities.end(), [&](auto const& file_loc) {
+  // update the state of files already on disk to Completed
+  std::for_each(on_disk.begin(), on_disk.end(), [&](auto const& file_loc) {
+    // started_at may remain at its default value
     m_db->update(file_loc.first, File::State::completed, now);
   });
 
-  // don't pass files already on disk to GEMSS
-  path_localities.erase(it, path_localities.end());
+  // update the state of all the other files (unavailable/none) to Failed
+  std::for_each(the_rest.begin(), the_rest.end(), [&](auto const& file_loc) {
+    // started_at may remain at its default value
+    m_db->update(file_loc.first, File::State::failed, now);
+  });
 
   // update the state of files to be passed to GEMSS to Started
+  // let's try also presumably lost files
   Paths paths;
-  paths.reserve(path_localities.size());
-  for (auto& [path, loc] : path_localities) {
-    m_db->update(path, File::State::started, now);
-    paths.push_back(std::move(path));
+  paths.reserve(on_tape_or_lost.size());
+  for (auto& [path, loc] : on_tape_or_lost) {
+    // first set the xattr, then update the DB. failing to update the DB is not
+    // a big deal, because the file stays in submitted state and can be passed
+    // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
+    // operation
+    XAttrName const tsm_rect{"user.TSMRecT"};
+    std::error_code ec;
+    create_xattr(path, tsm_rect, ec);
+    if (ec == std::error_code{}) {
+      m_db->update(path, File::State::started, now);
+      paths.push_back(std::move(path));
+    } else {
+      CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
+                                      tsm_rect.value(), path.string());
+    }
   }
 
   return TakeOverResponse{std::move(paths)};
