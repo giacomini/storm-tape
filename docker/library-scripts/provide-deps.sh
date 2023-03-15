@@ -7,4 +7,6 @@ then
     yum install -y \
         libubsan1 \
         libasan6
+else
+    echo "Skipping debug dependencies"
 fi

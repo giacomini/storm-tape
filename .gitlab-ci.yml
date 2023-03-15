@@ -21,6 +21,7 @@ build-ci:
     changes:
       - .devcontainer/*
       - .devcontainer/**/*
+      - vcpkg.json
       # - .gitlab-ci.yml
       
 build-storm-tape:debug:
@@ -72,8 +73,6 @@ build-docker:debug:
   image: docker:latest
   services:
     - docker:dind
-  variables:
-    STORM_BUILD_TYPE: debug
   needs:
     - build-storm-tape:debug
   before_script:
@@ -103,7 +102,7 @@ build-docker:release:
     - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - mv build/release/storm-tape-*.tar.gz ./docker
-    - docker build docker --pull -t $CI_REGISTRY_IMAGE
+    - docker build docker --pull --build-arg STORM_BUILD_TYPE=release -t $CI_REGISTRY_IMAGE
     - docker push $CI_REGISTRY_IMAGE
   only:
     refs:

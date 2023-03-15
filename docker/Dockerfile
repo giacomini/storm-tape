@@ -1,8 +1,10 @@
 FROM centos:7
+
 ARG USERNAME=storm
 ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
 ARG WORK_DIR=storm-tape
+ARG STORM_BUILD_TYPE=debug
 
 COPY ./library-scripts/*.sh /library-scripts/
 COPY ./storm-tape-*.tar.gz /
