@@ -4,7 +4,6 @@
 #include "database.hpp"
 
 #include <soci/soci.h>
-#include <soci/sqlite3/soci-sqlite3.h>
 
 namespace storm {
 
@@ -17,10 +16,10 @@ class SociDatabase : public Database
   bool insert(StageId const& id, StageRequest const& stage) override;
   std::optional<StageRequest> find(std::string const& id) const override;
   bool update(StageId const& id, Path const& path, File::State state) override;
-  std::size_t update(Path const& path, File::State state, TimePoint tp) override;
+  bool update(Path const& path, File::State state, TimePoint tp) override;
   bool erase(std::string const& id) override;
   std::size_t count_files(File::State state) const override;
-  std::vector<Filename> get_files(File::State state, std::size_t n_files) const override;
+  Paths get_files(File::State state, std::size_t n_files) const override;
 };
 
 } // namespace storm
