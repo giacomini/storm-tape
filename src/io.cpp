@@ -14,6 +14,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/url/parse.hpp>
 #include <boost/variant2.hpp>
+#include <fmt/core.h>
 #include <charconv>
 #include <chrono>
 #include <iomanip>
@@ -58,7 +59,8 @@ crow::response to_crow_response(StatusResponse const& resp)
       m_files.begin(), m_files.end(), std::back_inserter(files),
       [](File const& file) {
         boost::json::object result{{"path", file.path.c_str()}};
-        if (file.locality == Locality::disk) {
+        if (file.locality == Locality::disk
+            || file.locality == Locality::disk_and_tape) {
           result.emplace("onDisk", true);
         } else {
           result.emplace("state", to_string(file.state));
@@ -118,7 +120,7 @@ struct PathInfoVisitor
     return boost::json::object{{"path", path},
                                {"locality", to_string(locality)}};
   }
-  auto operator()(std::string_view msg) const
+  auto operator()(std::string const& msg) const
   {
     return boost::json::object{{"path", path}, {"error", msg}};
   }
@@ -136,8 +138,9 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
                    return boost::variant2::visit(visitor, info.info);
                  });
 
-  return crow::response{crow::status::OK, "json",
-                        boost::json::serialize(jbody)};
+  auto body = boost::json::serialize(jbody);
+  body += '\n';
+  return crow::response{crow::status::OK, "json", body};
 }
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp)
@@ -202,7 +205,7 @@ Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
 
 HostInfo get_host(crow::request const& req, Configuration const& conf)
 {
-  HostInfo result{"http", conf.hostname + ':' + std::to_string(conf.port)};
+  HostInfo result{"http", fmt::format("{}:{}", conf.hostname, conf.port)};
 
   if (auto const http_forwarded = req.get_header_value("Forwarded");
       !http_forwarded.empty()) {
