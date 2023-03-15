@@ -102,9 +102,9 @@ target_link_libraries(
   libtaperestapi
   PUBLIC
   Crow::Crow 
+  SOCI::soci_sqlite3_static 
   SOCI::soci_core_static 
   SOCI::soci_empty_static 
-  SOCI::soci_sqlite3_static 
   Boost::boost
   fmt::fmt
 )

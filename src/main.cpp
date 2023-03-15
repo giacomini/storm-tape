@@ -4,6 +4,7 @@
 #include "local_storage.hpp"
 #include "routes.hpp"
 #include "tape_service.hpp"
+#include <soci/sqlite3/soci-sqlite3.h>
 
 #ifdef ENABLE_TESTING
 
@@ -128,10 +129,11 @@ TEST_CASE("Test with archive info")
 int main()
 {
   try {
-    soci::session sql(soci::sqlite3, "storm-tape.sqlite");
     crow::SimpleApp app;
     app.loglevel(crow::LogLevel::Debug);
+    soci::session sql(soci::sqlite3, "storm-tape.sqlite");
     storm::SociDatabase db{sql};
+    //storm::MockDatabase db{};
     storm::Configuration const config{};
     storm::LocalStorage storage{};
     storm::TapeService service{db, storage};
