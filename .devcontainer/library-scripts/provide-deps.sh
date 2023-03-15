@@ -6,8 +6,6 @@
 set -ex
 
 # Add repo for devtools, ninja and git 2.x
-yum update -y
-
 yum install -y \
     centos-release-scl \
     epel-release \
@@ -25,7 +23,9 @@ yum install -y --setopt=tsflags=nodocs \
     tar \
     ninja-build \
     libattr-devel \
-    devtoolset-${DEVTOOLSET_VERSION}
+    devtoolset-"${DEVTOOLSET_VERSION}" \
+    devtoolset-"${DEVTOOLSET_VERSION}"-libubsan-devel \
+    devtoolset-"${DEVTOOLSET_VERSION}"-libasan-devel
 
 yum clean all
 rm -rf /var/cache/yum
