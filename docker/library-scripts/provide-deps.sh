@@ -1,5 +1,7 @@
 #!/bin/bash
 
+STORM_BUILD_TYPE=${1}
+
 if [[ $STORM_BUILD_TYPE == "debug" ]] 
 then 
     echo "Installing depencencies for debug"
@@ -9,4 +11,4 @@ then
         libasan6
 else
     echo "Skipping debug dependencies"
-fi
+fic

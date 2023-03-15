@@ -10,7 +10,7 @@ COPY ./library-scripts/*.sh /library-scripts/
 COPY ./storm-tape-*.tar.gz /
 
 RUN chmod +x library-scripts/*.sh && \
-    library-scripts/provide-deps.sh && \
+    library-scripts/provide-deps.sh ${STORM_BUILD_TYPE} && \
     library-scripts/provide-user.sh ${USERNAME} ${USER_UID} ${USER_GID} && \
     rm -rf library-scripts && \
     tar -xvf storm-tape-*.tar.gz && \
