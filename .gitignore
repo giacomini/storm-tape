@@ -5,3 +5,5 @@ vcpkg
 CMakeUserPresets.json
 *.db
 *.sqlite
+storm-tape-*.tar.gz
+compile_commands.json
