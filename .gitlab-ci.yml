@@ -18,7 +18,7 @@ build-ci:
     - docker build --pull -t $CI_REGISTRY_IMAGE/ci .devcontainer
     - docker push $CI_REGISTRY_IMAGE/ci
   only:
-    - changes:
+    changes:
       - .devcontainer/*
       - .devcontainer/**/*
       # - .gitlab-ci.yml
