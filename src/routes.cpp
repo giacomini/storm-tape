@@ -20,20 +20,6 @@ namespace storm {
 void create_routes(crow::SimpleApp& app, Configuration const& config,
                    TapeService& service)
 {
-  namespace json = boost::json;
-
-  app.route_dynamic(config.well_known_uri.c_str())([&] {
-    return crow::response{
-        crow::status::OK, "json",
-        json::serialize(json::value{
-            {"sitename", "cnaf-tape"},
-            {"description", "This is the INFN-CNAF tape REST API endpoint"},
-            {"endpoints",
-             {{{"uri", config.api_uri},
-               {"version", "v1"},
-               {"metadata", {}}}}}})};
-  });
-
   CROW_ROUTE(app, "/api/v1/stage")
       .methods("POST"_method)([&](crow::request const& req) {
         try {
@@ -116,18 +102,11 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
         }
       });
 
-  //  CROW_ROUTE(app, "/shutdown")
-  //  ([&app]() {
-  //    app.stop();
-  //    return "Server shutdown";
-  //  });
-
   CROW_ROUTE(app, "/favicon.ico")
   ([] { return crow::response{crow::status::NO_CONTENT}; });
 }
 
-void create_internal_routes(crow::SimpleApp& app,
-                            storm::Configuration const&,
+void create_internal_routes(crow::SimpleApp& app, storm::Configuration const&,
                             storm::TapeService& service)
 {
   CROW_ROUTE(app, "/recalltable/cardinality/tasks/readyTakeOver")
@@ -138,7 +117,8 @@ void create_internal_routes(crow::SimpleApp& app,
 
   CROW_ROUTE(app, "/recalltable/tasks")
       .methods("PUT"_method)([&](crow::request const& req) {
-        TakeOverRequest const take_over{from_body_params(req.body, TakeOverRequest::tag)};
+        TakeOverRequest const take_over{
+            from_body_params(req.body, TakeOverRequest::tag)};
         auto const resp = service.take_over(take_over);
         return to_crow_response(resp);
       });
