@@ -11,4 +11,4 @@ then
         libasan6
 else
     echo "Skipping debug dependencies"
-fic
+fi
