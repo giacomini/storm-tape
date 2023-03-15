@@ -19,7 +19,6 @@ build-ci:
     - docker push $CI_REGISTRY_IMAGE/ci
   only:
     changes:
-      - .devcontainer/*
       - .devcontainer/**/*
       - vcpkg.json
       # - .gitlab-ci.yml
@@ -42,9 +41,9 @@ build-storm-tape:debug:
   only:
     changes:
       - src/*
-      - test/*
-      - cmake/*
-      - docker/*
+      - test/**/*
+      - cmake/**/*
+      - docker/**/*
       - CMakeLists.txt
       - CMakePresets.json
       - vcpkg.json
@@ -85,9 +84,9 @@ build-docker:debug:
   only:
     changes:
       - src/*
-      - test/*
-      - cmake/*
-      - docker/*
+      - test/**/*
+      - cmake/**/*
+      - docker/**/*
       - CMakeLists.txt
       - CMakePresets.json
       - vcpkg.json
@@ -121,9 +120,9 @@ test:
     - ./test/test_script.sh
   only:
     changes:
-      - src/*
-      - test/*
-      - cmake/*
+      - test/**/*
+      - cmake/**/*
+      - docker/**/*
       - CMakeLists.txt
       - CMakePresets.json
       - vcpkg.json
