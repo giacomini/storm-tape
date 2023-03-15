@@ -42,7 +42,9 @@
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "STORM_SANITIZE_ADDRESS": "ON",
+        "STORM_SANITIZE_UNDEFINED": "ON"
       }
     },
     {
