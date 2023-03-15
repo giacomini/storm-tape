@@ -17,20 +17,15 @@ build-ci:
   script:
     - docker build --pull -t $CI_REGISTRY_IMAGE/ci .devcontainer
     - docker push $CI_REGISTRY_IMAGE/ci
-  rules:
+  only:
     - changes:
       - .devcontainer/*
       - .devcontainer/**/*
-      - .gitlab-ci.yml
-    - changes:
-      - .devcontainer/devcontainer.json
-      when: never
+      # - .gitlab-ci.yml
       
 build-storm-tape:debug:
   stage: build
   image: $CI_REGISTRY_IMAGE/ci
-  variables:
-    STORM_BUILD_TYPE: debug
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
@@ -77,6 +72,8 @@ build-docker:debug:
   image: docker:latest
   services:
     - docker:dind
+  variables:
+    STORM_BUILD_TYPE: debug
   needs:
     - build-storm-tape:debug
   before_script:
