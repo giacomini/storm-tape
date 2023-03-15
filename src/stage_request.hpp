@@ -8,18 +8,15 @@ namespace storm {
 struct StageRequest
 {
   Files files;
-  std::chrono::system_clock::time_point created_at;
-  std::chrono::system_clock::time_point started_at;
-  std::chrono::system_clock::time_point completed_at;
+  Clock::time_point created_at{Clock::now()};
+  Clock::time_point started_at{};
+  Clock::time_point completed_at{};
 
-  inline static struct Tag
-  {
-  } tag{};
+  struct Tag {};
+  static constexpr Tag tag{};
+
   explicit StageRequest(Files f = {})
       : files(std::move(f))
-      , created_at{std::chrono::system_clock::now()}
-      , started_at{}
-      , completed_at{}
   {}
 };
 

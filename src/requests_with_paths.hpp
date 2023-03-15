@@ -7,7 +7,8 @@ namespace storm {
 
 struct RequestWithPaths
 {
-  inline static struct Tag {} tag{};
+  struct Tag {};
+  static constexpr Tag tag{};
 
   Paths paths;
 };

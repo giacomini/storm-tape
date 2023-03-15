@@ -4,8 +4,6 @@
 
 namespace storm {
 
-XAttrName const storm_migrated{"user.storm.migrated"};
-
 Locality LocalStorage::locality(Path const& p)
 {
   struct stat sb = {};
@@ -14,19 +12,22 @@ Locality LocalStorage::locality(Path const& p)
     return Locality::unavailable;
   }
 
+  if (sb.st_size == 0) {
+    return Locality::none;
+  }
+
   constexpr auto bytes_per_block{512L};
   bool const is_stub{sb.st_blocks * bytes_per_block < sb.st_size};
-  // TODO check the presence of user.storm.migrated
-  bool const is_migrated{[&] {
+  bool const is_on_tape{[&] {
+    XAttrName const storm_migrated{"user.storm.migrated"};
     std::error_code ec;
     return has_xattr(p, storm_migrated, ec);
   }()};
 
   if (is_stub) {
-    // TODO unavailable -> lost? log something?
-    return is_migrated ? Locality::tape : Locality::unavailable;
+    return is_on_tape ? Locality::tape : Locality::lost;
   } else {
-    return is_migrated ? Locality::disk_and_tape : Locality::disk;
+    return is_on_tape ? Locality::disk_and_tape : Locality::disk;
   }
 }
 
