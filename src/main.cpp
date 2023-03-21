@@ -142,7 +142,7 @@ int main()
     storm::create_internal_routes(app, config, service);
 
     // TODO add signals?
-    app.bindaddr("127.0.0.1").port(config.port).concurrency(1).run();
+    app.port(config.port).concurrency(1).run();
 
   } catch (std::exception const& e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
