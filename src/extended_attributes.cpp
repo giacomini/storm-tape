@@ -66,13 +66,11 @@ XAttrValue get_xattr(fs::path const& path, XAttrName const& name,
 
   if (res >= 0) {
     value.resize(static_cast<std::size_t>(res));
-  } else if (res < 0 && errno == ERANGE) {
+  } else if (errno == ERANGE) {
     // query the actual size of the attribute value
     auto size = ::getxattr(path.c_str(), name.c_str(), value.data(), 0);
     value.resize(static_cast<std::size_t>(size));
     res = ::getxattr(path.c_str(), name.c_str(), value.data(), value.size());
-    // the following can hold only in a single-process scenario
-    assert(res < 0 || value.size() == static_cast<std::string::size_type>(res));
   }
 
   if (res >= 0) {
