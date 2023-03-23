@@ -1,18 +1,30 @@
 #ifndef CONFIGURATION_HPP
 #define CONFIGURATION_HPP
 
+#include "types.hpp"
 #include <string>
-#include <fmt/core.h>
-
+#include <vector>
+#include <iosfwd>
 namespace storm {
+
+struct StorageArea
+{
+  std::string name;
+  Path root;
+  Path access_point;
+};
+
+using StorageAreas = std::vector<StorageArea>;
 
 struct Configuration
 {
   std::string hostname = "localhost";
-  std::string base_url = fmt::format("https://{}:{}", hostname, port);
-  std::string api_uri  = fmt::format("{}/api/v1", base_url);
-  std::uint16_t port               = 8080;
+  std::uint16_t port   = 8080;
+  StorageAreas storage_areas;
 };
+
+Configuration load_configuration(std::istream& is);
+Configuration load_configuration(Path const& p);
 
 } // namespace storm
 

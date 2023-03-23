@@ -70,14 +70,16 @@ if (NOT _CROW_ICD)
   set_target_properties(Crow::Crow PROPERTIES INTERFACE_COMPILE_DEFINITIONS "")
 endif()
 find_package(SOCI CONFIG REQUIRED)
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(Fmt REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 
 add_library(
   libtaperestapi
   OBJECT
   src/archiveinfo_response.cpp
   src/cancel_response.cpp
+  src/configuration.cpp
   src/database.cpp
   src/database_soci.cpp
   src/delete_response.cpp
@@ -106,7 +108,9 @@ target_link_libraries(
   SOCI::soci_core_static 
   SOCI::soci_empty_static 
   Boost::boost
+  Boost::program_options
   fmt::fmt
+  yaml-cpp
 )
 
 add_executable(storm-tape src/main.cpp)
@@ -115,6 +119,10 @@ target_link_libraries(
   PRIVATE
   libtaperestapi 
 )
+
+if (BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

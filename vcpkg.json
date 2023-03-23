@@ -12,6 +12,8 @@
     "boost-json",
     "boost-uuid",
     "boost-url",
-    "fmt"
+    "boost-program-options",
+    "fmt",
+    "yaml-cpp"
   ]
 }
