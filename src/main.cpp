@@ -5,6 +5,7 @@
 #include "routes.hpp"
 #include "tape_service.hpp"
 #include <boost/program_options.hpp>
+#include <fmt/core.h>
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <filesystem>
 
@@ -14,9 +15,17 @@ namespace fs = std::filesystem;
 int main(int argc, char* argv[])
 {
   try {
+    std::string config_file;
     po::options_description desc("Allowed options");
-    desc.add_options()("help", "produce help message")(
-        "config", po::value<std::string>(), "specify configuration file");
+
+    // clang-format off
+    desc.add_options()
+    ("help,h", "produce help message")
+    ("config,c",
+     po::value<std::string>(&config_file)->default_value("storm-tape.conf"),
+     "specify configuration file"
+    );
+    // clang-format on
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -27,14 +36,7 @@ int main(int argc, char* argv[])
       return EXIT_SUCCESS;
     }
 
-    auto const config_file{[&] {
-      if (vm.count("compression")) {
-        return fs::path{vm["compression"].as<std::string>()};
-      } else {
-        return fs::path{"storm-tape.conf"};
-      }
-    }()};
-    auto const config = storm::load_configuration(config_file);
+    auto const config = storm::load_configuration(fs::path{config_file});
 
     crow::SimpleApp app;
     app.loglevel(crow::LogLevel::Debug);
@@ -50,10 +52,10 @@ int main(int argc, char* argv[])
     // TODO add signals?
     app.port(config.port).concurrency(1).run();
   } catch (std::exception const& e) {
-    std::cerr << "Caught exception: " << e.what() << '\n';
+    CROW_LOG_CRITICAL << fmt::format("Caught exception: {}", e.what());
     return EXIT_FAILURE;
   } catch (...) {
-    std::cerr << "Caught unknown exception\n";
+    CROW_LOG_CRITICAL << "Caught unknown exception";
     return EXIT_FAILURE;
   }
 }
