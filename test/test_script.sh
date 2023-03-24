@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
- 
+
+cat > storm-tape.conf <<EOF
+storage-areas:
+- name: sa1
+  root: /tmp
+  access-point: /tmp
+EOF
+
 storm-tape &
 job_id=$!
 sleep 5
