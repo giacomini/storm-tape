@@ -169,7 +169,7 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
   // the corresponding storage area
   auto const access_points = [&] {
     std::vector<std::pair<Path, StorageArea const*>> aps;
-    aps.reserve(aps.size());
+    aps.reserve(result.size());
     std::transform(result.begin(), result.end(), std::back_inserter(aps),
                    [](StorageArea const& sa) {
                      return std::pair{sa.access_point, &sa};
