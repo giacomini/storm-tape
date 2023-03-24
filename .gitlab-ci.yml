@@ -120,6 +120,7 @@ test:
     - ./test/test_script.sh || true
   only:
     changes:
+      - src/*
       - test/**/*
       - cmake/**/*
       - docker/**/*
