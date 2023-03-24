@@ -94,6 +94,7 @@ add_library(
   src/stage_request.cpp
   src/stage_response.cpp
   src/status_response.cpp
+  src/storage_area_resolver.cpp
   src/takeover_request.cpp
   src/tape_service.cpp
   src/types.cpp
