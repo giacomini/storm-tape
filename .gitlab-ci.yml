@@ -15,8 +15,8 @@ build-ci:
   before_script:
     - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
-    - docker build --pull -t $CI_REGISTRY_IMAGE/ci .devcontainer
-    - docker push $CI_REGISTRY_IMAGE/ci
+    - docker build --pull -t $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG .devcontainer
+    - docker push $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
   only:
     changes:
       - .devcontainer/**/*
@@ -25,7 +25,7 @@ build-ci:
       
 build-storm-tape:debug:
   stage: build
-  image: $CI_REGISTRY_IMAGE/ci
+  image: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
@@ -51,7 +51,7 @@ build-storm-tape:debug:
 
 build-storm-tape:release:
   stage: build
-  image: $CI_REGISTRY_IMAGE/ci
+  image: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
@@ -79,8 +79,8 @@ build-docker:debug:
     - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - mv build/debug/storm-tape-*.tar.gz ./docker
-    - docker build docker --pull -t $CI_REGISTRY_IMAGE:dev
-    - docker push $CI_REGISTRY_IMAGE:dev
+    - docker build docker --pull -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-debug
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-debug
   only:
     changes:
       - src/*
@@ -103,8 +103,8 @@ build-docker:release:
     - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - mv build/release/storm-tape-*.tar.gz ./docker
-    - docker build docker --pull --build-arg STORM_BUILD_TYPE=release -t $CI_REGISTRY_IMAGE
-    - docker push $CI_REGISTRY_IMAGE
+    - docker build docker --pull --build-arg STORM_BUILD_TYPE=release -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   only:
     refs:
       - tags
@@ -112,7 +112,7 @@ build-docker:release:
 test:
   stage: test
   image: 
-    name: $CI_REGISTRY_IMAGE:dev
+    name: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-debug
     entrypoint: [""]
   needs:
     - build-docker:debug
