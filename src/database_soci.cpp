@@ -208,7 +208,7 @@ std::size_t SociDatabase::count_files(File::State state) const
 
 Paths SociDatabase::get_files(File::State state, std::size_t n_files) const
 {
-  std::vector<Filename> filenames;
+  std::vector<Filename> filenames(n_files);
   auto const cstate = to_underlying(state);
 
   m_sql
