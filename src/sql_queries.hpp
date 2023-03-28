@@ -38,13 +38,14 @@ static constexpr auto DELETE = R"(
 namespace File {
 static constexpr auto CREATE_IF_NOT_EXISTS = R"(
   CREATE TABLE IF NOT EXISTS File (
-    stage_id  TEXT    NOT NULL,
-    path      TEXT    NOT NULL,
-    state     INTEGER NOT NULL,
-    locality  INTEGER NOT NULL,
-    started_at  BIGINT NOT NULL,
-    finished_at  BIGINT NOT NULL,
-    PRIMARY KEY (stage_id, path),
+    stage_id      TEXT    NOT NULL,
+    logical_path  TEXT    NOT NULL,
+    physical_path TEXT    NOT NULL,
+    state         INTEGER NOT NULL,
+    locality      INTEGER NOT NULL,
+    started_at    BIGINT  NOT NULL,
+    finished_at   BIGINT  NOT NULL,
+    PRIMARY KEY (stage_id, logical_path),
     FOREIGN KEY(stage_id) REFERENCES Stage(id)
   );
 )";
@@ -54,7 +55,7 @@ static constexpr auto DROP_IF_EXISTS = R"(
 )";
 
 static constexpr auto INSERT = R"(
-  INSERT INTO File VALUES (:stage_id, :path, :state, :locality, :started_at, :finished_at)
+  INSERT INTO File VALUES (:stage_id, :logical_path, :physical_path, :state, :locality, :started_at, :finished_at)
 )";
 
 static constexpr auto COUNT_BY_STAGE_ID = R"(
@@ -70,7 +71,7 @@ static constexpr auto FIND = R"(
 )";
 
 static constexpr auto DELETE = R"(
-  DELETE FROM File WHERE stage_id = :stage_id AND path = :path
+  DELETE FROM File WHERE stage_id = :stage_id AND logical_path = :logical_path
 )";
 } // namespace File
 } // namespace storm::sql

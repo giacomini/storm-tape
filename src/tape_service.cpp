@@ -1,6 +1,7 @@
 #include "tape_service.hpp"
 #include "archiveinfo_response.hpp"
 #include "cancel_response.hpp"
+#include "configuration.hpp"
 #include "database.hpp"
 #include "delete_response.hpp"
 #include "extended_attributes.hpp"
@@ -10,6 +11,7 @@
 #include "stage_response.hpp"
 #include "status_response.hpp"
 #include "storage.hpp"
+#include "storage_area_resolver.hpp"
 #include "takeover_request.hpp"
 #include "takeover_response.hpp"
 #include <fmt/core.h>
@@ -22,17 +24,20 @@ StageResponse TapeService::stage(StageRequest stage_request)
 {
   auto& files = stage_request.files;
   // de-duplication is needed because the path is a primary key of the db
-  std::sort(files.begin(), files.end(),
-            [](File const& a, File const& b) { return a.path < b.path; });
+  std::sort(files.begin(), files.end(), [](File const& a, File const& b) {
+    return a.logical_path < b.logical_path;
+  });
   files.erase(std::unique(files.begin(), files.end(),
                           [](File const& a, File const& b) {
-                            return a.path == b.path;
+                            return a.logical_path == b.logical_path;
                           }),
               files.end());
 
+  StorageAreaResolver resolve{m_config.storage_areas};
   for (auto& file : files) {
+    file.physical_path = resolve(file.logical_path);
     std::error_code ec;
-    auto status = fs::status(file.path, ec);
+    auto status = fs::status(file.physical_path, ec);
     if (ec || !fs::is_regular_file(status)) {
       file.state = File::State::failed;
     }
@@ -40,6 +45,10 @@ StageResponse TapeService::stage(StageRequest stage_request)
   auto const uuid     = m_uuid_gen();
   auto const id       = to_string(uuid);
   auto const inserted = m_db->insert(id, stage_request);
+  if (!inserted) {
+    CROW_LOG_ERROR << fmt::format(
+        "Failed to insert request {} into the database", id);
+  }
   return inserted ? StageResponse{id} : StageResponse{};
 }
 
@@ -67,15 +76,15 @@ StatusResponse TapeService::status(StageId const& id)
       file.locality = Locality::disk; // even if it can be disk_and_tape
       break;
     case File::State::started: {
-      if (recall_in_progress(file.path)) {
+      if (recall_in_progress(file.physical_path)) {
         break;
       }
-      auto locality = m_storage->locality(file.path);
+      auto locality = m_storage->locality(file.physical_path);
       if (locality == Locality::lost) {
         CROW_LOG_ERROR << fmt::format(
             "The file {} appears lost, check stubbification and presence of "
             "user.storm.migrated xattr",
-            file.path.string());
+            file.physical_path.string());
         // do not scare the client
         locality = Locality::unavailable;
       }
@@ -83,7 +92,7 @@ StatusResponse TapeService::status(StageId const& id)
           locality == Locality::disk || locality == Locality::disk_and_tape;
       file.state    = on_disk ? File::State::completed : File::State::failed;
       file.locality = locality;
-      m_db->update(file.path, file.state, std::time(nullptr));
+      m_db->update(file.physical_path, file.state, std::time(nullptr));
       break;
     }
     case File::State::cancelled:
@@ -105,7 +114,7 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
   }
 
   auto proj = [](File const& stage_file) -> Path const& {
-    return stage_file.path;
+    return stage_file.logical_path;
   };
 
   Paths invalid{};
@@ -145,7 +154,7 @@ ReleaseResponse TapeService::release(StageId const& id,
   }
 
   auto proj = [](File const& stage_file) -> Path const& {
-    return stage_file.path;
+    return stage_file.logical_path;
   };
 
   Paths both;
@@ -175,34 +184,41 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
   PathInfos infos;
   auto& paths = info.paths;
   infos.reserve(paths.size());
+
+  StorageAreaResolver resolve{m_config.storage_areas};
+
   std::transform( //
-      paths.begin(), paths.end(), std::back_inserter(infos), [&](Path& path) {
+      paths.begin(), paths.end(), std::back_inserter(infos),
+      [&](Path& logical_path) {
         using namespace std::string_literals;
+
+        auto const physical_path = resolve(logical_path);
         std::error_code ec;
-        auto status = fs::status(path, ec);
+        auto status = fs::status(physical_path, ec);
 
         // if the file doesn't exist, fs::status sets ec, so check first for
         // existence
         if (!fs::exists(status)) {
-          return PathInfo{std::move(path), "path doesn't exist"s};
+          return PathInfo{std::move(logical_path),
+                          "No such file or directory"s};
         }
         if (ec != std::error_code{}) {
-          return PathInfo{std::move(path), Locality::unavailable};
+          return PathInfo{std::move(logical_path), Locality::unavailable};
         }
         if (fs::is_directory(status)) {
-          return PathInfo{std::move(path), "path is a directory"s};
+          return PathInfo{std::move(logical_path), "Is a directory"s};
         }
         if (!fs::is_regular_file(status)) {
-          return PathInfo{std::move(path), "path is not a regular file"s};
+          return PathInfo{std::move(logical_path), "Not a regular file"s};
         }
-        auto locality = m_storage->locality(path);
+        auto locality = m_storage->locality(physical_path);
         if (locality == Locality::lost) {
           CROW_LOG_ERROR << fmt::format("The file {} appears lost",
-                                        path.string());
+                                        logical_path.string());
           // do not scare the client
           locality = Locality::unavailable;
         }
-        return PathInfo{std::move(path), locality};
+        return PathInfo{std::move(logical_path), locality};
       });
 
   return ArchiveInfoResponse{infos};

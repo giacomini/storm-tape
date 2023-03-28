@@ -10,6 +10,7 @@
 
 namespace storm {
 
+class Configuration;
 class Database;
 class Storage;
 class StageRequest;
@@ -31,12 +32,13 @@ class File;
 class TapeService
 {
   boost::uuids::random_generator m_uuid_gen;
+  Configuration const& m_config;
   Database* m_db;
   Storage* m_storage;
 
  public:
-  TapeService(Database& db, Storage& storage)
-      : m_db(&db), m_storage(&storage)
+  TapeService(Configuration const& config, Database& db, Storage& storage)
+      : m_config{config}, m_db(&db), m_storage(&storage)
   {}
 
   StageResponse stage(StageRequest stage_request);

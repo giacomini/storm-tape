@@ -31,12 +31,16 @@ boost::json::object to_json(StageResponse const& resp)
 
 crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
 {
-  auto jbody = to_json(resp);
-  crow::response cresp{crow::status::CREATED, "json",
-                       boost::json::serialize(jbody)};
-  cresp.set_header("Location", info.proto + "://" + info.host + "/api/v1/stage/"
-                                   + resp.id());
-  return cresp;
+  if (resp.id().empty()) {
+    return crow::response{500};
+  } else {
+    auto jbody = to_json(resp);
+    crow::response cresp{crow::status::CREATED, "json",
+                         boost::json::serialize(jbody)};
+    cresp.set_header("Location", info.proto + "://" + info.host
+                                     + "/api/v1/stage/" + resp.id());
+    return cresp;
+  }
 }
 
 template<class TP>
@@ -58,7 +62,7 @@ crow::response to_crow_response(StatusResponse const& resp)
   std::transform( //
       m_files.begin(), m_files.end(), std::back_inserter(files),
       [](File const& file) {
-        boost::json::object result{{"path", file.path.c_str()}};
+        boost::json::object result{{"path", file.logical_path.c_str()}};
         if (file.locality == Locality::disk
             || file.locality == Locality::disk_and_tape) {
           result.emplace("onDisk", true);

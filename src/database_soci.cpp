@@ -35,19 +35,21 @@ struct type_conversion<storm::FileEntity>
   static void from_base(const soci::values& v, soci::indicator,
                         storm::FileEntity& file)
   {
-    file.stage_id    = v.get<storm::StageId>("stage_id");
-    file.path        = v.get<storm::Filename>("path");
-    file.state       = static_cast<storm::File::State>(v.get<int>("state"));
-    file.locality    = storm::Locality::unavailable;
-    file.started_at  = v.get<storm::TimePoint>("started_at");
-    file.finished_at = v.get<storm::TimePoint>("finished_at");
+    file.stage_id      = v.get<storm::StageId>("stage_id");
+    file.logical_path  = v.get<storm::Filename>("logical_path");
+    file.physical_path = v.get<storm::Filename>("physical_path");
+    file.state         = static_cast<storm::File::State>(v.get<int>("state"));
+    file.locality      = storm::Locality::unavailable;
+    file.started_at    = v.get<storm::TimePoint>("started_at");
+    file.finished_at   = v.get<storm::TimePoint>("finished_at");
   }
 
   static void to_base(const storm::FileEntity& file, soci::values& v,
                       soci::indicator& ind)
   {
     v.set("stage_id", file.stage_id);
-    v.set("path", file.path);
+    v.set("logical_path", file.logical_path);
+    v.set("physical_path", file.physical_path);
     v.set("state", storm::to_underlying(file.state));
     using uchar = unsigned char;
     v.set("locality", uchar{});
@@ -109,8 +111,9 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
     // Insert files
     const auto& files = stage.files;
     std::for_each(files.begin(), files.end(), [&](auto const& f) {
-      FileEntity const entity{id,         f.path,       f.state,
-                              f.locality, f.started_at, f.finished_at};
+      FileEntity const entity{id,           f.logical_path, f.physical_path,
+                              f.state,      f.locality,     f.started_at,
+                              f.finished_at};
       m_sql << storm::sql::File::INSERT, soci::use(entity);
     });
   } catch (soci::soci_error const& e) {
@@ -134,8 +137,9 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
   files.reserve(f_entities.size());
   std::transform(f_entities.begin(), f_entities.end(),
                  std::back_inserter(files), [](auto& fe) {
-                   return File{fe.path, fe.state, fe.locality, fe.started_at,
-                               fe.finished_at};
+                   return File{fe.logical_path, fe.physical_path,
+                               fe.state,        fe.locality,
+                               fe.started_at,   fe.finished_at};
                  });
 
   // FIXME: created_at and started_at cannot be initialized
