@@ -117,7 +117,7 @@ test:
   needs:
     - build-docker:debug
   script:
-    - ./test/test_script.sh || true
+    - ./test/test_script.sh
   only:
     changes:
       - src/*
