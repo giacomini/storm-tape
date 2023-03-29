@@ -14,24 +14,24 @@ auto prefix_match_size(Path const& p1, Path const& p2)
 
 } // namespace
 
-Path StorageAreaResolver::operator()(Path const& path) const
+Path StorageAreaResolver::operator()(Path const& logical_path) const
 {
-  if (path != path.lexically_normal()) {
+  if (logical_path != logical_path.lexically_normal()) {
     return Path{};
   }
 
-  // find sa whose access_point has longest prefix match with path
+  // find sa whose access_point has longest prefix match with logical_path
   auto sa_it =
       std::max_element(m_sas.begin(), m_sas.end(),
                        [&](StorageArea const& sa1, StorageArea const& sa2) {
-                         return prefix_match_size(path, sa1.access_point)
-                              < prefix_match_size(path, sa2.access_point);
+                         return prefix_match_size(logical_path, sa1.access_point)
+                              < prefix_match_size(logical_path, sa2.access_point);
                        });
-  auto rel_path = path.lexically_relative(sa_it->access_point);
+  auto rel_path = logical_path.lexically_relative(sa_it->access_point);
   assert(!rel_path.empty());
 
   if (rel_path == ".") {
-    // path exactly matches the access point
+    // logical_path exactly matches the access point
     return sa_it->root;
   }
 

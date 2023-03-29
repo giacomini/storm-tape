@@ -23,7 +23,8 @@ namespace storm {
 StageResponse TapeService::stage(StageRequest stage_request)
 {
   auto& files = stage_request.files;
-  // de-duplication is needed because the path is a primary key of the db
+  // de-duplication is needed because the logical path is a primary key of the
+  // db
   std::sort(files.begin(), files.end(), [](File const& a, File const& b) {
     return a.logical_path < b.logical_path;
   });
@@ -52,11 +53,11 @@ StageResponse TapeService::stage(StageRequest stage_request)
   return inserted ? StageResponse{id} : StageResponse{};
 }
 
-static bool recall_in_progress(Path const& path)
+static bool recall_in_progress(Path const& physical_path)
 {
   XAttrName const tsm_rect{"user.TSMRecT"};
   std::error_code ec;
-  auto const in_progress = has_xattr(path, tsm_rect, ec);
+  auto const in_progress = has_xattr(physical_path, tsm_rect, ec);
   return ec == std::error_code{} && in_progress;
 }
 
@@ -128,8 +129,8 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
     return CancelResponse{id, std::move(invalid)};
   }
 
-  for (auto const& path : cancel.paths) {
-    m_db->update(id, path, File::State::cancelled);
+  for (auto const& logical_path : cancel.paths) {
+    m_db->update(id, logical_path, File::State::cancelled);
   }
 
   // do not bother cancelling the recalls in progress
@@ -274,26 +275,26 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
 
   // update the state of files to be passed to GEMSS to Started
   // let's try also presumably lost files
-  Paths paths;
-  paths.reserve(on_tape_or_lost.size());
-  for (auto& [path, loc] : on_tape_or_lost) {
+  Paths physical_paths;
+  physical_paths.reserve(on_tape_or_lost.size());
+  for (auto& [physical_path, loc] : on_tape_or_lost) {
     // first set the xattr, then update the DB. failing to update the DB is not
     // a big deal, because the file stays in submitted state and can be passed
     // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
     // operation
     XAttrName const tsm_rect{"user.TSMRecT"};
     std::error_code ec;
-    create_xattr(path, tsm_rect, ec);
+    create_xattr(physical_path, tsm_rect, ec);
     if (ec == std::error_code{}) {
-      m_db->update(path, File::State::started, now);
-      paths.push_back(std::move(path));
+      m_db->update(physical_path, File::State::started, now);
+      physical_paths.push_back(std::move(physical_path));
     } else {
       CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
-                                      tsm_rect.value(), path.string());
+                                      tsm_rect.value(), physical_path.string());
     }
   }
 
-  return TakeOverResponse{std::move(paths)};
+  return TakeOverResponse{std::move(physical_paths)};
 }
 
 } // namespace storm

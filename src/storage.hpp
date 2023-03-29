@@ -7,8 +7,8 @@ namespace storm {
 
 struct Storage
 {
-  virtual ~Storage()                          = default;
-  virtual Locality locality(Path const& path) = 0;
+  virtual ~Storage()                                   = default;
+  virtual Locality locality(Path const& physical_path) = 0;
 };
 
 } // namespace storm

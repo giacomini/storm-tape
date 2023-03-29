@@ -67,7 +67,7 @@ static constexpr auto FIND_BY_STAGE_ID = R"(
 )";
 
 static constexpr auto FIND = R"(
-  SELECT * FROM File WHERE stage_id = :stage_id AND path = :path)
+  SELECT * FROM File WHERE stage_id = :stage_id AND logical_path = :logical_path)
 )";
 
 static constexpr auto DELETE = R"(

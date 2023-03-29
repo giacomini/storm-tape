@@ -146,14 +146,14 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
   return StageRequest{files};
 }
 
-bool SociDatabase::update(StageId const& id, Path const& path,
+bool SociDatabase::update(StageId const& id, Path const& logical_path,
                           File::State state)
 {
   try {
     auto const cstate = to_underlying(state);
-    auto const cpath  = path.string();
-    m_sql << "UPDATE File SET state = :state WHERE stage_id = :id AND path = "
-             ":path;",
+    auto const cpath  = logical_path.string();
+    m_sql << "UPDATE File SET state = :state WHERE stage_id = :id AND logical_path = "
+             ":logical_path;",
         soci::use(cstate), soci::use(id), soci::use(cpath);
   } catch (soci::soci_error const& e) {
     std::cerr << "Soci error: " << e.what() << '\n';
@@ -162,19 +162,19 @@ bool SociDatabase::update(StageId const& id, Path const& path,
   return true;
 }
 
-bool SociDatabase::update(Path const& path, File::State state, TimePoint tp)
+bool SociDatabase::update(Path const& physical_path, File::State state, TimePoint tp)
 {
   try {
     auto const new_state       = to_underlying(state);
     auto const submitted_state = to_underlying(File::State::submitted);
     auto const started_state   = to_underlying(File::State::started);
-    auto const cpath           = path.string();
+    auto const cpath           = physical_path.string();
 
     switch (state) {
     case File::State::started: {
       using soci::use;
       m_sql << "UPDATE File SET state = :state, started_at = :tp WHERE "
-               "path = :path AND state = :submitted;",
+               "physical_path = :physical_path AND state = :submitted;",
           use(new_state), use(tp), use(cpath), use(submitted_state);
       break;
     }
@@ -183,7 +183,7 @@ bool SociDatabase::update(Path const& path, File::State state, TimePoint tp)
     case File::State::failed: {
       using soci::use;
       m_sql << "UPDATE File SET state = :state, finished_at = :tp "
-               "WHERE path = :path AND state IN (:submitted, :started);",
+               "WHERE physical_path = :physical_path AND state IN (:submitted, :started);",
           use(new_state), use(tp), use(cpath), use(submitted_state),
           use(started_state);
       break;
@@ -205,7 +205,7 @@ std::size_t SociDatabase::count_files(File::State state) const
 {
   std::size_t count{};
   auto const cstate = to_underlying(state);
-  m_sql << "SELECT COUNT(DISTINCT path) FROM File WHERE state = :state;",
+  m_sql << "SELECT COUNT(DISTINCT physical_path) FROM File WHERE state = :state;",
       soci::into(count), soci::use(cstate);
   return std::size_t{count};
 }
@@ -216,7 +216,7 @@ Paths SociDatabase::get_files(File::State state, std::size_t n_files) const
   auto const cstate = to_underlying(state);
 
   m_sql
-      << "SELECT DISTINCT path FROM File WHERE state = :state LIMIT :n_files;",
+      << "SELECT DISTINCT physical_path FROM File WHERE state = :state LIMIT :n_files;",
       soci::into(filenames), soci::use(cstate), soci::use(n_files);
 
   Paths result;
