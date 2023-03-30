@@ -26,7 +26,8 @@ struct StageEntity
 struct FileEntity
 {
   StageId stage_id;
-  Filename path;
+  Filename logical_path;
+  Filename physical_path;
   File::State state{File::State::submitted};
   Locality locality{Locality::unavailable}; // TODO is it needed in the db?
   TimePoint started_at{0};
@@ -39,11 +40,12 @@ class Database
   virtual ~Database()                                               = default;
   virtual bool insert(StageId const& id, StageRequest const& stage) = 0;
   virtual std::optional<StageRequest> find(StageId const& id) const = 0;
-  virtual bool update(StageId const& id, Path const& path,
+  virtual bool update(StageId const& id, Path const& logical_path,
                       File::State state)                            = 0;
-  virtual bool update(Path const& path, File::State state, TimePoint tp) = 0;
+  virtual bool update(Path const& physical_path, File::State state, TimePoint tp) = 0;
   virtual bool erase(StageId const& id)                                  = 0;
   virtual std::size_t count_files(File::State state) const               = 0;
+  // get physical paths
   virtual Paths get_files(File::State state, std::size_t n_files) const  = 0;
 };
 
@@ -64,20 +66,19 @@ class MockDatabase : public Database
     return it == m_db.end() ? std::nullopt : std::optional{it->second};
   }
 
-  bool update(StageId const& id, Path const& path, File::State state) override
+  bool update(StageId const& id, Path const& logical_path, File::State state) override
   {
     auto it = m_db.find(id);
     if (it == m_db.end()) {
       return false;
     }
     auto& stage = it->second;
-    File file{path};
     auto file_it =
-        std::lower_bound(stage.files.begin(), stage.files.end(), file,
+        std::lower_bound(stage.files.begin(), stage.files.end(), File{logical_path},
                          [](File const& file1, File const& file2) {
-                           return file1.path.string() < file2.path.string();
+                           return file1.logical_path.string() < file2.logical_path.string();
                          });
-    if (file_it->path == path) {
+    if (file_it->logical_path == logical_path) {
       file_it->state = state;
       return true;
     }
@@ -85,16 +86,15 @@ class MockDatabase : public Database
     return false;
   }
 
-  bool update(Path const& path, File::State state, TimePoint tp) override
+  bool update(Path const& physical_path, File::State state, TimePoint tp) override
   {
     for (auto&& [id, stage] : m_db) {
-      File file{path};
       auto it =
-          std::lower_bound(stage.files.begin(), stage.files.end(), file,
+          std::lower_bound(stage.files.begin(), stage.files.end(), File{physical_path},
                            [](File const& file1, File const& file2) {
-                             return file1.path.string() < file2.path.string();
+                             return file1.physical_path.string() < file2.physical_path.string();
                            });
-      if (it->path == path) {
+      if (it->physical_path == physical_path) {
         it->state = state;
         switch (state) {
         case File::State::started:
@@ -142,7 +142,7 @@ class MockDatabase : public Database
     for (auto&& [id, stage] : std::as_const(m_db)) {
       for (auto&& file : stage.files) {
         if (file.state == state) {
-          result.push_back(file.path);
+          result.push_back(file.physical_path);
         }
       }
     }

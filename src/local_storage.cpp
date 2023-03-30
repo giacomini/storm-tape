@@ -4,11 +4,11 @@
 
 namespace storm {
 
-Locality LocalStorage::locality(Path const& p)
+Locality LocalStorage::locality(Path const& physical_path)
 {
   struct stat sb = {};
 
-  if (::stat(p.c_str(), &sb) == -1) {
+  if (::stat(physical_path.c_str(), &sb) == -1) {
     return Locality::unavailable;
   }
 
@@ -21,7 +21,7 @@ Locality LocalStorage::locality(Path const& p)
   bool const is_on_tape{[&] {
     XAttrName const storm_migrated{"user.storm.migrated"};
     std::error_code ec;
-    return has_xattr(p, storm_migrated, ec);
+    return has_xattr(physical_path, storm_migrated, ec);
   }()};
 
   if (is_stub) {

@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     storm::SociDatabase db{sql};
     // storm::MockDatabase db{};
     storm::LocalStorage storage{};
-    storm::TapeService service{db, storage};
+    storm::TapeService service{config, db, storage};
 
     storm::create_routes(app, config, service);
     storm::create_internal_routes(app, config, service);

@@ -31,12 +31,16 @@ boost::json::object to_json(StageResponse const& resp)
 
 crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
 {
-  auto jbody = to_json(resp);
-  crow::response cresp{crow::status::CREATED, "json",
-                       boost::json::serialize(jbody)};
-  cresp.set_header("Location", info.proto + "://" + info.host + "/api/v1/stage/"
-                                   + resp.id());
-  return cresp;
+  if (resp.id().empty()) {
+    return crow::response{500};
+  } else {
+    auto jbody = to_json(resp);
+    crow::response cresp{crow::status::CREATED, "json",
+                         boost::json::serialize(jbody)};
+    cresp.set_header("Location", info.proto + "://" + info.host
+                                     + "/api/v1/stage/" + resp.id());
+    return cresp;
+  }
 }
 
 template<class TP>
@@ -58,7 +62,7 @@ crow::response to_crow_response(StatusResponse const& resp)
   std::transform( //
       m_files.begin(), m_files.end(), std::back_inserter(files),
       [](File const& file) {
-        boost::json::object result{{"path", file.path.c_str()}};
+        boost::json::object result{{"path", file.logical_path.c_str()}};
         if (file.locality == Locality::disk
             || file.locality == Locality::disk_and_tape) {
           result.emplace("onDisk", true);
@@ -114,15 +118,15 @@ crow::response to_crow_response(ReleaseResponse const& resp)
 
 struct PathInfoVisitor
 {
-  std::string path;
+  std::string logical_path;
   auto operator()(Locality locality) const
   {
-    return boost::json::object{{"path", path},
+    return boost::json::object{{"path", logical_path},
                                {"locality", to_string(locality)}};
   }
   auto operator()(std::string const& msg) const
   {
-    return boost::json::object{{"path", path}, {"error", msg}};
+    return boost::json::object{{"path", logical_path}, {"error", msg}};
   }
 };
 
@@ -134,7 +138,7 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
 
   std::transform(infos.begin(), infos.end(), std::back_inserter(jbody),
                  [&](PathInfo const& info) {
-                   PathInfoVisitor visitor{info.path.string()};
+                   PathInfoVisitor visitor{info.logical_path.string()};
                    return boost::variant2::visit(visitor, info.info);
                  });
 
@@ -189,18 +193,19 @@ Files from_json(std::string_view const& body, StageRequest::Tag)
 
 Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
 {
-  Paths paths;
+  Paths logical_paths;
   auto const value =
       boost::json::parse(boost::json::string_view{body.data(), body.size()});
 
   auto const& jpaths = value.as_object().at("paths").as_array();
-  paths.reserve(jpaths.size());
-  std::transform(jpaths.begin(), jpaths.end(), std::back_inserter(paths),
+  logical_paths.reserve(jpaths.size());
+  std::transform(jpaths.begin(), jpaths.end(),
+                 std::back_inserter(logical_paths), //
                  [](auto& path) {
                    return Path{path.as_string().c_str()}.lexically_normal();
                  });
 
-  return paths;
+  return logical_paths;
 }
 
 HostInfo get_host(crow::request const& req, Configuration const& conf)

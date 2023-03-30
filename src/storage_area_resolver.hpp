@@ -13,7 +13,7 @@ class StorageAreaResolver
   StorageAreaResolver(StorageAreas const& sas)
       : m_sas{sas}
   {}
-  Path operator()(Path const& path) const;
+  Path operator()(Path const& logical_path) const;
 };
 
 } // namespace storm

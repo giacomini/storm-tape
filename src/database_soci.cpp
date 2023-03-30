@@ -35,19 +35,21 @@ struct type_conversion<storm::FileEntity>
   static void from_base(const soci::values& v, soci::indicator,
                         storm::FileEntity& file)
   {
-    file.stage_id    = v.get<storm::StageId>("stage_id");
-    file.path        = v.get<storm::Filename>("path");
-    file.state       = static_cast<storm::File::State>(v.get<int>("state"));
-    file.locality    = storm::Locality::unavailable;
-    file.started_at  = v.get<storm::TimePoint>("started_at");
-    file.finished_at = v.get<storm::TimePoint>("finished_at");
+    file.stage_id      = v.get<storm::StageId>("stage_id");
+    file.logical_path  = v.get<storm::Filename>("logical_path");
+    file.physical_path = v.get<storm::Filename>("physical_path");
+    file.state         = static_cast<storm::File::State>(v.get<int>("state"));
+    file.locality      = storm::Locality::unavailable;
+    file.started_at    = v.get<storm::TimePoint>("started_at");
+    file.finished_at   = v.get<storm::TimePoint>("finished_at");
   }
 
   static void to_base(const storm::FileEntity& file, soci::values& v,
                       soci::indicator& ind)
   {
     v.set("stage_id", file.stage_id);
-    v.set("path", file.path);
+    v.set("logical_path", file.logical_path);
+    v.set("physical_path", file.physical_path);
     v.set("state", storm::to_underlying(file.state));
     using uchar = unsigned char;
     v.set("locality", uchar{});
@@ -109,8 +111,9 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
     // Insert files
     const auto& files = stage.files;
     std::for_each(files.begin(), files.end(), [&](auto const& f) {
-      FileEntity const entity{id,         f.path,       f.state,
-                              f.locality, f.started_at, f.finished_at};
+      FileEntity const entity{id,           f.logical_path, f.physical_path,
+                              f.state,      f.locality,     f.started_at,
+                              f.finished_at};
       m_sql << storm::sql::File::INSERT, soci::use(entity);
     });
   } catch (soci::soci_error const& e) {
@@ -134,22 +137,23 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
   files.reserve(f_entities.size());
   std::transform(f_entities.begin(), f_entities.end(),
                  std::back_inserter(files), [](auto& fe) {
-                   return File{fe.path, fe.state, fe.locality, fe.started_at,
-                               fe.finished_at};
+                   return File{fe.logical_path, fe.physical_path,
+                               fe.state,        fe.locality,
+                               fe.started_at,   fe.finished_at};
                  });
 
   // FIXME: created_at and started_at cannot be initialized
   return StageRequest{files};
 }
 
-bool SociDatabase::update(StageId const& id, Path const& path,
+bool SociDatabase::update(StageId const& id, Path const& logical_path,
                           File::State state)
 {
   try {
     auto const cstate = to_underlying(state);
-    auto const cpath  = path.string();
-    m_sql << "UPDATE File SET state = :state WHERE stage_id = :id AND path = "
-             ":path;",
+    auto const cpath  = logical_path.string();
+    m_sql << "UPDATE File SET state = :state WHERE stage_id = :id AND logical_path = "
+             ":logical_path;",
         soci::use(cstate), soci::use(id), soci::use(cpath);
   } catch (soci::soci_error const& e) {
     std::cerr << "Soci error: " << e.what() << '\n';
@@ -158,19 +162,19 @@ bool SociDatabase::update(StageId const& id, Path const& path,
   return true;
 }
 
-bool SociDatabase::update(Path const& path, File::State state, TimePoint tp)
+bool SociDatabase::update(Path const& physical_path, File::State state, TimePoint tp)
 {
   try {
     auto const new_state       = to_underlying(state);
     auto const submitted_state = to_underlying(File::State::submitted);
     auto const started_state   = to_underlying(File::State::started);
-    auto const cpath           = path.string();
+    auto const cpath           = physical_path.string();
 
     switch (state) {
     case File::State::started: {
       using soci::use;
       m_sql << "UPDATE File SET state = :state, started_at = :tp WHERE "
-               "path = :path AND state = :submitted;",
+               "physical_path = :physical_path AND state = :submitted;",
           use(new_state), use(tp), use(cpath), use(submitted_state);
       break;
     }
@@ -179,7 +183,7 @@ bool SociDatabase::update(Path const& path, File::State state, TimePoint tp)
     case File::State::failed: {
       using soci::use;
       m_sql << "UPDATE File SET state = :state, finished_at = :tp "
-               "WHERE path = :path AND state IN (:submitted, :started);",
+               "WHERE physical_path = :physical_path AND state IN (:submitted, :started);",
           use(new_state), use(tp), use(cpath), use(submitted_state),
           use(started_state);
       break;
@@ -201,7 +205,7 @@ std::size_t SociDatabase::count_files(File::State state) const
 {
   std::size_t count{};
   auto const cstate = to_underlying(state);
-  m_sql << "SELECT COUNT(DISTINCT path) FROM File WHERE state = :state;",
+  m_sql << "SELECT COUNT(DISTINCT physical_path) FROM File WHERE state = :state;",
       soci::into(count), soci::use(cstate);
   return std::size_t{count};
 }
@@ -212,7 +216,7 @@ Paths SociDatabase::get_files(File::State state, std::size_t n_files) const
   auto const cstate = to_underlying(state);
 
   m_sql
-      << "SELECT DISTINCT path FROM File WHERE state = :state LIMIT :n_files;",
+      << "SELECT DISTINCT physical_path FROM File WHERE state = :state LIMIT :n_files;",
       soci::into(filenames), soci::use(cstate), soci::use(n_files);
 
   Paths result;
