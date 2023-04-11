@@ -98,9 +98,14 @@ StatusResponse TapeService::status(StageId const& id)
     }
     case File::State::cancelled:
     case File::State::failed:
-    case File::State::submitted:
       // do nothing
       break;
+    case File::State::submitted: {
+      if (recall_in_progress(file.physical_path)) {
+        m_db->update(file.physical_path, File::State::started, std::time(nullptr));
+      }
+      break;
+    }
     }
   }
 
