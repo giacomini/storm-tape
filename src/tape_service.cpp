@@ -243,7 +243,15 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
                                        || file_loc.second == Locality::lost;
                                  });
 
-  std::span const on_tape_or_lost{path_localities.begin(), it};
+  // select the files on tape (or lost) whose recall is already in progress
+  auto const it_in_progress =
+      std::partition(path_localities.begin(), it, [](auto const& file_loc) {
+        return recall_in_progress(file_loc.first);
+      });
+
+  std::span const in_progress{path_localities.begin(), it_in_progress};
+
+  std::span const on_tape_or_lost{it_in_progress, it};
 
   auto const it2 =
       std::partition(it, path_localities.end(), [](auto const& file_loc) {
@@ -254,6 +262,12 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
   std::span const the_rest{it2, path_localities.end()};
 
   auto const now = std::time(nullptr);
+
+  // update the state of files already in progress to Started
+  std::for_each(in_progress.begin(), in_progress.end(),
+                [&](auto const& file_loc) {
+                  m_db->update(file_loc.first, File::State::started, now);
+                });
 
   // update the state of files already on disk to Completed
   std::for_each(on_disk.begin(), on_disk.end(), [&](auto const& file_loc) {
