@@ -112,7 +112,7 @@ crow::response to_crow_response(CancelResponse const& resp)
 
 crow::response to_crow_response(ReleaseResponse const& resp)
 {
-  auto jbody = file_missing_to_json(resp.invalid(), resp.id());
+  auto jbody = file_missing_to_json(resp.invalid, resp.id);
   return {crow::status::BAD_REQUEST, "json", boost::json::serialize(jbody)};
 }
 

@@ -79,10 +79,10 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
             try {
               ReleaseRequest release{from_json(req.body, ReleaseRequest::tag)};
               auto resp = service.release(StageId{id}, std::move(release));
-              if (resp.stage() == nullptr) {
+              if (resp.id.empty()) {
                 return crow::response(crow::status::NOT_FOUND);
               }
-              if (resp.invalid().empty()) {
+              if (resp.invalid.empty()) {
                 return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);

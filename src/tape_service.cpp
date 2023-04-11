@@ -158,26 +158,20 @@ ReleaseResponse TapeService::release(StageId const& id,
     return stage_file.logical_path;
   };
 
-  Paths both;
-  both.reserve(release.paths.size());
-  std::set_intersection(
+  Paths invalid{};
+  std::set_difference(
       release.paths.begin(), release.paths.end(),
       boost::make_transform_iterator(stage->files.begin(), proj),
       boost::make_transform_iterator(stage->files.end(), proj),
-      std::back_inserter(both));
+      std::back_inserter(invalid));
 
-  if (release.paths.size() != both.size()) {
-    Paths invalid;
-    assert(release.paths.size() > both.size());
-    invalid.reserve(release.paths.size() - both.size());
-    std::set_difference(release.paths.begin(), release.paths.end(),
-                        both.begin(), both.end(), std::back_inserter(invalid));
-    return ReleaseResponse{id, invalid};
+  if (!invalid.empty()) {
+    return ReleaseResponse{id, std::move(invalid)};
   }
 
   // do nothing
 
-  return ReleaseResponse{};
+  return ReleaseResponse{id};
 }
 
 ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
