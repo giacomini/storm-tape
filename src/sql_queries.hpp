@@ -63,7 +63,7 @@ static constexpr auto COUNT_BY_STAGE_ID = R"(
 )";
 
 static constexpr auto FIND_BY_STAGE_ID = R"(
-  SELECT * FROM File WHERE stage_id = :stage_id
+  SELECT * FROM File WHERE stage_id = :stage_id ORDER BY logical_path
 )";
 
 static constexpr auto FIND = R"(

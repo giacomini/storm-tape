@@ -123,6 +123,8 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
     return stage_file.logical_path;
   };
 
+  std::sort(cancel.paths.begin(), cancel.paths.end());
+
   Paths invalid{};
   std::set_difference(
       cancel.paths.begin(), cancel.paths.end(),
@@ -162,6 +164,8 @@ ReleaseResponse TapeService::release(StageId const& id,
   auto proj = [](File const& stage_file) -> Path const& {
     return stage_file.logical_path;
   };
+
+  std::sort(release.paths.begin(), release.paths.end());
 
   Paths invalid{};
   std::set_difference(
