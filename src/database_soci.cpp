@@ -105,6 +105,8 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
   StageEntity s_entity{id, created_at, started_at, completed_at};
 
   try {
+    soci::transaction tr{m_sql};
+
     // Insert stage
     m_sql << storm::sql::Stage::INSERT, soci::use(s_entity);
 
@@ -116,6 +118,8 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
                               f.finished_at};
       m_sql << storm::sql::File::INSERT, soci::use(entity);
     });
+
+    tr.commit();
   } catch (soci::soci_error const& e) {
     std::cerr << "Soci error: " << e.what() << '\n';
     return false;
