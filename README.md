@@ -21,8 +21,8 @@ The dependencies are specified in a manifest file.
 To build:
 
 ```shell
-git clone https://baltig.infn.it/giaco/storm-tape-poc.git
-cd storm-tape-poc
+git clone https://baltig.infn.it/cnafsd/storm-tape.git
+cd storm-tape
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
@@ -75,7 +75,7 @@ $ build/storm-tape
 ## Install via Docker
 As an alternative, it is possible to run the REST API server via Docker, using the following command:
 ```
-docker run -it -p 8080:8080 -v <path/to/dir>:/storm-tape baltig.infn.it:4567/giaco/storm-tape-poc
+docker run -it -p 8080:8080 -v <path/to/dir>:/storm-tape baltig.infn.it:4567/cnafsd/storm-tape
 ```
 NOTE:
 Before running the image, make sure to be correctly logged in on the Baltig Docker registry,
