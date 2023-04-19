@@ -154,19 +154,11 @@ crow::response to_crow_response(ReadyTakeOverResponse const& resp)
 
 crow::response to_crow_response(TakeOverResponse const& resp)
 {
-  auto it   = resp.paths.begin();
-  auto last = resp.paths.end();
-
-  // join the paths
-  std::string body;
-  if (it != last) {
-    body += it->string();
-    ++it;
-  }
-  for (; it != last; ++it) {
-    body += '\n';
-    body += it->string();
-  }
+  auto const body =
+      std::accumulate(resp.paths.begin(), resp.paths.end(), std::string{}, //
+                      [](std::string const& acc, Path const& path) {
+                        return fmt::format("{}unused {}\n", acc, path.string());
+                      });
   return crow::response{crow::status::OK, "txt", body};
 }
 
