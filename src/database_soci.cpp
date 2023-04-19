@@ -205,6 +205,16 @@ bool SociDatabase::update(Path const& physical_path, File::State state, TimePoin
   return true;
 }
 
+bool SociDatabase::update(std::span<Path const> physical_paths,
+                          File::State state, TimePoint tp)
+{
+  soci::transaction tr{m_sql};
+  std::for_each(physical_paths.begin(), physical_paths.end(),
+                [&](auto& p) { update(p, state, tp); });
+  tr.commit();
+  return true;
+}
+
 std::size_t SociDatabase::count_files(File::State state) const
 {
   std::size_t count{};

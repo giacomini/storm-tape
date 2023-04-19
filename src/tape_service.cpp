@@ -272,44 +272,55 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
 
   auto const now = std::time(nullptr);
 
+  auto proj = [](auto const& file_loc) { return file_loc.first; };
+
+  Paths physical_paths;
+
   // update the state of files already in progress to Started
-  std::for_each(in_progress.begin(), in_progress.end(),
-                [&](auto const& file_loc) {
-                  m_db->update(file_loc.first, File::State::started, now);
-                });
+  physical_paths.reserve(in_progress.size());
+  physical_paths.assign(
+      boost::make_transform_iterator(in_progress.begin(), proj),
+      boost::make_transform_iterator(in_progress.end(), proj));
+  m_db->update(physical_paths, File::State::started, now);
 
   // update the state of files already on disk to Completed
-  std::for_each(on_disk.begin(), on_disk.end(), [&](auto const& file_loc) {
-    // started_at may remain at its default value
-    m_db->update(file_loc.first, File::State::completed, now);
-  });
+  // started_at may remain at its default value
+  physical_paths.reserve(on_disk.size());
+  physical_paths.assign(boost::make_transform_iterator(on_disk.begin(), proj),
+                        boost::make_transform_iterator(on_disk.end(), proj));
+  m_db->update(physical_paths, File::State::completed, now);
 
   // update the state of all the other files (unavailable/none) to Failed
-  std::for_each(the_rest.begin(), the_rest.end(), [&](auto const& file_loc) {
-    // started_at may remain at its default value
-    m_db->update(file_loc.first, File::State::failed, now);
-  });
+  // started_at may remain at its default value
+  physical_paths.reserve(the_rest.size());
+  physical_paths.assign(boost::make_transform_iterator(the_rest.begin(), proj),
+                        boost::make_transform_iterator(the_rest.end(), proj));
+  m_db->update(physical_paths, File::State::failed, now);
 
   // update the state of files to be passed to GEMSS to Started
   // let's try also presumably lost files
-  Paths physical_paths;
   physical_paths.reserve(on_tape_or_lost.size());
-  for (auto& [physical_path, loc] : on_tape_or_lost) {
-    // first set the xattr, then update the DB. failing to update the DB is not
-    // a big deal, because the file stays in submitted state and can be passed
-    // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
-    // operation
-    XAttrName const tsm_rect{"user.TSMRecT"};
-    std::error_code ec;
-    create_xattr(physical_path, tsm_rect, ec);
-    if (ec == std::error_code{}) {
-      m_db->update(physical_path, File::State::started, now);
-      physical_paths.push_back(std::move(physical_path));
-    } else {
-      CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
-                                      tsm_rect.value(), physical_path.string());
-    }
-  }
+  physical_paths.assign(
+      boost::make_transform_iterator(on_tape_or_lost.begin(), proj),
+      boost::make_transform_iterator(on_tape_or_lost.end(), proj));
+
+  // first set the xattr, then update the DB. failing to update the DB is not
+  // a big deal, because the file stays in submitted state and can be passed
+  // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
+  // operation
+  std::for_each(
+      physical_paths.begin(), physical_paths.end(), [&](auto& physical_path) {
+        XAttrName const tsm_rect{"user.TSMRecT"};
+        std::error_code ec;
+        create_xattr(physical_path, tsm_rect, ec);
+        if (ec != std::error_code{}) {
+          CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
+                                          tsm_rect.value(),
+                                          physical_path.string());
+        }
+      });
+
+  m_db->update(physical_paths, File::State::started, now);
 
   return TakeOverResponse{std::move(physical_paths)};
 }

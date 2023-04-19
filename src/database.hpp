@@ -8,6 +8,7 @@
 #include <map>
 #include <numeric>
 #include <optional>
+#include <span>
 
 namespace storm {
 
@@ -42,11 +43,14 @@ class Database
   virtual std::optional<StageRequest> find(StageId const& id) const = 0;
   virtual bool update(StageId const& id, Path const& logical_path,
                       File::State state)                            = 0;
-  virtual bool update(Path const& physical_path, File::State state, TimePoint tp) = 0;
-  virtual bool erase(StageId const& id)                                  = 0;
-  virtual std::size_t count_files(File::State state) const               = 0;
+  virtual bool update(Path const& physical_path, File::State state,
+                      TimePoint tp)                                 = 0;
+  virtual bool update(std::span<Path const> physical_paths, File::State state,
+                      TimePoint tp)                                 = 0;
+  virtual bool erase(StageId const& id)                             = 0;
+  virtual std::size_t count_files(File::State state) const          = 0;
   // get physical paths
-  virtual Paths get_files(File::State state, std::size_t n_files) const  = 0;
+  virtual Paths get_files(File::State state, std::size_t n_files) const = 0;
 };
 
 class MockDatabase : public Database
@@ -114,6 +118,11 @@ class MockDatabase : public Database
       }
     }
 
+    return true;
+  }
+
+  bool update(std::span<Path const>, File::State, TimePoint) override
+  {
     return true;
   }
 
