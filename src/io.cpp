@@ -149,7 +149,7 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp)
 {
-  return crow::response{crow::status::OK, "txt", std::to_string(resp.n_ready)};
+  return crow::response{crow::status::OK, "txt", fmt::format("{}\n", resp.n_ready)};
 }
 
 crow::response to_crow_response(TakeOverResponse const& resp)
