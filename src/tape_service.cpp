@@ -234,50 +234,72 @@ ReadyTakeOverResponse TapeService::ready_take_over()
   return ReadyTakeOverResponse{n};
 }
 
-TakeOverResponse TapeService::take_over(TakeOverRequest req)
-{
-  auto files = m_db->get_files(File::State::submitted, req.n_files);
+using PathLocality = std::pair<Path, Locality>;
 
-  std::vector<std::pair<Path, Locality>> path_localities;
-  path_localities.reserve(files.size());
-  for (auto&& file : files) {
-    Path p{std::move(file)};
-    auto const locality{m_storage->locality(p)};
-    path_localities.emplace_back(std::move(p), locality);
+static auto extend_paths_with_localities(storm::Paths&& paths, Storage& storage)
+{
+  std::vector<PathLocality> path_localities;
+  path_localities.reserve(paths.size());
+
+  for (auto&& path : paths) {
+    auto const locality{storage.locality(path)};
+    path_localities.emplace_back(std::move(path), locality);
   }
 
-  auto const it = std::partition(path_localities.begin(), path_localities.end(),
-                                 [&](auto const& file_loc) {
-                                   return file_loc.second == Locality::tape
-                                       || file_loc.second == Locality::lost;
+  return path_localities;
+}
+
+static auto select_only_on_tape(std::span<PathLocality> path_locs)
+{
+  auto const it = std::partition(path_locs.begin(), path_locs.end(),
+                                 [&](auto const& path_loc) {
+                                   return path_loc.second == Locality::tape
+                                       // let's try also apparently-lost files
+                                       || path_loc.second == Locality::lost;
                                  });
+  return std::tuple{std::span{path_locs.begin(), it},
+                    std::span{it, path_locs.end()}};
+}
 
-  // select the files on tape (or lost) whose recall is already in progress
-  auto const it_in_progress =
-      std::partition(path_localities.begin(), it, [](auto const& file_loc) {
-        return recall_in_progress(file_loc.first);
+static auto select_in_progress(std::span<PathLocality> path_locs)
+{
+  auto const it = std::partition(
+      path_locs.begin(), path_locs.end(),
+      [](auto const& path_loc) { return recall_in_progress(path_loc.first); });
+  return std::tuple{std::span{path_locs.begin(), it},
+                    std::span{it, path_locs.end()}};
+}
+
+static auto select_on_disk(std::span<PathLocality> path_locs)
+{
+  auto const it = std::partition(
+      path_locs.begin(), path_locs.end(), [](auto const& path_loc) {
+        return path_loc.second == Locality::disk
+            || path_loc.second == Locality::disk_and_tape;
       });
+  return std::tuple{std::span{path_locs.begin(), it},
+                    std::span{it, path_locs.end()}};
+}
 
-  std::span const in_progress{path_localities.begin(), it_in_progress};
+TakeOverResponse TapeService::take_over(TakeOverRequest req)
+{
+  auto physical_paths = m_db->get_files(File::State::submitted, req.n_files);
 
-  std::span const on_tape_or_lost{it_in_progress, it};
+  auto path_locs =
+      extend_paths_with_localities(std::move(physical_paths), *m_storage);
 
-  auto const it2 =
-      std::partition(it, path_localities.end(), [](auto const& file_loc) {
-        return file_loc.second == Locality::disk
-            || file_loc.second == Locality::disk_and_tape;
-      });
-  std::span const on_disk{it, it2};
-  std::span const the_rest{it2, path_localities.end()};
+  auto [only_on_tape, not_only_on_tape] = select_only_on_tape(path_locs);
+  auto [in_progress, need_recall]       = select_in_progress(only_on_tape);
+  auto [on_disk, the_rest]              = select_on_disk(not_only_on_tape);
 
   auto const now = std::time(nullptr);
 
   auto proj = [](auto const& file_loc) { return file_loc.first; };
 
-  Paths physical_paths;
+  // reuse physical_paths, premature optimization?
+  // reserve enough space for all the following assignments
+  physical_paths.reserve(path_locs.size());
 
-  // update the state of files already in progress to Started
-  physical_paths.reserve(in_progress.size());
   physical_paths.assign(
       boost::make_transform_iterator(in_progress.begin(), proj),
       boost::make_transform_iterator(in_progress.end(), proj));
@@ -285,24 +307,20 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
 
   // update the state of files already on disk to Completed
   // started_at may remain at its default value
-  physical_paths.reserve(on_disk.size());
   physical_paths.assign(boost::make_transform_iterator(on_disk.begin(), proj),
                         boost::make_transform_iterator(on_disk.end(), proj));
   m_db->update(physical_paths, File::State::completed, now);
 
   // update the state of all the other files (unavailable/none) to Failed
   // started_at may remain at its default value
-  physical_paths.reserve(the_rest.size());
   physical_paths.assign(boost::make_transform_iterator(the_rest.begin(), proj),
                         boost::make_transform_iterator(the_rest.end(), proj));
   m_db->update(physical_paths, File::State::failed, now);
 
   // update the state of files to be passed to GEMSS to Started
-  // let's try also presumably lost files
-  physical_paths.reserve(on_tape_or_lost.size());
   physical_paths.assign(
-      boost::make_transform_iterator(on_tape_or_lost.begin(), proj),
-      boost::make_transform_iterator(on_tape_or_lost.end(), proj));
+      boost::make_transform_iterator(need_recall.begin(), proj),
+      boost::make_transform_iterator(need_recall.end(), proj));
 
   // first set the xattr, then update the DB. failing to update the DB is not
   // a big deal, because the file stays in submitted state and can be passed
