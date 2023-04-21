@@ -16,7 +16,8 @@ auto prefix_match_size(Path const& p1, Path const& p2)
 
 Path StorageAreaResolver::operator()(Path const& logical_path) const
 {
-  if (logical_path != logical_path.lexically_normal()) {
+  if (logical_path.is_relative()
+      || logical_path != logical_path.lexically_normal()) {
     return Path{};
   }
 

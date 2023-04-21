@@ -25,6 +25,7 @@ TEST_CASE("Storage area resolver")
   CHECK(resolve("/cms/file")              == "/storage/cms/file");
   CHECK(resolve("/cms/data/file")         == "/storage2/cms/file");
   CHECK(resolve("/cms/../atlas/file")     == "");
+  CHECK(resolve("cms/file")               == "");
 
   // clang-format on
 }
