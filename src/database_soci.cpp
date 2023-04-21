@@ -1,6 +1,7 @@
 #include "database_soci.hpp"
 #include "io.hpp"
 #include "sql_queries.hpp"
+#include "profiler.hpp"
 
 namespace soci {
 template<>
@@ -93,6 +94,7 @@ SociDatabase::SociDatabase(soci::session& sql)
 
 bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 {
+  PROFILE_FUNCTION();
   auto created_at =
       duration_cast<std::chrono::seconds>(stage.created_at.time_since_epoch())
           .count();
@@ -129,6 +131,7 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 
 std::optional<StageRequest> SociDatabase::find(StageId const& id) const
 {
+  PROFILE_FUNCTION();
   StageEntity s_entity{};
   m_sql << storm::sql::Stage::FIND, soci::into(s_entity), soci::use(id);
 
@@ -153,6 +156,7 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
 bool SociDatabase::update(StageId const& id, Path const& logical_path,
                           File::State state)
 {
+  PROFILE_FUNCTION();
   try {
     auto const cstate = to_underlying(state);
     auto const cpath  = logical_path.string();
@@ -168,6 +172,7 @@ bool SociDatabase::update(StageId const& id, Path const& logical_path,
 
 bool SociDatabase::update(Path const& physical_path, File::State state, TimePoint tp)
 {
+  PROFILE_FUNCTION();
   try {
     auto const new_state       = to_underlying(state);
     auto const submitted_state = to_underlying(File::State::submitted);
@@ -208,6 +213,7 @@ bool SociDatabase::update(Path const& physical_path, File::State state, TimePoin
 bool SociDatabase::update(std::span<Path const> physical_paths,
                           File::State state, TimePoint tp)
 {
+  PROFILE_FUNCTION();
   soci::transaction tr{m_sql};
   std::for_each(physical_paths.begin(), physical_paths.end(),
                 [&](auto& p) { update(p, state, tp); });
@@ -217,6 +223,7 @@ bool SociDatabase::update(std::span<Path const> physical_paths,
 
 std::size_t SociDatabase::count_files(File::State state) const
 {
+  PROFILE_FUNCTION();
   std::size_t count{};
   auto const cstate = to_underlying(state);
   m_sql << "SELECT COUNT(DISTINCT physical_path) FROM File WHERE state = :state;",
@@ -226,6 +233,7 @@ std::size_t SociDatabase::count_files(File::State state) const
 
 Paths SociDatabase::get_files(File::State state, std::size_t n_files) const
 {
+  PROFILE_FUNCTION();
   std::vector<Filename> filenames(n_files);
   auto const cstate = to_underlying(state);
 
@@ -242,6 +250,7 @@ Paths SociDatabase::get_files(File::State state, std::size_t n_files) const
 
 bool SociDatabase::erase(StageId const& id)
 {
+  PROFILE_FUNCTION();
   try {
     int count{0};
     m_sql << "SELECT count(*) FROM Stage WHERE id = :id;", soci::into(count),

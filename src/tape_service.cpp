@@ -17,11 +17,13 @@
 #include <fmt/core.h>
 #include <span>
 #include <string>
+#include "profiler.hpp"
 
 namespace storm {
 
 StageResponse TapeService::stage(StageRequest stage_request)
 {
+  PROFILE_FUNCTION();
   auto& files = stage_request.files;
   // de-duplication is needed because the logical path is a primary key of the
   // db
@@ -63,6 +65,7 @@ static bool recall_in_progress(Path const& physical_path)
 
 StatusResponse TapeService::status(StageId const& id)
 {
+  PROFILE_FUNCTION();
   auto maybe_stage = m_db->find(id);
 
   if (!maybe_stage.has_value()) {
@@ -114,6 +117,7 @@ StatusResponse TapeService::status(StageId const& id)
 
 CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
 {
+  PROFILE_FUNCTION();
   auto stage = m_db->find(id);
   if (!stage.has_value()) {
     return CancelResponse{};
@@ -147,6 +151,7 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
 
 DeleteResponse TapeService::erase(StageId const& id)
 {
+  PROFILE_FUNCTION();
   // do not bother cancelling the recalls in progress
 
   auto const erased = m_db->erase(id);
@@ -156,6 +161,7 @@ DeleteResponse TapeService::erase(StageId const& id)
 ReleaseResponse TapeService::release(StageId const& id,
                                      ReleaseRequest release) const
 {
+  PROFILE_FUNCTION();
   auto stage = m_db->find(id);
   if (!stage.has_value()) {
     return ReleaseResponse{};
@@ -185,6 +191,7 @@ ReleaseResponse TapeService::release(StageId const& id,
 
 ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
 {
+  PROFILE_FUNCTION();
   PathInfos infos;
   auto& paths = info.paths;
   infos.reserve(paths.size());
@@ -230,6 +237,7 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
 
 ReadyTakeOverResponse TapeService::ready_take_over()
 {
+  PROFILE_FUNCTION();
   auto const n = m_db->count_files(File::State::submitted);
   return ReadyTakeOverResponse{n};
 }
@@ -283,6 +291,7 @@ static auto select_on_disk(std::span<PathLocality> path_locs)
 
 TakeOverResponse TapeService::take_over(TakeOverRequest req)
 {
+  PROFILE_FUNCTION();
   auto physical_paths = m_db->get_files(File::State::submitted, req.n_files);
 
   auto path_locs =

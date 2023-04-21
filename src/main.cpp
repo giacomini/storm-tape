@@ -3,6 +3,7 @@
 #include "database_soci.hpp"
 #include "errors.hpp"
 #include "local_storage.hpp"
+#include "profiler.hpp"
 #include "routes.hpp"
 #include "tape_service.hpp"
 #include <boost/program_options.hpp>
@@ -15,6 +16,7 @@ namespace fs = std::filesystem;
 
 int main(int argc, char* argv[])
 {
+  PROFILE_FUNCTION();
   try {
     std::string config_file;
     po::options_description desc("Allowed options");
