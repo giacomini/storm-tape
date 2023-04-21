@@ -1,6 +1,6 @@
 #include "storage_area_resolver.hpp"
+#include "errors.hpp"
 #include <algorithm>
-#include <cassert>
 
 namespace storm {
 
@@ -21,6 +21,7 @@ Path StorageAreaResolver::operator()(Path const& logical_path) const
     return Path{};
   }
 
+  BOOST_ASSERT(!m_sas.empty());
   // find sa whose access_point has longest prefix match with logical_path
   auto sa_it =
       std::max_element(m_sas.begin(), m_sas.end(),
@@ -29,7 +30,7 @@ Path StorageAreaResolver::operator()(Path const& logical_path) const
                               < prefix_match_size(logical_path, sa2.access_point);
                        });
   auto rel_path = logical_path.lexically_relative(sa_it->access_point);
-  assert(!rel_path.empty());
+  BOOST_ASSERT(!rel_path.empty());
 
   if (rel_path == ".") {
     // logical_path exactly matches the access point

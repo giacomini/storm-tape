@@ -1,6 +1,7 @@
 #include "configuration.hpp"
 #include "database.hpp"
 #include "database_soci.hpp"
+#include "errors.hpp"
 #include "local_storage.hpp"
 #include "routes.hpp"
 #include "tape_service.hpp"
@@ -58,4 +59,12 @@ int main(int argc, char* argv[])
     CROW_LOG_CRITICAL << "Caught unknown exception";
     return EXIT_FAILURE;
   }
+}
+
+void boost::assertion_failed(char const* expr, char const* function,
+                             char const* file, long line)
+{
+  std::cerr << "Failed assertion: '" << expr << "' in '" << function << "' ("
+            << file << ':' << line << ")\n";
+  std::abort();
 }
