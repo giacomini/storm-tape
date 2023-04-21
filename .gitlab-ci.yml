@@ -30,7 +30,7 @@ build-storm-tape:debug:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
     - cmake --preset debug
-    - cmake --build build/debug --target package
+    - cmake --build build/debug --target package --parallel
   artifacts:
     paths:
     - build/debug/storm-tape-*.tar.gz
@@ -56,7 +56,7 @@ build-storm-tape:release:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
     - cmake --preset release
-    - cmake --build build/release --target package
+    - cmake --build build/release --target package --parallel
   artifacts:
     paths:
     - build/release/storm-tape-*.tar.gz
