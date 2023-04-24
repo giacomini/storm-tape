@@ -5,6 +5,7 @@
 #include "database.hpp"
 #include "delete_response.hpp"
 #include "extended_attributes.hpp"
+#include "profiler.hpp"
 #include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "requests_with_paths.hpp"
@@ -17,7 +18,6 @@
 #include <fmt/core.h>
 #include <span>
 #include <string>
-#include "profiler.hpp"
 
 namespace storm {
 
@@ -72,7 +72,8 @@ StatusResponse TapeService::status(StageId const& id)
     return StatusResponse{};
   }
 
-  // update each file locality
+  // determine the actual state of files and update the db
+  std::vector<std::pair<Path, File::State>> files_to_update;
   auto& stage = maybe_stage.value();
   for (auto& files = stage.files; auto& file : files) {
     switch (file.state) {
@@ -96,7 +97,7 @@ StatusResponse TapeService::status(StageId const& id)
           locality == Locality::disk || locality == Locality::disk_and_tape;
       file.state    = on_disk ? File::State::completed : File::State::failed;
       file.locality = locality;
-      m_db->update(file.physical_path, file.state, std::time(nullptr));
+      files_to_update.push_back({file.physical_path, file.state});
       break;
     }
     case File::State::cancelled:
@@ -105,12 +106,15 @@ StatusResponse TapeService::status(StageId const& id)
       break;
     case File::State::submitted: {
       if (recall_in_progress(file.physical_path)) {
-        m_db->update(file.physical_path, File::State::started, std::time(nullptr));
+        file.state = File::State::started;
+        files_to_update.push_back({file.physical_path, File::State::started});
       }
       break;
     }
     }
   }
+
+  m_db->update(files_to_update, std::time(nullptr));
 
   return StatusResponse{id, std::move(stage)};
 }
