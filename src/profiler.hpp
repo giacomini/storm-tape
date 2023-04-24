@@ -10,7 +10,9 @@
 
 #define PROFILING 1
 #ifdef PROFILING
-#  define PROFILE_SCOPE(name) storm::InstrumentationTimer timer##__LINE__(name)
+#  define COMBINE_HELPER(X,Y) X##Y
+#  define COMBINE(X,Y) COMBINE_HELPER(X,Y)
+#  define PROFILE_SCOPE(name) storm::InstrumentationTimer COMBINE(timer,__LINE__)(name)
 #  define PROFILE_FUNCTION()  PROFILE_SCOPE(__FUNCTION__)
 #else
 #  define PROFILE_SCOPE(name)
@@ -60,29 +62,7 @@ class Instrumentor
     write_footer();
   }
 
-  void write_profile(const ProfileResult& result)
-  {
-    std::lock_guard lock(m_lock);
-
-    if (m_first_profile) {
-      m_first_profile = false;
-    } else {
-      m_os << ',';
-    }
-
-    auto name = result.name;
-    std::replace(name.begin(), name.end(), '"', '\'');
-
-    m_os << "{";
-    m_os << R"("cat":"function",)";
-    m_os << R"("dur":)" << result.end - result.start << ",";
-    m_os << R"("name":")" << name << R"(",)";
-    m_os << R"("ph":"X",)";
-    m_os << R"("pid":0,)";
-    m_os << R"("tid":)" << result.thread_id << ",";
-    m_os << R"("ts":)" << result.start;
-    m_os << "}\n";
-  }
+  void write_profile(const ProfileResult& result);
 };
 
 class InstrumentationTimer
