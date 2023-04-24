@@ -1,7 +1,7 @@
 #include "database_soci.hpp"
 #include "io.hpp"
-#include "sql_queries.hpp"
 #include "profiler.hpp"
+#include "sql_queries.hpp"
 
 namespace soci {
 template<>
@@ -160,8 +160,8 @@ bool SociDatabase::update(StageId const& id, Path const& logical_path,
   try {
     auto const cstate = to_underlying(state);
     auto const cpath  = logical_path.string();
-    m_sql << "UPDATE File SET state = :state WHERE stage_id = :id AND logical_path = "
-             ":logical_path;",
+    m_sql << "UPDATE File SET state = :state WHERE stage_id = :id AND "
+             "logical_path = :logical_path;",
         soci::use(cstate), soci::use(id), soci::use(cpath);
   } catch (soci::soci_error const& e) {
     std::cerr << "Soci error: " << e.what() << '\n';
@@ -217,6 +217,18 @@ bool SociDatabase::update(std::span<Path const> physical_paths,
   soci::transaction tr{m_sql};
   std::for_each(physical_paths.begin(), physical_paths.end(),
                 [&](auto& p) { update(p, state, tp); });
+  tr.commit();
+  return true;
+}
+
+bool SociDatabase::update(
+    std::span<std::pair<Path, File::State>> physical_path_states, TimePoint tp)
+{
+  PROFILE_FUNCTION();
+  soci::transaction tr{m_sql};
+  for (auto const& [physical_path, state] : physical_path_states) {
+    update(physical_path, state, tp);
+  }
   tr.commit();
   return true;
 }

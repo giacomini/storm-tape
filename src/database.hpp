@@ -47,6 +47,8 @@ class Database
                       TimePoint tp)                                 = 0;
   virtual bool update(std::span<Path const> physical_paths, File::State state,
                       TimePoint tp)                                 = 0;
+  virtual bool update(std::span<std::pair<Path, File::State>> physical_path_states,
+                      TimePoint tp)                                 = 0;
   virtual bool erase(StageId const& id)                             = 0;
   virtual std::size_t count_files(File::State state) const          = 0;
   // get physical paths
@@ -122,6 +124,11 @@ class MockDatabase : public Database
   }
 
   bool update(std::span<Path const>, File::State, TimePoint) override
+  {
+    return true;
+  }
+
+  bool update(std::span<std::pair<Path, File::State>>, TimePoint) override
   {
     return true;
   }
