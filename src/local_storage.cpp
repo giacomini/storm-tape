@@ -1,11 +1,14 @@
 #include "local_storage.hpp"
 #include "extended_attributes.hpp"
 #include <sys/stat.h>
+#include "profiler.hpp"
 
 namespace storm {
 
 Locality LocalStorage::locality(Path const& physical_path)
 {
+  PROFILE_FUNCTION();
+
   struct stat sb = {};
 
   if (::stat(physical_path.c_str(), &sb) == -1) {
