@@ -146,6 +146,7 @@ target_link_libraries(
 )
 
 add_executable(storm-tape src/main.cpp)
+set_target_properties(storm-tape PROPERTIES DEBUG_POSTFIX "-debug")
 target_link_libraries(
   storm-tape 
   PRIVATE
@@ -156,7 +157,20 @@ if (BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+include(GNUInstallDirs)
+install(TARGETS storm-tape DESTINATION ${CMAKE_INSTALL_SBINDIR})
+
+set(CPACK_PACKAGE_NAME storm-tape)
+set(CPACK_PACKAGE_VENDOR INFN)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "StoRM Tape")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
+set(CPACK_PACKAGE_VERSION "${storm_tape_version}${storm_tape_version_postfix}")
+set(CPACK_RPM_PACKAGE_ARCHITECTURE x86_64)
+set(CPACK_VERBATIM_VARIABLES YES)
+set(CPACK_GENERATOR TGZ RPM)
+set(CPACK_RPM_PACKAGE_RELEASE 1)
+set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+# https://stackoverflow.com/a/74348493/4377355
+list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/sbin")
+set(CPACK_RPM_DEBUGINFO_PACKAGE ON)
 include(CPack)
-install(TARGETS storm-tape DESTINATION "")

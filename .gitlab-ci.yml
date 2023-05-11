@@ -67,7 +67,31 @@ build-storm-tape:release:
   only:
     refs:
       - tags
-  
+
+package-storm-tape:
+  stage: build
+  image: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+  before_script:
+    - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
+  script:
+    - cmake -S . -B build -G "Ninja Multi-Config" -DBUILD_TESTING=OFF
+    - cd build
+    - cmake --build . --config Debug
+    - cmake --build . --config Release
+    - cpack -C "Debug;Release" -G RPM
+  artifacts:
+    paths:
+    - build/storm-tape-*.rpm
+  cache:
+    - key: $CI_JOB_NAME
+      paths:
+        - $VCPKG_DEFAULT_BINARY_CACHE
+  only:
+    changes:
+      - src/*
+      - CMakeLists.txt
+      - version.txt
+
 build-docker:debug:
   stage: docker-build
   image: docker:latest
