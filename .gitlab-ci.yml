@@ -74,7 +74,7 @@ package-storm-tape:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - cmake -S . -B build -G "Ninja Multi-Config" -DBUILD_TESTING=OFF
+    - cmake -S . -B build -G "Ninja Multi-Config" -DBUILD_TESTING=OFF -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cd build
     - cmake --build . --config Debug
     - cmake --build . --config Release
@@ -91,6 +91,8 @@ package-storm-tape:
       - src/*
       - CMakeLists.txt
       - version.txt
+  tags:
+    - runner-11
 
 build-docker:debug:
   stage: docker-build
