@@ -8,7 +8,37 @@ if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 endif()
 
-project(storm-tape VERSION 0.1.0)
+file(STRINGS version.txt storm_tape_version LIMIT_COUNT 1)
+string(STRIP "${storm_tape_version}" storm_tape_version)
+message("version as read from version.txt: ${storm_tape_version}")
+find_package(Git)
+if (Git_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --dirty
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE describe
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(result)
+    message("Failed to git describe: ${result}")
+  else()
+    message("git describe gives: ${describe}")
+    string(FIND "${describe}" "${storm_tape_version}" position)
+    if (${position} EQUAL 0)
+      string(REPLACE "${storm_tape_version}" "" storm_tape_version_postfix ${describe})
+    else()
+      message(WARNING "the result of git describe is not compatible with the contents of version.txt")
+      string(FIND "${describe}" "-" hyphen)
+      string(SUBSTRING "${describe}" 0 ${hyphen} storm_tape_version)
+      string(SUBSTRING "${describe}" ${hyphen} -1 storm_tape_version_postfix)
+    endif()
+  endif()
+endif()
+
+project(StoRM-Tape VERSION ${storm_tape_version})
+
+message("StoRM-Tape base version: ${StoRM-Tape_VERSION}")
+
 include(CTest)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
