@@ -8,7 +8,37 @@ if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 endif()
 
-project(storm-tape VERSION 0.1.0)
+file(STRINGS version.txt storm_tape_version LIMIT_COUNT 1)
+string(STRIP "${storm_tape_version}" storm_tape_version)
+message("version as read from version.txt: ${storm_tape_version}")
+find_package(Git)
+if (Git_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --dirty
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE describe
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(result)
+    message("Failed to git describe: ${result}")
+  else()
+    message("git describe gives: ${describe}")
+    string(FIND "${describe}" "${storm_tape_version}" position)
+    if (${position} EQUAL 0)
+      string(REPLACE "${storm_tape_version}" "" storm_tape_version_postfix ${describe})
+    else()
+      message(WARNING "the result of git describe is not compatible with the contents of version.txt")
+      string(FIND "${describe}" "-" hyphen)
+      string(SUBSTRING "${describe}" 0 ${hyphen} storm_tape_version)
+      string(SUBSTRING "${describe}" ${hyphen} -1 storm_tape_version_postfix)
+    endif()
+  endif()
+endif()
+
+project(StoRM-Tape VERSION ${storm_tape_version})
+
+message("StoRM-Tape base version: ${StoRM-Tape_VERSION}")
+
 include(CTest)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -116,6 +146,7 @@ target_link_libraries(
 )
 
 add_executable(storm-tape src/main.cpp)
+set_target_properties(storm-tape PROPERTIES DEBUG_POSTFIX "-debug")
 target_link_libraries(
   storm-tape 
   PRIVATE
@@ -126,7 +157,20 @@ if (BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+include(GNUInstallDirs)
+install(TARGETS storm-tape DESTINATION ${CMAKE_INSTALL_SBINDIR})
+
+set(CPACK_PACKAGE_NAME storm-tape)
+set(CPACK_PACKAGE_VENDOR INFN)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "StoRM Tape")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
+set(CPACK_PACKAGE_VERSION "${storm_tape_version}${storm_tape_version_postfix}")
+set(CPACK_RPM_PACKAGE_ARCHITECTURE x86_64)
+set(CPACK_VERBATIM_VARIABLES YES)
+set(CPACK_GENERATOR TGZ RPM)
+set(CPACK_RPM_PACKAGE_RELEASE 1)
+set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+# https://stackoverflow.com/a/74348493/4377355
+list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/sbin")
+set(CPACK_RPM_DEBUGINFO_PACKAGE ON)
 include(CPack)
-install(TARGETS storm-tape DESTINATION "")
