@@ -91,8 +91,6 @@ package-storm-tape:
       - src/*
       - CMakeLists.txt
       - version.txt
-  tags:
-    - runner-11
 
 build-docker:debug:
   stage: docker-build
