@@ -8,7 +8,6 @@
 #include <string>
 #include <thread>
 
-#define PROFILING 1
 #ifdef PROFILING
 #  define COMBINE_HELPER(X,Y) X##Y
 #  define COMBINE(X,Y) COMBINE_HELPER(X,Y)
