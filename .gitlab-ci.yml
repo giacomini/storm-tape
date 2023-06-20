@@ -21,7 +21,7 @@ build-ci:
     changes:
       - .devcontainer/**/*
       - vcpkg.json
-      - .gitlab-ci.yml
+      # - .gitlab-ci.yml
       
 build-storm-tape:debug:
   stage: build
@@ -76,8 +76,8 @@ package-storm-tape:
   script:
     - cmake -S . -B build/mc -G "Ninja Multi-Config" -DBUILD_TESTING=OFF -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cd build/mc
-    - cmake --build . --config Debug
-    - cmake --build . --config Release
+    - cmake --build . --parallel --config Debug
+    - cmake --build . --parallel --config Release
     - cpack -C "Debug;Release" -G RPM
   artifacts:
     paths:
