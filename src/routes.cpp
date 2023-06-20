@@ -27,7 +27,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
         try {
           StageRequest request{from_json(req.body, StageRequest::tag)};
           auto resp = service.stage(std::move(request));
-          return to_crow_response(resp, get_host(req, config));
+          return to_crow_response(resp, get_hostinfo(req, config));
         } catch (...) {
           return crow::response(crow::status::BAD_REQUEST);
         }

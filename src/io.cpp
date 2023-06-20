@@ -29,6 +29,12 @@ boost::json::object to_json(StageResponse const& resp)
   return boost::json::object{{"requestId", resp.id()}};
 }
 
+static auto make_location(HostInfo const& info, StageId const& id)
+{
+  return fmt::format("{}://{}:{}/api/v1/stage/{}", info.proto, info.host,
+                     info.port, id);
+}
+
 crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
 {
   if (resp.id().empty()) {
@@ -37,8 +43,7 @@ crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
     auto jbody = to_json(resp);
     crow::response cresp{crow::status::CREATED, "json",
                          boost::json::serialize(jbody)};
-    cresp.set_header("Location", info.proto + "://" + info.host
-                                     + "/api/v1/stage/" + resp.id());
+    cresp.set_header("Location", make_location(info, resp.id()));
     return cresp;
   }
 }
@@ -200,23 +205,44 @@ Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
   return logical_paths;
 }
 
-HostInfo get_host(crow::request const& req, Configuration const& conf)
+void fill_hostinfo_from_forwarded(HostInfo& info,
+                                  std::string const& http_forwarded)
 {
-  HostInfo result{"http", fmt::format("{}:{}", conf.hostname, conf.port)};
+  static std::regex const proto_re("proto=(http|https)(;|$)");
+  static std::regex const host_re("host=([^;]+)(;|$)");
+  static std::regex const port_re("port=([0-9]+)(;|$)");
+
+  if (std::smatch match; std::regex_search(
+          http_forwarded.begin(), http_forwarded.end(), match, proto_re)) {
+    info.proto = match[1];
+    if (info.proto == "http") {
+      info.port = "80";
+    } else if (info.proto == "https") {
+      info.port = "443";
+    }
+  }
+
+  if (std::smatch match; std::regex_search(
+          http_forwarded.begin(), http_forwarded.end(), match, host_re)) {
+    info.host = match[1];
+  }
+
+  if (std::smatch match; std::regex_search(
+          http_forwarded.begin(), http_forwarded.end(), match, port_re)) {
+    auto const port = boost::lexical_cast<int>(match[1]);
+    if (port > 0 && port < 65'536) {
+      info.port = match[1];
+    }
+  }
+}
+
+HostInfo get_hostinfo(crow::request const& req, Configuration const& conf)
+{
+  HostInfo result{"http", conf.hostname, std::to_string(conf.port)};
 
   if (auto const http_forwarded = req.get_header_value("Forwarded");
       !http_forwarded.empty()) {
-    std::regex const host_match("host=(.*?)(;|$)");
-    std::regex const proto_match("proto=(.*?)(;|$)");
-    std::smatch match;
-    if (std::regex_search(http_forwarded.begin(), http_forwarded.end(), match,
-                          host_match)) {
-      result.host = match[1];
-    }
-    if (std::regex_search(http_forwarded.begin(), http_forwarded.end(), match,
-                          proto_match)) {
-      result.proto = match[1];
-    }
+    fill_hostinfo_from_forwarded(result, http_forwarded);
   } else if (auto const http_host = req.get_header_value("Host");
              !http_host.empty()) {
     result.host = http_host;
