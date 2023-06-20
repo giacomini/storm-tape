@@ -29,7 +29,7 @@ build-storm-tape:debug:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - cmake --preset debug
+    - cmake --preset debug -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cmake --build build/debug --target package --parallel
   artifacts:
     paths:
@@ -55,7 +55,7 @@ build-storm-tape:release:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - cmake --preset release
+    - cmake --preset release -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cmake --build build/release --target package --parallel
   artifacts:
     paths:
