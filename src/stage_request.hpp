@@ -2,7 +2,6 @@
 #define STAGE_REQUEST_HPP
 
 #include "file.hpp"
-#include <chrono>
 
 namespace storm {
 struct StageRequest
