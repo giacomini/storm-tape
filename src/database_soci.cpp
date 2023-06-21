@@ -183,9 +183,13 @@ bool SociDatabase::update(Path const& physical_path, File::State state, TimePoin
     case File::State::cancelled:
     case File::State::failed: {
       using soci::use;
-      m_sql << "UPDATE File SET state = :state, finished_at = :tp "
-               "WHERE physical_path = :physical_path AND state IN (:submitted, :started);",
-          use(new_state), use(tp), use(cpath), use(submitted_state),
+      m_sql << "UPDATE File SET state = :state, "
+               "started_at = CASE WHEN started_at = 0 THEN :tp_start ELSE "
+               "started_at END, "
+               "finished_at = :tp_end "
+               "WHERE physical_path = :physical_path AND state IN (:submitted, "
+               ":started);",
+          use(new_state), use(tp), use(tp), use(cpath), use(submitted_state),
           use(started_state);
       break;
     }
