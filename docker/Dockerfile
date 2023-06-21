@@ -14,12 +14,10 @@ RUN chmod +x library-scripts/*.sh && \
     library-scripts/provide-user.sh ${USERNAME} ${USER_UID} ${USER_GID} && \
     rm -rf library-scripts && \
     tar -xvf storm-tape-*.tar.gz && \
-    mv storm-tape-*/bin/storm-tape /usr/bin/ && \
+    mv storm-tape-*/sbin/storm-tape* /usr/bin/ && \
     rm -rf storm-tape-* && \
     mkdir ${WORK_DIR} && \
     chown -R ${USERNAME}:${USERNAME} ${WORK_DIR}
 
 USER ${USERNAME}
 WORKDIR ${WORK_DIR}
-
-ENTRYPOINT ["/usr/bin/storm-tape"]

@@ -21,7 +21,7 @@ build-ci:
     changes:
       - .devcontainer/**/*
       - vcpkg.json
-      - .gitlab-ci.yml
+      # - .gitlab-ci.yml
       
 build-storm-tape:debug:
   stage: build
@@ -29,7 +29,7 @@ build-storm-tape:debug:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - cmake --preset debug
+    - cmake --preset debug -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cmake --build build/debug --target package --parallel
   artifacts:
     paths:
@@ -55,7 +55,7 @@ build-storm-tape:release:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - cmake --preset release
+    - cmake --preset release -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cmake --build build/release --target package --parallel
   artifacts:
     paths:
@@ -74,14 +74,14 @@ package-storm-tape:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - cmake -S . -B build -G "Ninja Multi-Config" -DBUILD_TESTING=OFF -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
-    - cd build
-    - cmake --build . --config Debug
-    - cmake --build . --config Release
+    - cmake -S . -B build/mc -G "Ninja Multi-Config" -DBUILD_TESTING=OFF -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
+    - cd build/mc
+    - cmake --build . --parallel --config Debug
+    - cmake --build . --parallel --config Release
     - cpack -C "Debug;Release" -G RPM
   artifacts:
     paths:
-    - build/storm-tape-*.rpm
+    - build/mc/storm-tape-*.rpm
   cache:
     - key: $CI_JOB_NAME
       paths:

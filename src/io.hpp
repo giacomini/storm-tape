@@ -24,6 +24,7 @@ struct HostInfo
 {
   std::string proto;
   std::string host;
+  std::string port;
 };
 
 crow::response to_crow_response(StageResponse const& resp,
@@ -48,7 +49,8 @@ crow::response to_crow_response(TakeOverResponse const& resp);
 Files from_json(std::string_view const& body, StageRequest::Tag);
 Paths from_json(std::string_view const& body, RequestWithPaths::Tag);
 
-HostInfo get_host(crow::request const& req, Configuration const& conf);
+void fill_hostinfo_from_forwarded(HostInfo& info, std::string const& http_forwarded);
+HostInfo get_hostinfo(crow::request const& req, Configuration const& conf);
 
 template<class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept

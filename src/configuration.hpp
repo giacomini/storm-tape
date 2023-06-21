@@ -2,9 +2,10 @@
 #define CONFIGURATION_HPP
 
 #include "types.hpp"
+#include <iosfwd>
 #include <string>
 #include <vector>
-#include <iosfwd>
+
 namespace storm {
 
 struct StorageArea
