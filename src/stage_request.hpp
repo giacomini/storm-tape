@@ -13,10 +13,11 @@ struct StageRequest
 
   struct Tag {};
   static constexpr Tag tag{};
-
+  
   explicit StageRequest(Files f = {})
       : files(std::move(f))
   {}
+  bool update_timestamps();
 };
 
 } // namespace storm
