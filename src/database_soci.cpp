@@ -95,16 +95,8 @@ SociDatabase::SociDatabase(soci::session& sql)
 bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 {
   PROFILE_FUNCTION();
-  auto created_at =
-      duration_cast<std::chrono::seconds>(stage.created_at.time_since_epoch())
-          .count();
-  auto started_at =
-      duration_cast<std::chrono::seconds>(stage.started_at.time_since_epoch())
-          .count();
-  auto completed_at =
-      duration_cast<std::chrono::seconds>(stage.completed_at.time_since_epoch())
-          .count();
-  StageEntity s_entity{id, created_at, started_at, completed_at};
+  StageEntity s_entity{id, stage.created_at, stage.started_at,
+            stage.completed_at};
 
   try {
     soci::transaction tr{m_sql};

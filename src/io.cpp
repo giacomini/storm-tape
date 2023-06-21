@@ -48,14 +48,6 @@ crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
   }
 }
 
-template<class TP>
-auto to_seconds(TP time_point)
-{
-  return std::chrono::duration_cast<std::chrono::seconds>(
-             time_point.time_since_epoch())
-      .count();
-}
-
 crow::response to_crow_response(StatusResponse const& resp)
 {
   auto const& stage   = resp.stage();
