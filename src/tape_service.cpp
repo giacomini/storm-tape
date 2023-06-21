@@ -5,6 +5,7 @@
 #include "database.hpp"
 #include "delete_response.hpp"
 #include "extended_attributes.hpp"
+#include "io.hpp"
 #include "profiler.hpp"
 #include "readytakeover_response.hpp"
 #include "release_response.hpp"
@@ -16,6 +17,7 @@
 #include "takeover_request.hpp"
 #include "takeover_response.hpp"
 #include <fmt/core.h>
+#include <ctime>
 #include <span>
 #include <string>
 
@@ -42,7 +44,9 @@ StageResponse TapeService::stage(StageRequest stage_request)
     std::error_code ec;
     auto status = fs::status(file.physical_path, ec);
     if (ec || !fs::is_regular_file(status)) {
-      file.state = File::State::failed;
+      file.state       = File::State::failed;
+      file.started_at  = std::time(nullptr);
+      file.finished_at = file.started_at;
     }
   }
   auto const uuid     = m_uuid_gen();
@@ -106,7 +110,8 @@ StatusResponse TapeService::status(StageId const& id)
       break;
     case File::State::submitted: {
       if (recall_in_progress(file.physical_path)) {
-        file.state = File::State::started;
+        file.state      = File::State::started;
+        file.started_at = now;
         files_to_update.push_back({file.physical_path, File::State::started});
       }
       break;
@@ -114,8 +119,12 @@ StatusResponse TapeService::status(StageId const& id)
     }
   }
 
-  m_db->update(files_to_update, std::time(nullptr));
+  std::sort(stage.files.begin(), stage.files.end(),
+            [](auto const& f1, auto const& f2) {
+              return to_underlying(f1.state) < to_underlying(f2.state);
+            });
 
+  auto const updated = stage.update_timestamps();
   return StatusResponse{id, std::move(stage)};
 }
 
