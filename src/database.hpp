@@ -35,8 +35,19 @@ struct FileEntity
   TimePoint finished_at{0};
 };
 
+struct StageUpdate
+{
+  std::optional<StageEntity> stage;
+  std::span<std::pair<Path, File::State>> files;
+  TimePoint tp;
+};
+
 class Database
 {
+  virtual bool update(std::span<std::pair<Path, File::State>> physical_path_states,
+                        TimePoint tp)                               = 0;
+  virtual bool update(StageEntity const& stage_entity)              = 0;
+ 
  public:
   virtual ~Database()                                               = default;
   virtual bool insert(StageId const& id, StageRequest const& stage) = 0;
@@ -47,8 +58,7 @@ class Database
                       TimePoint tp)                                 = 0;
   virtual bool update(std::span<Path const> physical_paths, File::State state,
                       TimePoint tp)                                 = 0;
-  virtual bool update(std::span<std::pair<Path, File::State>> physical_path_states,
-                      TimePoint tp)                                 = 0;
+  virtual bool update(StageUpdate const& stage_update)              = 0;
   virtual bool erase(StageId const& id)                             = 0;
   virtual std::size_t count_files(File::State state) const          = 0;
   // get physical paths
@@ -58,6 +68,16 @@ class Database
 class MockDatabase : public Database
 {
   std::map<StageId, StageRequest> m_db;
+
+  bool update(std::span<std::pair<Path, File::State>>, TimePoint) override
+  {
+    return true;
+  }
+
+  bool update(StageEntity const&) override
+  {
+    return true;
+  }
 
  public:
   bool insert(StageId const& id, const StageRequest& stage) override
@@ -128,7 +148,7 @@ class MockDatabase : public Database
     return true;
   }
 
-  bool update(std::span<std::pair<Path, File::State>>, TimePoint) override
+  bool update(StageUpdate const&) override
   {
     return true;
   }

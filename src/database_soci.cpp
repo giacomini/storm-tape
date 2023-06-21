@@ -141,8 +141,8 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
                                fe.started_at,   fe.finished_at};
                  });
 
-  // FIXME: created_at and started_at cannot be initialized
-  return StageRequest{files};
+  return StageRequest{std::move(files), s_entity.created_at,
+                      s_entity.started_at, s_entity.completed_at};
 }
 
 bool SociDatabase::update(StageId const& id, Path const& logical_path,
@@ -217,10 +217,32 @@ bool SociDatabase::update(
     std::span<std::pair<Path, File::State>> physical_path_states, TimePoint tp)
 {
   PROFILE_FUNCTION();
-  soci::transaction tr{m_sql};
   for (auto const& [physical_path, state] : physical_path_states) {
     update(physical_path, state, tp);
   }
+  return true;
+}
+
+bool SociDatabase::update(StageEntity const& entity)
+{
+  PROFILE_FUNCTION();
+  using namespace soci;
+  m_sql << "UPDATE Stage SET created_at = :created_at, "
+           "started_at = :started_at, completed_at = :completed_at "
+           "WHERE id = :id;",
+      use(entity.created_at), use(entity.started_at), use(entity.completed_at),
+      use(entity.id);
+  return true;
+}
+
+bool SociDatabase::update(StageUpdate const& stage_update)
+{
+  PROFILE_FUNCTION();
+  soci::transaction tr{m_sql};
+  if (stage_update.stage.has_value()) {
+    update(stage_update.stage.value());
+  }
+  update(stage_update.files, stage_update.tp);
   tr.commit();
   return true;
 }

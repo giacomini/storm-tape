@@ -76,6 +76,8 @@ StatusResponse TapeService::status(StageId const& id)
     return StatusResponse{};
   }
 
+  const auto now = std::time(nullptr);
+
   // determine the actual state of files and update the db
   std::vector<std::pair<Path, File::State>> files_to_update;
   auto& stage = maybe_stage.value();
@@ -99,8 +101,12 @@ StatusResponse TapeService::status(StageId const& id)
       }
       auto const on_disk =
           locality == Locality::disk || locality == Locality::disk_and_tape;
-      file.state    = on_disk ? File::State::completed : File::State::failed;
-      file.locality = locality;
+      file.state      = on_disk ? File::State::completed : File::State::failed;
+      file.locality   = locality;
+      file.finished_at = now;
+      if (file.started_at == 0) {
+        file.started_at = now;
+      }
       files_to_update.push_back({file.physical_path, file.state});
       break;
     }
@@ -125,6 +131,12 @@ StatusResponse TapeService::status(StageId const& id)
             });
 
   auto const updated = stage.update_timestamps();
+  StageUpdate stage_update{
+      updated ? std::optional(StageEntity{id, stage.created_at,
+                                          stage.started_at, stage.completed_at})
+              : std::nullopt,
+      files_to_update, now};
+  m_db->update(stage_update);
   return StatusResponse{id, std::move(stage)};
 }
 
@@ -348,6 +360,7 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
   // a big deal, because the file stays in submitted state and can be passed
   // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
   // operation
+  // clang-format off
   std::for_each(
       physical_paths.begin(), physical_paths.end(), [&](auto& physical_path) {
         XAttrName const tsm_rect{"user.TSMRecT"};
@@ -359,7 +372,7 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
                                           physical_path.string());
         }
       });
-
+  // clang-format on
   m_db->update(physical_paths, File::State::started, now);
 
   return TakeOverResponse{std::move(physical_paths)};
