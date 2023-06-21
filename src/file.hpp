@@ -23,6 +23,11 @@ struct File
   TimePoint finished_at{0};
 };
 
+inline auto is_final(File::State state)
+{
+  return state == File::State::cancelled || state == File::State::failed
+      || state == File::State::completed;
+}
 std::string to_string(File::State state);
 
 using Files = std::vector<File>;
