@@ -16,6 +16,8 @@
 #include "storage_area_resolver.hpp"
 #include "takeover_request.hpp"
 #include "takeover_response.hpp"
+#include <boost/iterator/transform_iterator.hpp>
+#include <crow/logging.h>
 #include <fmt/core.h>
 #include <ctime>
 #include <span>
