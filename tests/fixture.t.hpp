@@ -41,7 +41,6 @@ class TestFixture
         make_dummy_config();
         return DUMMY_CONFIG_PATH;
       }())}
-      , m_storage{}
       , db{m_sql}
       , service{m_config, db, m_storage}
   {}
