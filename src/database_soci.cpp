@@ -2,6 +2,7 @@
 #include "io.hpp"
 #include "profiler.hpp"
 #include "sql_queries.hpp"
+#include <iostream>
 
 namespace soci {
 template<>
