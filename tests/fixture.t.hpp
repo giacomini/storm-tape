@@ -16,10 +16,10 @@ auto static constexpr DUMMY_CONFIG_PATH = "storm-tape-test.conf";
 static inline void make_dummy_config()
 {
   std::ofstream out{DUMMY_CONFIG_PATH};
-  out << "storage-areas:\n"
-         "- name: sa1\n"
-         "  root: /tmp\n"
-         "  access-point: /tmp\n";
+  out << R"(storage-areas: 
+            - name: sa1
+              root: /tmp
+              access-point: /tmp)";
   out.close();
 }
 
