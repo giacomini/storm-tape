@@ -69,11 +69,11 @@ crow::response to_crow_response(StatusResponse const& resp)
         return result;
       });
   boost::json::object jbody;
-  jbody["id"]           = id;
+  jbody["id"]          = id;
   jbody["createdAt"]   = stage.created_at;
   jbody["startedAt"]   = stage.started_at;
   jbody["completedAt"] = stage.completed_at;
-  jbody["files"]        = files;
+  jbody["files"]       = files;
 
   return crow::response{crow::status::OK, "json",
                         boost::json::serialize(jbody)};

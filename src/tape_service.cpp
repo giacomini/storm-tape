@@ -101,8 +101,8 @@ StatusResponse TapeService::status(StageId const& id)
       }
       auto const on_disk =
           locality == Locality::disk || locality == Locality::disk_and_tape;
-      file.state      = on_disk ? File::State::completed : File::State::failed;
-      file.locality   = locality;
+      file.state       = on_disk ? File::State::completed : File::State::failed;
+      file.locality    = locality;
       file.finished_at = now;
       if (file.started_at == 0) {
         file.started_at = now;
