@@ -20,7 +20,6 @@ static inline void make_dummy_config()
             - name: sa1
               root: /tmp
               access-point: /tmp)";
-  out.close();
 }
 
 class TestFixture
