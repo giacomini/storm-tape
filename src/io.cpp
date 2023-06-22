@@ -14,6 +14,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/url/parse.hpp>
 #include <boost/variant2.hpp>
+#include <crow.h>
 #include <fmt/core.h>
 #include <charconv>
 #include <chrono>
