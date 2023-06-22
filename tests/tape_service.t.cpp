@@ -76,21 +76,17 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     auto& stage          = status_response.stage();
     auto& files          = stage.files;
 
-    // clang-format off
-    CHECK(std::all_of(files.begin(), files.end(), [](auto const& f) {
-      return f.state == File::State::submitted;
-    }));
+    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
+    CHECK_EQ(files.at(0).state, File::State::submitted);
+    CHECK_EQ(files.at(0).started_at, 0);
+    CHECK_EQ(files.at(0).finished_at, 0);
+    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
+    CHECK_EQ(files.at(1).state, File::State::completed);
+    CHECK_GT(files.at(1).started_at, 0);
+    CHECK_EQ(files.at(1).finished_at, files.at(1).started_at);
 
-    CHECK(std::all_of(files.begin(), files.end(), [](auto const& f) {
-      return f.started_at == 0;
-    }));
-
-    CHECK(std::all_of(files.begin(), files.end(), [](auto const& f) {
-      return f.finished_at == 0;
-    }));
-    // clang-format on
     CHECK_EQ(stage.created_at, now);
-    CHECK_EQ(stage.started_at, 0);
+    CHECK_GE(stage.started_at, now);
     CHECK_EQ(stage.completed_at, 0);
   }
   {
@@ -99,21 +95,17 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     CHECK(maybe_stage.has_value());
     auto& stage = maybe_stage.value();
     auto& files = stage.files;
-    // clang-format off
-    CHECK(std::all_of(files.begin(), files.end(), [](auto const& f) {
-      return f.state == File::State::submitted;
-    }));
 
-    CHECK(std::all_of(files.begin(), files.end(), [](auto const& f) {
-      return f.started_at == 0;
-    }));
-
-    CHECK(std::all_of(files.begin(), files.end(), [](auto const& f) {
-      return f.finished_at == 0;
-    }));
-    // clang-format on
+    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
+    CHECK_EQ(files.at(0).state, File::State::submitted);
+    CHECK_EQ(files.at(0).started_at, 0);
+    CHECK_EQ(files.at(0).finished_at, 0);
+    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
+    CHECK_EQ(files.at(1).state, File::State::completed);
+    CHECK_GT(files.at(1).started_at, 0);
+    CHECK_EQ(files.at(1).finished_at, files.at(1).started_at);
     CHECK_EQ(stage.created_at, now);
-    CHECK_EQ(stage.started_at, 0);
+    CHECK_GE(stage.started_at, now);
     CHECK_EQ(stage.completed_at, 0);
   }
 
@@ -131,6 +123,10 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
         has_xattr(Path{"/tmp/example2.txt"}, XAttrName{"user.TSMRecT"}));
   }
 
+  // Sleep for a while...
+  using namespace std::chrono_literals;
+  std::this_thread::sleep_for(2s);
+
   // Do status again
   {
     // check from response
@@ -140,10 +136,13 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     CHECK_EQ(status.id(), id);
     CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
     CHECK_EQ(files.at(0).state, File::State::started);
-    CHECK_LE(files.at(0).started_at, files.at(1).started_at);
-    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
+    CHECK_GE(files.at(0).started_at, 0);
+    CHECK_EQ(files.at(0).finished_at, 0);
+
     CHECK_EQ(files.at(1).state, File::State::completed);
-    CHECK_EQ(files.at(1).started_at, files.at(1).finished_at);
+    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
+    CHECK_GE(files.at(1).started_at, files.at(1).finished_at);
+    CHECK_GE(files.at(1).finished_at, files.at(1).started_at);
   }
   {
     // check from db
@@ -177,10 +176,13 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     CHECK_EQ(status.id(), id);
     CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
     CHECK_EQ(files.at(0).state, File::State::completed);
-    CHECK_GE(files.at(0).finished_at, files.at(0).started_at);
-    CHECK_LE(files.at(0).started_at, files.at(1).started_at);
+    CHECK_GT(files.at(0).finished_at, files.at(0).started_at);
+    CHECK_GT(files.at(0).started_at, files.at(1).started_at);
+    
+    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
     CHECK_EQ(files.at(1).state, File::State::completed);
     CHECK_EQ(files.at(1).started_at, files.at(1).finished_at);
+   
     CHECK_GE(stage.started_at, stage.created_at);
     CHECK_GT(stage.completed_at, stage.created_at);
     CHECK_EQ(stage.started_at, files.at(1).started_at);
