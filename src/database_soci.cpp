@@ -95,16 +95,8 @@ SociDatabase::SociDatabase(soci::session& sql)
 bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 {
   PROFILE_FUNCTION();
-  auto created_at =
-      duration_cast<std::chrono::seconds>(stage.created_at.time_since_epoch())
-          .count();
-  auto started_at =
-      duration_cast<std::chrono::seconds>(stage.started_at.time_since_epoch())
-          .count();
-  auto completed_at =
-      duration_cast<std::chrono::seconds>(stage.completed_at.time_since_epoch())
-          .count();
-  StageEntity s_entity{id, created_at, started_at, completed_at};
+  StageEntity s_entity{id, stage.created_at, stage.started_at,
+            stage.completed_at};
 
   try {
     soci::transaction tr{m_sql};
@@ -149,8 +141,8 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
                                fe.started_at,   fe.finished_at};
                  });
 
-  // FIXME: created_at and started_at cannot be initialized
-  return StageRequest{files};
+  return StageRequest{std::move(files), s_entity.created_at,
+                      s_entity.started_at, s_entity.completed_at};
 }
 
 bool SociDatabase::update(StageId const& id, Path const& logical_path,
@@ -191,9 +183,13 @@ bool SociDatabase::update(Path const& physical_path, File::State state, TimePoin
     case File::State::cancelled:
     case File::State::failed: {
       using soci::use;
-      m_sql << "UPDATE File SET state = :state, finished_at = :tp "
-               "WHERE physical_path = :physical_path AND state IN (:submitted, :started);",
-          use(new_state), use(tp), use(cpath), use(submitted_state),
+      m_sql << "UPDATE File SET state = :state, "
+               "started_at = CASE WHEN started_at = 0 THEN :tp_start ELSE "
+               "started_at END, "
+               "finished_at = :tp_end "
+               "WHERE physical_path = :physical_path AND state IN (:submitted, "
+               ":started);",
+          use(new_state), use(tp), use(tp), use(cpath), use(submitted_state),
           use(started_state);
       break;
     }
@@ -225,10 +221,32 @@ bool SociDatabase::update(
     std::span<std::pair<Path, File::State>> physical_path_states, TimePoint tp)
 {
   PROFILE_FUNCTION();
-  soci::transaction tr{m_sql};
   for (auto const& [physical_path, state] : physical_path_states) {
     update(physical_path, state, tp);
   }
+  return true;
+}
+
+bool SociDatabase::update(StageEntity const& entity)
+{
+  PROFILE_FUNCTION();
+  using namespace soci;
+  m_sql << "UPDATE Stage SET created_at = :created_at, "
+           "started_at = :started_at, completed_at = :completed_at "
+           "WHERE id = :id;",
+      use(entity.created_at), use(entity.started_at), use(entity.completed_at),
+      use(entity.id);
+  return true;
+}
+
+bool SociDatabase::update(StageUpdate const& stage_update)
+{
+  PROFILE_FUNCTION();
+  soci::transaction tr{m_sql};
+  if (stage_update.stage.has_value()) {
+    update(stage_update.stage.value());
+  }
+  update(stage_update.files, stage_update.tp);
   tr.commit();
   return true;
 }

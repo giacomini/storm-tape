@@ -48,14 +48,6 @@ crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
   }
 }
 
-template<class TP>
-auto to_seconds(TP time_point)
-{
-  return std::chrono::duration_cast<std::chrono::seconds>(
-             time_point.time_since_epoch())
-      .count();
-}
-
 crow::response to_crow_response(StatusResponse const& resp)
 {
   auto const& stage   = resp.stage();
@@ -77,10 +69,11 @@ crow::response to_crow_response(StatusResponse const& resp)
         return result;
       });
   boost::json::object jbody;
-  jbody["id"]         = id;
-  jbody["created_at"] = to_seconds(stage.created_at);
-  jbody["started_at"] = to_seconds(stage.started_at);
-  jbody["files"]      = files;
+  jbody["id"]          = id;
+  jbody["createdAt"]   = stage.created_at;
+  jbody["startedAt"]   = stage.started_at;
+  jbody["completedAt"] = stage.completed_at;
+  jbody["files"]       = files;
 
   return crow::response{crow::status::OK, "json",
                         boost::json::serialize(jbody)};

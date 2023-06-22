@@ -2,22 +2,18 @@
 #define STAGE_REQUEST_HPP
 
 #include "file.hpp"
-#include <chrono>
 
 namespace storm {
 struct StageRequest
 {
   Files files;
-  Clock::time_point created_at{Clock::now()};
-  Clock::time_point started_at{};
-  Clock::time_point completed_at{};
+  TimePoint created_at{};
+  TimePoint started_at{};
+  TimePoint completed_at{};
 
   struct Tag {};
   static constexpr Tag tag{};
-
-  explicit StageRequest(Files f = {})
-      : files(std::move(f))
-  {}
+  bool update_timestamps();
 };
 
 } // namespace storm

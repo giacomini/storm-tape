@@ -5,6 +5,7 @@
 #include "database.hpp"
 #include "delete_response.hpp"
 #include "extended_attributes.hpp"
+#include "io.hpp"
 #include "profiler.hpp"
 #include "readytakeover_response.hpp"
 #include "release_response.hpp"
@@ -16,6 +17,7 @@
 #include "takeover_request.hpp"
 #include "takeover_response.hpp"
 #include <fmt/core.h>
+#include <ctime>
 #include <span>
 #include <string>
 
@@ -42,7 +44,9 @@ StageResponse TapeService::stage(StageRequest stage_request)
     std::error_code ec;
     auto status = fs::status(file.physical_path, ec);
     if (ec || !fs::is_regular_file(status)) {
-      file.state = File::State::failed;
+      file.state       = File::State::failed;
+      file.started_at  = std::time(nullptr);
+      file.finished_at = file.started_at;
     }
   }
   auto const uuid     = m_uuid_gen();
@@ -72,6 +76,8 @@ StatusResponse TapeService::status(StageId const& id)
     return StatusResponse{};
   }
 
+  const auto now = std::time(nullptr);
+
   // determine the actual state of files and update the db
   std::vector<std::pair<Path, File::State>> files_to_update;
   auto& stage = maybe_stage.value();
@@ -95,8 +101,9 @@ StatusResponse TapeService::status(StageId const& id)
       }
       auto const on_disk =
           locality == Locality::disk || locality == Locality::disk_and_tape;
-      file.state    = on_disk ? File::State::completed : File::State::failed;
-      file.locality = locality;
+      file.state       = on_disk ? File::State::completed : File::State::failed;
+      file.locality    = locality;
+      file.finished_at = now;
       files_to_update.push_back({file.physical_path, file.state});
       break;
     }
@@ -106,7 +113,8 @@ StatusResponse TapeService::status(StageId const& id)
       break;
     case File::State::submitted: {
       if (recall_in_progress(file.physical_path)) {
-        file.state = File::State::started;
+        file.state      = File::State::started;
+        file.started_at = now;
         files_to_update.push_back({file.physical_path, File::State::started});
       }
       break;
@@ -114,8 +122,18 @@ StatusResponse TapeService::status(StageId const& id)
     }
   }
 
-  m_db->update(files_to_update, std::time(nullptr));
+  std::sort(stage.files.begin(), stage.files.end(),
+            [](auto const& f1, auto const& f2) {
+              return to_underlying(f1.state) < to_underlying(f2.state);
+            });
 
+  auto const updated = stage.update_timestamps();
+  StageUpdate stage_update{
+      updated ? std::optional(StageEntity{id, stage.created_at,
+                                          stage.started_at, stage.completed_at})
+              : std::nullopt,
+      files_to_update, now};
+  m_db->update(stage_update);
   return StatusResponse{id, std::move(stage)};
 }
 
@@ -339,6 +357,7 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
   // a big deal, because the file stays in submitted state and can be passed
   // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
   // operation
+  // clang-format off
   std::for_each(
       physical_paths.begin(), physical_paths.end(), [&](auto& physical_path) {
         XAttrName const tsm_rect{"user.TSMRecT"};
@@ -350,7 +369,7 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
                                           physical_path.string());
         }
       });
-
+  // clang-format on
   m_db->update(physical_paths, File::State::started, now);
 
   return TakeOverResponse{std::move(physical_paths)};

@@ -15,6 +15,7 @@
 #include "takeover_request.hpp"
 #include "takeover_response.hpp"
 #include "tape_service.hpp"
+#include <ctime>
 
 namespace storm {
 
@@ -25,7 +26,8 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
       .methods("POST"_method)([&](crow::request const& req) {
         PROFILE_SCOPE("STAGE");
         try {
-          StageRequest request{from_json(req.body, StageRequest::tag)};
+          StageRequest request{from_json(req.body, StageRequest::tag),
+                               std::time(nullptr), 0, 0};
           auto resp = service.stage(std::move(request));
           return to_crow_response(resp, get_hostinfo(req, config));
         } catch (...) {
