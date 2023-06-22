@@ -48,10 +48,10 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   make_file(request.files.at(1).physical_path);
 
   // Do stage
-  auto stage_response = service.stage(std::move(request));
+  auto stage_response = m_service.stage(std::move(request));
   auto id             = stage_response.id();
   {
-    auto maybe_stage = db.find(id);
+    auto maybe_stage = m_db.find(id);
 
     CHECK(maybe_stage.has_value());
 
@@ -72,7 +72,7 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   // Do status
   {
     // check from response
-    auto status_response = service.status(id);
+    auto status_response = m_service.status(id);
     auto& stage          = status_response.stage();
     auto& files          = stage.files;
 
@@ -95,7 +95,7 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   }
   {
     // check from db
-    auto maybe_stage = db.find(id);
+    auto maybe_stage = m_db.find(id);
     CHECK(maybe_stage.has_value());
     auto& stage = maybe_stage.value();
     auto& files = stage.files;
@@ -124,7 +124,7 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   // Do take over
   {
     // Since one file was already on disk, only the stub file should be returned
-    auto const takeover_response = service.take_over({42});
+    auto const takeover_response = m_service.take_over({42});
     CHECK_EQ(takeover_response.paths.size(), 1);
     CHECK(has_xattr(Path{"/tmp/example1.txt"}, XAttrName{"user.TSMRecT"}));
     CHECK_FALSE(
@@ -134,7 +134,7 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   // Do status again
   {
     // check from response
-    auto const status = service.status(id);
+    auto const status = m_service.status(id);
     auto& stage       = status.stage();
     auto& files       = stage.files;
     CHECK_EQ(status.id(), id);
@@ -147,7 +147,7 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   }
   {
     // check from db
-    auto maybe_stage = db.find(id);
+    auto maybe_stage = m_db.find(id);
     CHECK(maybe_stage.has_value());
     auto& stage = maybe_stage.value();
     auto& files = stage.files;
@@ -171,7 +171,7 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   // Do status for the last time, now everything should be finished
   {
     // check from response
-    auto const status = service.status(id);
+    auto const status = m_service.status(id);
     auto& stage       = status.stage();
     auto& files       = stage.files;
     CHECK_EQ(status.id(), id);
@@ -188,7 +188,7 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   }
   {
     // check from db
-    auto maybe_stage = db.find(id);
+    auto maybe_stage = m_db.find(id);
     CHECK(maybe_stage.has_value());
     auto& stage = maybe_stage.value();
     auto& files = stage.files;

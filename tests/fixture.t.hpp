@@ -31,8 +31,8 @@ class TestFixture
   storm::LocalStorage m_storage;
 
  protected:
-  storm::SociDatabase db;
-  storm::TapeService service;
+  storm::SociDatabase m_db;
+  storm::TapeService m_service;
 
  public:
   TestFixture()
@@ -41,8 +41,8 @@ class TestFixture
         make_dummy_config();
         return DUMMY_CONFIG_PATH;
       }())}
-      , db{m_sql}
-      , service{m_config, db, m_storage}
+      , m_db{m_sql}
+      , m_service{m_config, m_db, m_storage}
   {}
 
   ~TestFixture()
