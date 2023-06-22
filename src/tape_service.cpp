@@ -67,6 +67,20 @@ static bool recall_in_progress(Path const& physical_path)
   return ec == std::error_code{} && in_progress;
 }
 
+static bool override_locality(Locality& locality, Path const& path)
+{
+  if (locality == Locality::lost) {
+    CROW_LOG_ERROR << fmt::format(
+        "The file {} appears lost, check stubbification and presence of "
+        "user.storm.migrated xattr",
+        path.string());
+    // do not scare the client
+    locality = Locality::unavailable;
+    return true;
+  }
+  return false;
+}
+
 StatusResponse TapeService::status(StageId const& id)
 {
   PROFILE_FUNCTION();
@@ -91,14 +105,7 @@ StatusResponse TapeService::status(StageId const& id)
         break;
       }
       auto locality = m_storage->locality(file.physical_path);
-      if (locality == Locality::lost) {
-        CROW_LOG_ERROR << fmt::format(
-            "The file {} appears lost, check stubbification and presence of "
-            "user.storm.migrated xattr",
-            file.physical_path.string());
-        // do not scare the client
-        locality = Locality::unavailable;
-      }
+      override_locality(locality, file.physical_path);
       auto const on_disk =
           locality == Locality::disk || locality == Locality::disk_and_tape;
       file.state       = on_disk ? File::State::completed : File::State::failed;
@@ -245,12 +252,7 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
           return PathInfo{std::move(logical_path), "Not a regular file"s};
         }
         auto locality = m_storage->locality(physical_path);
-        if (locality == Locality::lost) {
-          CROW_LOG_ERROR << fmt::format("The file {} appears lost",
-                                        logical_path.string());
-          // do not scare the client
-          locality = Locality::unavailable;
-        }
+        override_locality(locality, physical_path);
         return PathInfo{std::move(logical_path), locality};
       });
 
