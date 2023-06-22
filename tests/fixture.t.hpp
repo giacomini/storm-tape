@@ -17,7 +17,7 @@ static inline void make_dummy_config()
 {
   std::ofstream out{DUMMY_CONFIG_PATH};
   out << R"(
-storage-areas: 
+storage-areas:
 - name: sa1
   root: /tmp
   access-point: /tmp
