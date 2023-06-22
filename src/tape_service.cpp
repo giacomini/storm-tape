@@ -104,9 +104,6 @@ StatusResponse TapeService::status(StageId const& id)
       file.state       = on_disk ? File::State::completed : File::State::failed;
       file.locality    = locality;
       file.finished_at = now;
-      if (file.started_at == 0) {
-        file.started_at = now;
-      }
       files_to_update.push_back({file.physical_path, file.state});
       break;
     }
