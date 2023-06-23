@@ -7,6 +7,7 @@
 #include "routes.hpp"
 #include "tape_service.hpp"
 #include <boost/program_options.hpp>
+#include <crow.h>
 #include <fmt/core.h>
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <filesystem>

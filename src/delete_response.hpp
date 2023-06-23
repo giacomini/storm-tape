@@ -1,8 +1,6 @@
 #ifndef DELETE_RESPONSE_HPP
 #define DELETE_RESPONSE_HPP
 
-#include <crow.h>
-
 namespace storm {
 
 class Configuration;

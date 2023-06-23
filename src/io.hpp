@@ -6,7 +6,11 @@
 #include "stage_request.hpp"
 #include "takeover_request.hpp"
 #include <boost/json.hpp>
-#include <crow.h>
+
+namespace crow {
+  class request;
+  class response;
+}
 
 namespace storm {
 

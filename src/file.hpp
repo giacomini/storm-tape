@@ -2,8 +2,9 @@
 #define STORM_FILE_HPP
 
 #include "types.hpp"
-#include <vector>
 #include <string>
+#include <vector>
+
 namespace storm {
 struct File
 {
@@ -21,6 +22,9 @@ struct File
   Locality locality{Locality::unavailable};
   TimePoint started_at{0};
   TimePoint finished_at{0};
+  bool on_disk() const {
+    return locality == Locality::disk || locality == Locality::disk_and_tape;
+  }
 };
 
 inline auto is_final(File::State state)
