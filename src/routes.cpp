@@ -39,7 +39,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           CROW_LOG_ERROR << e.what() << '\n';
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         } catch (...) {
-          CROW_LOG_ERROR << "Uncaught exception\n";
+          CROW_LOG_ERROR << "Unknown exception\n";
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
@@ -57,7 +57,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
       CROW_LOG_ERROR << e.what() << '\n';
       return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     } catch (...) {
-      CROW_LOG_ERROR << "Uncaught exception\n";
+      CROW_LOG_ERROR << "Unknown exception\n";
       return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     }
   });
@@ -83,7 +83,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
               CROW_LOG_ERROR << e.what() << '\n';
               return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             } catch (...) {
-              CROW_LOG_ERROR << "Uncaught exception\n";
+              CROW_LOG_ERROR << "Unknown exception\n";
               return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
           });
@@ -99,7 +99,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           CROW_LOG_ERROR << e.what() << '\n';
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         } catch (...) {
-          CROW_LOG_ERROR << "Uncaught exception\n";
+          CROW_LOG_ERROR << "Unknown exception\n";
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
@@ -125,7 +125,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
               CROW_LOG_ERROR << e.what() << '\n';
               return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             } catch (...) {
-              CROW_LOG_ERROR << "Uncaught exception\n";
+              CROW_LOG_ERROR << "Unknown exception\n";
               return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
           });
@@ -144,7 +144,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           CROW_LOG_ERROR << e.what() << '\n';
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         } catch (...) {
-          CROW_LOG_ERROR << "Uncaught exception\n";
+          CROW_LOG_ERROR << "Unknown exception\n";
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
@@ -166,7 +166,7 @@ void create_internal_routes(crow::SimpleApp& app, storm::Configuration const&,
       CROW_LOG_ERROR << e.what() << '\n';
       return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     } catch (...) {
-      CROW_LOG_ERROR << "Uncaught exception\n";
+      CROW_LOG_ERROR << "Unknown exception\n";
       return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     }
   });
@@ -183,7 +183,7 @@ void create_internal_routes(crow::SimpleApp& app, storm::Configuration const&,
           CROW_LOG_ERROR << e.what() << '\n';
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         } catch (...) {
-          CROW_LOG_ERROR << "Uncaught exception\n";
+          CROW_LOG_ERROR << "Unknown exception\n";
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
