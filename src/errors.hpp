@@ -15,17 +15,15 @@ namespace storm {
 
 class Exception : public std::runtime_error
 {
-  public:
-    using std::runtime_error::runtime_error;
-    virtual int http_code() const = 0;
+ public:
+  using std::runtime_error::runtime_error;
+  virtual int http_code() const = 0;
 };
 
-class BadRequest : public Exception {
-  public:
-  explicit BadRequest(std::string title)
-    : Exception(std::move(title))
-    {}
-
+class BadRequest : public Exception
+{
+ public:
+  using Exception::Exception;
   int http_code() const override { return 400; }
 };
 } // namespace storm
