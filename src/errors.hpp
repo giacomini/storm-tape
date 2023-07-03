@@ -4,7 +4,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include "types.hpp"
 #include <boost/assert.hpp>
-#include <system_error>
+#include <stdexcept>
 
 namespace boost {
 void assertion_failed(char const* expr, char const* function, char const* file,
