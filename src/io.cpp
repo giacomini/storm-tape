@@ -149,7 +149,8 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp)
 {
-  return crow::response{crow::status::OK, "txt", fmt::format("{}\n", resp.n_ready)};
+  return crow::response{crow::status::OK, "txt",
+                        fmt::format("{}\n", resp.n_ready)};
 }
 
 crow::response to_crow_response(TakeOverResponse const& resp)
@@ -196,19 +197,23 @@ Files from_json(std::string_view const& body, StageRequest::Tag)
 
 Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
 {
-  Paths logical_paths;
-  auto const value =
-      boost::json::parse(boost::json::string_view{body.data(), body.size()});
+  try {
+    Paths logical_paths;
+    auto const value =
+        boost::json::parse(boost::json::string_view{body.data(), body.size()});
 
-  auto const& jpaths = value.as_object().at("paths").as_array();
-  logical_paths.reserve(jpaths.size());
-  std::transform(jpaths.begin(), jpaths.end(),
-                 std::back_inserter(logical_paths), //
-                 [](auto& path) {
-                   return Path{path.as_string().c_str()}.lexically_normal();
-                 });
+    auto const& jpaths = value.as_object().at("paths").as_array();
+    logical_paths.reserve(jpaths.size());
+    std::transform(jpaths.begin(), jpaths.end(),
+                   std::back_inserter(logical_paths), //
+                   [](auto& path) {
+                     return Path{path.as_string().c_str()}.lexically_normal();
+                   });
 
-  return logical_paths;
+    return logical_paths;
+  } catch (boost::exception const&) {
+    throw BadRequest("JSON validation error");
+  }
 }
 
 void fill_hostinfo_from_forwarded(HostInfo& info,

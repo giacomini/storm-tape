@@ -32,7 +32,6 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           auto resp = service.stage(std::move(request));
           return to_crow_response(resp, get_hostinfo(req, config));
         } catch (BadRequest const& e) {
-          CROW_LOG_WARNING << e.what() << '\n';
           return to_crow_response(e);
         } catch (...) {
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
@@ -67,8 +66,10 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
                 return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
+            } catch (BadRequest const& e) {
+              return to_crow_response(e);
             } catch (...) {
-              return crow::response(crow::status::BAD_REQUEST);
+              return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
           });
 
@@ -98,8 +99,10 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
                 return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
+            } catch (BadRequest const& e) {
+              return to_crow_response(e);
             } catch (...) {
-              return crow::response(crow::status::BAD_REQUEST);
+              return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
           });
 
@@ -110,8 +113,10 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           ArchiveInfoRequest info{from_json(req.body, ArchiveInfoRequest::tag)};
           auto const resp = service.archive_info(std::move(info));
           return to_crow_response(resp);
+        } catch (BadRequest const& e) {
+          return to_crow_response(e);
         } catch (...) {
-          return crow::response(crow::status::BAD_REQUEST);
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
 
