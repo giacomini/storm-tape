@@ -17,6 +17,7 @@
 #include "takeover_response.hpp"
 #include "tape_service.hpp"
 #include <ctime>
+#include <exception>
 
 namespace storm {
 
@@ -32,8 +33,13 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           auto resp = service.stage(std::move(request));
           return to_crow_response(resp, get_hostinfo(req, config));
         } catch (BadRequest const& e) {
+          CROW_LOG_WARNING << e.what() << '\n';
           return to_crow_response(e);
+        } catch (std::exception const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         } catch (...) {
+          CROW_LOG_ERROR << "Uncaught exception\n";
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
@@ -47,8 +53,12 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
         return crow::response(crow::status::NOT_FOUND);
       }
       return to_crow_response(resp);
+    } catch (std::exception const& e) {
+      CROW_LOG_ERROR << e.what() << '\n';
+      return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     } catch (...) {
-      return crow::response(crow::status::BAD_REQUEST);
+      CROW_LOG_ERROR << "Uncaught exception\n";
+      return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     }
   });
 
@@ -67,8 +77,13 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
               }
               return to_crow_response(resp);
             } catch (BadRequest const& e) {
+              CROW_LOG_WARNING << e.what() << '\n';
               return to_crow_response(e);
+            } catch (std::exception const& e) {
+              CROW_LOG_ERROR << e.what() << '\n';
+              return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             } catch (...) {
+              CROW_LOG_ERROR << "Uncaught exception\n";
               return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
           });
@@ -80,8 +95,12 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           auto resp = service.erase(StageId{id});
           return resp.found() ? crow::response{crow::status::OK}
                               : crow::response{crow::status::NOT_FOUND};
+        } catch (std::exception const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         } catch (...) {
-          return crow::response(crow::status::BAD_REQUEST);
+          CROW_LOG_ERROR << "Uncaught exception\n";
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
 
@@ -100,8 +119,13 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
               }
               return to_crow_response(resp);
             } catch (BadRequest const& e) {
+              CROW_LOG_WARNING << e.what() << '\n';
               return to_crow_response(e);
+            } catch (std::exception const& e) {
+              CROW_LOG_ERROR << e.what() << '\n';
+              return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             } catch (...) {
+              CROW_LOG_ERROR << "Uncaught exception\n";
               return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
           });
@@ -114,8 +138,13 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           auto const resp = service.archive_info(std::move(info));
           return to_crow_response(resp);
         } catch (BadRequest const& e) {
+          CROW_LOG_WARNING << e.what() << '\n';
           return to_crow_response(e);
+        } catch (std::exception const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         } catch (...) {
+          CROW_LOG_ERROR << "Uncaught exception\n";
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
@@ -130,17 +159,33 @@ void create_internal_routes(crow::SimpleApp& app, storm::Configuration const&,
   CROW_ROUTE(app, "/recalltable/cardinality/tasks/readyTakeOver")
   ([&] {
     PROFILE_SCOPE("READY");
-    auto const resp = service.ready_take_over();
-    return to_crow_response(resp);
+    try {
+      auto const resp = service.ready_take_over();
+      return to_crow_response(resp);
+    } catch (std::exception const& e) {
+      CROW_LOG_ERROR << e.what() << '\n';
+      return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+    } catch (...) {
+      CROW_LOG_ERROR << "Uncaught exception\n";
+      return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+    }
   });
 
   CROW_ROUTE(app, "/recalltable/tasks")
       .methods("PUT"_method)([&](crow::request const& req) {
         PROFILE_SCOPE("TAKE_OVER");
-        TakeOverRequest const take_over{
-            from_body_params(req.body, TakeOverRequest::tag)};
-        auto const resp = service.take_over(take_over);
-        return to_crow_response(resp);
+        try {
+          TakeOverRequest const take_over{
+              from_body_params(req.body, TakeOverRequest::tag)};
+          auto const resp = service.take_over(take_over);
+          return to_crow_response(resp);
+        } catch (std::exception const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+        } catch (...) {
+          CROW_LOG_ERROR << "Uncaught exception\n";
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+        }
       });
 }
 
