@@ -1,6 +1,7 @@
 #ifndef IO_HPP
 #define IO_HPP
 
+#include "errors.hpp"
 #include "file.hpp"
 #include "requests_with_paths.hpp"
 #include "stage_request.hpp"
@@ -8,9 +9,9 @@
 #include <boost/json.hpp>
 
 namespace crow {
-  class request;
-  class response;
-}
+class request;
+class response;
+} // namespace crow
 
 namespace storm {
 
@@ -49,6 +50,7 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp);
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp);
 crow::response to_crow_response(TakeOverResponse const& resp);
+crow::response to_crow_response(storm::Exception const& exception);
 
 Files from_json(std::string_view const& body, StageRequest::Tag);
 Paths from_json(std::string_view const& body, RequestWithPaths::Tag);

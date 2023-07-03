@@ -4,6 +4,7 @@
 #include "configuration.hpp"
 #include "database.hpp"
 #include "delete_response.hpp"
+#include "errors.hpp"
 #include "io.hpp"
 #include "profiler.hpp"
 #include "readytakeover_response.hpp"
@@ -30,8 +31,11 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
                                std::time(nullptr), 0, 0};
           auto resp = service.stage(std::move(request));
           return to_crow_response(resp, get_hostinfo(req, config));
+        } catch (BadRequest const& e) {
+          CROW_LOG_WARNING << e.what() << '\n';
+          return to_crow_response(e);
         } catch (...) {
-          return crow::response(crow::status::BAD_REQUEST);
+          return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
 

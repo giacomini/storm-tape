@@ -3,6 +3,7 @@
 #include "cancel_response.hpp"
 #include "configuration.hpp"
 #include "delete_response.hpp"
+#include "errors.hpp"
 #include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "stage_request.hpp"
@@ -161,25 +162,36 @@ crow::response to_crow_response(TakeOverResponse const& resp)
   return crow::response{crow::status::OK, "txt", body};
 }
 
+crow::response to_crow_response(storm::Exception const& e)
+{
+  static auto constexpr body_format = R"({{"status":{},"title":"{}"}})";
+  auto const body = fmt::format(body_format, e.http_code(), e.what());
+  auto response   = crow::response{e.http_code(), body};
+  response.set_header("Content-Type", "application/problem+json");
+  return response;
+}
+
 Files from_json(std::string_view const& body, StageRequest::Tag)
 {
-  auto const value =
-      boost::json::parse(boost::json::string_view{body.data(), body.size()});
+  try {
+    auto const value =
+        boost::json::parse(boost::json::string_view{body.data(), body.size()});
+    auto& jfiles = value.as_object().at("files").as_array();
+    Files files;
+    files.reserve(jfiles.size());
 
-  auto& jfiles = value.as_object().at("files").as_array();
-  Files files;
-  files.reserve(jfiles.size());
-
-  std::transform(                   //
-      jfiles.begin(), jfiles.end(), //
-      std::back_inserter(files),    //
-      [](auto& jfile) {
-        std::string_view sv = jfile.as_object().at("path").as_string();
-        return File{Path{sv}.lexically_normal()};
-      } //
-  );
-
-  return files;
+    std::transform(                   //
+        jfiles.begin(), jfiles.end(), //
+        std::back_inserter(files),    //
+        [](auto& jfile) {
+          std::string_view sv = jfile.as_object().at("path").as_string();
+          return File{Path{sv}.lexically_normal()};
+        } //
+    );
+    return files;
+  } catch (boost::exception const&) {
+    throw BadRequest("JSON validation error");
+  }
 }
 
 Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
