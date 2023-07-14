@@ -10,7 +10,7 @@ struct CancelResponse
   StageId id{};
   Paths invalid{};
 
-  explicit CancelResponse(StageId i = {}, Paths v = {})
+  explicit CancelResponse(StageId i, Paths v = {})
       : id(std::move(i))
       , invalid(std::move(v))
   {}
