@@ -49,10 +49,10 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
     PROFILE_SCOPE("STATUS");
     try {
       auto resp = service.status(StageId{id});
-      if (resp.id().empty()) {
-        return crow::response(crow::status::NOT_FOUND);
-      }
       return to_crow_response(resp);
+    } catch (StageNotFound const& e) {
+      CROW_LOG_ERROR << e.what() << '\n';
+      return to_crow_response(e);
     } catch (std::exception const& e) {
       CROW_LOG_ERROR << e.what() << '\n';
       return crow::response(crow::status::INTERNAL_SERVER_ERROR);
