@@ -34,6 +34,27 @@ class BadRequest : public Exception
     return 400;
   }
 };
+
+class StageNotFound : public Exception
+{
+  static auto constexpr s_title     = "Stage not found";
+  static auto constexpr s_format    = "Stage with id {} not found";
+  static auto constexpr s_http_code = 404;
+
+  StageId m_id;
+
+ public:
+  explicit StageNotFound(StageId id)
+      : Exception(s_title)
+      , m_id(std::move(id))
+  {}
+
+  int http_code() const override { return s_http_code; }
+
+  std::string detail() const override {
+    return fmt::format(s_format, m_id);
+  }
+};
 } // namespace storm
 
 #endif
