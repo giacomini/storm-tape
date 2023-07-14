@@ -79,6 +79,9 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
             } catch (BadRequest const& e) {
               CROW_LOG_INFO << e.what() << '\n';
               return to_crow_response(e);
+            } catch (StageNotFound const& e) {
+              CROW_LOG_ERROR << e.what() << '\n';
+              return to_crow_response(e);
             } catch (std::exception const& e) {
               CROW_LOG_ERROR << e.what() << '\n';
               return crow::response(crow::status::INTERNAL_SERVER_ERROR);
