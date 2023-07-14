@@ -181,6 +181,9 @@ void create_internal_routes(crow::SimpleApp& app, storm::Configuration const&,
               from_body_params(req.body, TakeOverRequest::tag)};
           auto const resp = service.take_over(take_over);
           return to_crow_response(resp);
+        } catch (BadRequest const& e) {
+          CROW_LOG_INFO << e.what() << '\n';
+          return to_crow_response(e);
         } catch (std::exception const& e) {
           CROW_LOG_ERROR << e.what() << '\n';
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
