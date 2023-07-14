@@ -39,6 +39,7 @@ crow::response to_crow_response(StatusResponse const& resp);
 
 boost::json::object file_missing_to_json(Paths const& missing,
                                          std::string const& id);
+crow::response to_crow_response(DeleteResponse const& resp);
 crow::response to_crow_response(CancelResponse const& resp);
 crow::response to_crow_response(ReleaseResponse const& resp);
 

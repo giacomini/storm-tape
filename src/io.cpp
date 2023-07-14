@@ -104,6 +104,11 @@ boost::json::object file_missing_to_json(Paths const& missing,
                              {"detail", message.str()}};
 }
 
+crow::response to_crow_response(DeleteResponse const&)
+{
+  return crow::response{crow::status::OK};
+}
+
 crow::response to_crow_response(CancelResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid, resp.id);
