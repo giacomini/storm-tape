@@ -278,7 +278,9 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
       auto& v        = p.value;
       auto [ptr, ec] = std::from_chars(std::to_address(v.begin()),
                                        std::to_address(v.end()), n_files);
-      if (ptr != std::to_address(v.end())) { // not all input has been consumed
+      if (ptr != std::to_address(v.end())
+          || ec != std::errc{}) { // not all input has been consumed or an error
+                                  // occoured
         return TakeOverRequest::invalid;
       }
     }
