@@ -4,6 +4,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include "types.hpp"
 #include <boost/assert.hpp>
+#include <fmt/core.h>
 #include <stdexcept>
 
 namespace boost {
@@ -18,6 +19,10 @@ class Exception : public std::runtime_error
  public:
   using std::runtime_error::runtime_error;
   virtual int http_code() const = 0;
+  virtual std::string detail() const
+  {
+    return {};
+  }
 };
 
 class BadRequest : public Exception
