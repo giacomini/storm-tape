@@ -95,9 +95,11 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
       .methods("DELETE"_method)([&](std::string const& id) {
         PROFILE_SCOPE("DELETE");
         try {
-          auto resp = service.erase(StageId{id});
-          return resp.found() ? crow::response{crow::status::OK}
-                              : crow::response{crow::status::NOT_FOUND};
+          auto const resp = service.erase(StageId{id});
+          return to_crow_response(resp);
+        } catch (StageNotFound const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
+          return to_crow_response(e);
         } catch (std::exception const& e) {
           CROW_LOG_ERROR << e.what() << '\n';
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
@@ -114,15 +116,15 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
             try {
               ReleaseRequest release{from_json(req.body, ReleaseRequest::tag)};
               auto resp = service.release(StageId{id}, std::move(release));
-              if (resp.id.empty()) {
-                return crow::response(crow::status::NOT_FOUND);
-              }
               if (resp.invalid.empty()) {
                 return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
             } catch (BadRequest const& e) {
               CROW_LOG_INFO << e.what() << '\n';
+              return to_crow_response(e);
+            } catch (StageNotFound const& e) {
+              CROW_LOG_ERROR << e.what() << '\n';
               return to_crow_response(e);
             } catch (std::exception const& e) {
               CROW_LOG_ERROR << e.what() << '\n';
