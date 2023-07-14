@@ -29,7 +29,10 @@ class BadRequest : public Exception
 {
  public:
   using Exception::Exception;
-  int http_code() const override { return 400; }
+  int http_code() const override
+  {
+    return 400;
+  }
 };
 } // namespace storm
 
