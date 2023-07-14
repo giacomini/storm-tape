@@ -69,9 +69,6 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
             try {
               CancelRequest cancel{from_json(req.body, CancelRequest::tag)};
               auto resp = service.cancel(StageId{id}, std::move(cancel));
-              if (resp.id.empty()) {
-                return crow::response(crow::status::NOT_FOUND);
-              }
               if (resp.invalid.empty()) {
                 return crow::response{crow::status::OK};
               }
