@@ -31,13 +31,13 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     auto json =
         R"({"files"[{"path":"/tmp//example.txt"},{"path":"/tmp/example2.txt"}]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, StageRequest::tag), BadRequest,
-                            "JSON validation error");
+                            "Invalid JSON");
   }
   {
     auto json =
         R"(({"FiLeS":[{"path":"/tmp//example.txt"},{"path":"/tmp/example2.txt"}]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, StageRequest::tag), BadRequest,
-                            "JSON validation error");
+                            "Invalid JSON");
   }
 }
 
@@ -58,12 +58,12 @@ TEST_CASE_FIXTURE(TestFixture, "Cancel")
   {
     auto json = R"({"files":["/tmp/example.txt","/tmp/example2.txt"]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, CancelRequest::tag), BadRequest,
-                            "JSON validation error");
+                            "Invalid JSON");
   }
   {
     auto json = R"({"paths":["/tmp/example.txt""/tmp/example2.txt"]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, CancelRequest::tag), BadRequest,
-                            "JSON validation error");
+                            "Invalid JSON");
   }
   auto const valid_id = make_stage(m_service);
   CHECK_NOTHROW(m_service.cancel(valid_id, CancelRequest{}));
@@ -88,12 +88,12 @@ TEST_CASE_FIXTURE(TestFixture, "Release")
   {
     auto json = R"({"files":["/tmp/example.txt","/tmp/example2.txt"]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, ReleaseRequest::tag), BadRequest,
-                            "JSON validation error");
+                            "Invalid JSON");
   }
   {
     auto json = R"({"paths":["/tmp/example.txt""/tmp/example2.txt"]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, ReleaseRequest::tag), BadRequest,
-                            "JSON validation error");
+                            "Invalid JSON");
   }
   auto const valid_id = make_stage(m_service);
   CHECK_THROWS_AS_MESSAGE(m_service.release(invalid_id, {}), StageNotFound,
@@ -110,12 +110,12 @@ TEST_CASE_FIXTURE(TestFixture, "ArchiveInfo")
   {
     auto json = R"({"files":["/tmp/example.txt","/tmp/example2.txt"]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, ArchiveInfoRequest::tag),
-                            BadRequest, "JSON validation error");
+                            BadRequest, "Invalid JSON");
   }
   {
     auto json = R"({"paths":["/tmp/example.txt""/tmp/example2.txt"]})";
     CHECK_THROWS_AS_MESSAGE(from_json(json, ArchiveInfoRequest::tag),
-                            BadRequest, "JSON validation error");
+                            BadRequest, "Invalid JSON");
   }
 }
 
@@ -128,22 +128,22 @@ TEST_CASE_FIXTURE(TestFixture, "TakeOver")
   {
     auto query_string = "second=123";
     CHECK_THROWS_AS_MESSAGE(from_json(query_string, ArchiveInfoRequest::tag),
-                            BadRequest, "Query Parameters validation error");
+                            BadRequest, "Invalid query parameters");
   }
   {
     auto query_string = "first=12.3";
     CHECK_THROWS_AS_MESSAGE(from_json(query_string, ArchiveInfoRequest::tag),
-                            BadRequest, "Query Parameters validation error");
+                            BadRequest, "Invalid query parameters");
   }
   {
     auto query_string = "first=p123";
     CHECK_THROWS_AS_MESSAGE(from_json(query_string, ArchiveInfoRequest::tag),
-                            BadRequest, "Query Parameters validation error");
+                            BadRequest, "Invalid query parameters");
   }
   {
     auto query_string = "first=123x";
     CHECK_THROWS_AS_MESSAGE(from_json(query_string, ArchiveInfoRequest::tag),
-                            BadRequest, "Query Parameters validation error");
+                            BadRequest, "Invalid query parameters");
   }
 }
 

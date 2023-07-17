@@ -196,7 +196,7 @@ Files from_json(std::string_view const& body, StageRequest::Tag)
     );
     return files;
   } catch (boost::exception const&) {
-    throw BadRequest("JSON validation error");
+    throw BadRequest("Invalid JSON");
   }
 }
 
@@ -217,7 +217,7 @@ Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
 
     return logical_paths;
   } catch (boost::exception const&) {
-    throw BadRequest("JSON validation error");
+    throw BadRequest("Invalid JSON");
   }
 }
 
@@ -274,7 +274,7 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
     auto const dummy_url = std::string("/a?").append(body);
     auto url_view        = boost::urls::parse_origin_form(dummy_url);
     if (!url_view.has_value()) {
-      throw BadRequest("Query Parameters validation error");
+      throw BadRequest("Invalid query parameters");
     }
     auto params = url_view.value().params();
     auto it     = params.find("first");
@@ -286,7 +286,7 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
       if (ptr != std::to_address(v.end())
           || ec != std::errc{}) { // not all input has been consumed or an error
                                   // occoured
-        throw BadRequest("Query Parameters validation error");
+        throw BadRequest("Invalid query parameters");
       }
     }
   }
