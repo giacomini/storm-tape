@@ -32,8 +32,8 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
                                std::time(nullptr), 0, 0};
           auto resp = service.stage(std::move(request));
           return to_crow_response(resp, get_hostinfo(req, config));
-        } catch (BadRequest const& e) {
-          CROW_LOG_INFO << e.what() << '\n';
+        } catch (HttpError const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
           return to_crow_response(e);
         } catch (std::exception const& e) {
           CROW_LOG_ERROR << e.what() << '\n';
@@ -50,7 +50,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
     try {
       auto resp = service.status(StageId{id});
       return to_crow_response(resp);
-    } catch (StageNotFound const& e) {
+    } catch (HttpError const& e) {
       CROW_LOG_ERROR << e.what() << '\n';
       return to_crow_response(e);
     } catch (std::exception const& e) {
@@ -73,10 +73,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
                 return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
-            } catch (BadRequest const& e) {
-              CROW_LOG_INFO << e.what() << '\n';
-              return to_crow_response(e);
-            } catch (StageNotFound const& e) {
+            } catch (HttpError const& e) {
               CROW_LOG_ERROR << e.what() << '\n';
               return to_crow_response(e);
             } catch (std::exception const& e) {
@@ -94,7 +91,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
         try {
           auto const resp = service.erase(StageId{id});
           return to_crow_response(resp);
-        } catch (StageNotFound const& e) {
+        } catch (HttpError const& e) {
           CROW_LOG_ERROR << e.what() << '\n';
           return to_crow_response(e);
         } catch (std::exception const& e) {
@@ -117,10 +114,7 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
                 return crow::response{crow::status::OK};
               }
               return to_crow_response(resp);
-            } catch (BadRequest const& e) {
-              CROW_LOG_INFO << e.what() << '\n';
-              return to_crow_response(e);
-            } catch (StageNotFound const& e) {
+            } catch (HttpError const& e) {
               CROW_LOG_ERROR << e.what() << '\n';
               return to_crow_response(e);
             } catch (std::exception const& e) {
@@ -139,8 +133,8 @@ void create_routes(crow::SimpleApp& app, Configuration const& config,
           ArchiveInfoRequest info{from_json(req.body, ArchiveInfoRequest::tag)};
           auto const resp = service.archive_info(std::move(info));
           return to_crow_response(resp);
-        } catch (BadRequest const& e) {
-          CROW_LOG_INFO << e.what() << '\n';
+        } catch (HttpError const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
           return to_crow_response(e);
         } catch (std::exception const& e) {
           CROW_LOG_ERROR << e.what() << '\n';
@@ -181,8 +175,8 @@ void create_internal_routes(crow::SimpleApp& app, storm::Configuration const&,
               from_body_params(req.body, TakeOverRequest::tag)};
           auto const resp = service.take_over(take_over);
           return to_crow_response(resp);
-        } catch (BadRequest const& e) {
-          CROW_LOG_INFO << e.what() << '\n';
+        } catch (HttpError const& e) {
+          CROW_LOG_ERROR << e.what() << '\n';
           return to_crow_response(e);
         } catch (std::exception const& e) {
           CROW_LOG_ERROR << e.what() << '\n';
