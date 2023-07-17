@@ -14,7 +14,7 @@ void assertion_failed(char const* expr, char const* function, char const* file,
 
 namespace storm {
 
-class Exception : public std::runtime_error
+class HttpError : public std::runtime_error
 {
  public:
   using std::runtime_error::runtime_error;
@@ -25,17 +25,17 @@ class Exception : public std::runtime_error
   }
 };
 
-class BadRequest : public Exception
+class BadRequest : public HttpError
 {
  public:
-  using Exception::Exception;
+  using HttpError::HttpError;
   int http_code() const override
   {
     return 400;
   }
 };
 
-class StageNotFound : public Exception
+class StageNotFound : public HttpError
 {
   static auto constexpr s_title     = "Stage not found";
   static auto constexpr s_format    = "Stage with id {} not found";
@@ -45,7 +45,7 @@ class StageNotFound : public Exception
 
  public:
   explicit StageNotFound(StageId id)
-      : Exception(s_title)
+      : HttpError(s_title)
       , m_id(std::move(id))
   {}
 

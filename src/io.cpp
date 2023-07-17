@@ -168,7 +168,7 @@ crow::response to_crow_response(TakeOverResponse const& resp)
   return crow::response{crow::status::OK, "txt", body};
 }
 
-crow::response to_crow_response(storm::Exception const& e)
+crow::response to_crow_response(storm::HttpError const& e)
 {
   static auto constexpr body_format = R"({{"status":{},"title":"{}"}})";
   auto const body = fmt::format(body_format, e.http_code(), e.what());
