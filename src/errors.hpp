@@ -18,7 +18,7 @@ class HttpError : public std::runtime_error
 {
  public:
   using std::runtime_error::runtime_error;
-  virtual int http_code() const = 0;
+  virtual int status_code() const = 0;
   virtual std::string detail() const
   {
     return {};
@@ -29,7 +29,7 @@ class BadRequest : public HttpError
 {
  public:
   using HttpError::HttpError;
-  int http_code() const override
+  int status_code() const override
   {
     return 400;
   }
@@ -39,7 +39,7 @@ class StageNotFound : public HttpError
 {
   static auto constexpr s_title     = "Stage not found";
   static auto constexpr s_format    = "Stage with id {} not found";
-  static auto constexpr s_http_code = 404;
+  static auto constexpr s_status_code = 404;
 
   StageId m_id;
 
@@ -49,7 +49,7 @@ class StageNotFound : public HttpError
       , m_id(std::move(id))
   {}
 
-  int http_code() const override { return s_http_code; }
+  int status_code() const override { return s_status_code; }
 
   std::string detail() const override {
     return fmt::format(s_format, m_id);

@@ -171,8 +171,8 @@ crow::response to_crow_response(TakeOverResponse const& resp)
 crow::response to_crow_response(storm::HttpError const& e)
 {
   static auto constexpr body_format = R"({{"status":{},"title":"{}"}})";
-  auto const body = fmt::format(body_format, e.http_code(), e.what());
-  auto response   = crow::response{e.http_code(), body};
+  auto const body = fmt::format(body_format, e.status_code(), e.what());
+  auto response   = crow::response{e.status_code(), body};
   response.set_header("Content-Type", "application/problem+json");
   return response;
 }
