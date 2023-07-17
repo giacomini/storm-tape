@@ -37,8 +37,8 @@ class BadRequest : public HttpError
 
 class StageNotFound : public HttpError
 {
-  static auto constexpr s_title     = "Stage not found";
-  static auto constexpr s_format    = "Stage with id {} not found";
+  static auto constexpr s_title       = "Stage not found";
+  static auto constexpr s_format      = "Stage with id {} not found";
   static auto constexpr s_status_code = 404;
 
   StageId m_id;
@@ -49,9 +49,13 @@ class StageNotFound : public HttpError
       , m_id(std::move(id))
   {}
 
-  int status_code() const override { return s_status_code; }
+  int status_code() const override
+  {
+    return s_status_code;
+  }
 
-  std::string detail() const override {
+  std::string detail() const override
+  {
     return fmt::format(s_format, m_id);
   }
 };
