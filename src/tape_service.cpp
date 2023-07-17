@@ -4,6 +4,7 @@
 #include "configuration.hpp"
 #include "database.hpp"
 #include "delete_response.hpp"
+#include "errors.hpp"
 #include "extended_attributes.hpp"
 #include "io.hpp"
 #include "profiler.hpp"
@@ -89,7 +90,7 @@ StatusResponse TapeService::status(StageId const& id)
   auto maybe_stage = m_db->find(id);
 
   if (!maybe_stage.has_value()) {
-    return StatusResponse{};
+    throw StageNotFound(id);
   }
 
   const auto now = std::time(nullptr);
@@ -159,8 +160,9 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
 {
   PROFILE_FUNCTION();
   auto stage = m_db->find(id);
+
   if (!stage.has_value()) {
-    return CancelResponse{};
+    throw StageNotFound{id};
   }
 
   auto proj = [](File const& stage_file) -> Path const& {
@@ -193,9 +195,11 @@ DeleteResponse TapeService::erase(StageId const& id)
 {
   PROFILE_FUNCTION();
   // do not bother cancelling the recalls in progress
-
   auto const erased = m_db->erase(id);
-  return DeleteResponse{erased};
+  if (!erased) {
+    throw StageNotFound(id);
+  }
+  return {};
 }
 
 ReleaseResponse TapeService::release(StageId const& id,
@@ -204,7 +208,7 @@ ReleaseResponse TapeService::release(StageId const& id,
   PROFILE_FUNCTION();
   auto stage = m_db->find(id);
   if (!stage.has_value()) {
-    return ReleaseResponse{};
+    throw StageNotFound{id};
   }
 
   auto proj = [](File const& stage_file) -> Path const& {

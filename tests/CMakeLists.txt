@@ -1,7 +1,8 @@
 
 add_executable(all.t 
   all.t.cpp 
-  configuration.t.cpp 
+  configuration.t.cpp
+  errors.t.cpp
   storage_area_resolver.t.cpp
   io.t.cpp
   stage_request.t.cpp

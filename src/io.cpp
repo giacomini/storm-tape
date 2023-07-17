@@ -3,6 +3,7 @@
 #include "cancel_response.hpp"
 #include "configuration.hpp"
 #include "delete_response.hpp"
+#include "errors.hpp"
 #include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "stage_request.hpp"
@@ -103,6 +104,11 @@ boost::json::object file_missing_to_json(Paths const& missing,
                              {"detail", message.str()}};
 }
 
+crow::response to_crow_response(DeleteResponse const&)
+{
+  return crow::response{crow::status::OK};
+}
+
 crow::response to_crow_response(CancelResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid, resp.id);
@@ -148,7 +154,8 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp)
 {
-  return crow::response{crow::status::OK, "txt", fmt::format("{}\n", resp.n_ready)};
+  return crow::response{crow::status::OK, "txt",
+                        fmt::format("{}\n", resp.n_ready)};
 }
 
 crow::response to_crow_response(TakeOverResponse const& resp)
@@ -161,42 +168,57 @@ crow::response to_crow_response(TakeOverResponse const& resp)
   return crow::response{crow::status::OK, "txt", body};
 }
 
+crow::response to_crow_response(storm::HttpError const& e)
+{
+  static auto constexpr body_format = R"({{"status":{},"title":"{}"}})";
+  auto const body = fmt::format(body_format, e.status_code(), e.what());
+  auto response   = crow::response{e.status_code(), body};
+  response.set_header("Content-Type", "application/problem+json");
+  return response;
+}
+
 Files from_json(std::string_view const& body, StageRequest::Tag)
 {
-  auto const value =
-      boost::json::parse(boost::json::string_view{body.data(), body.size()});
+  try {
+    auto const value =
+        boost::json::parse(boost::json::string_view{body.data(), body.size()});
+    auto& jfiles = value.as_object().at("files").as_array();
+    Files files;
+    files.reserve(jfiles.size());
 
-  auto& jfiles = value.as_object().at("files").as_array();
-  Files files;
-  files.reserve(jfiles.size());
-
-  std::transform(                   //
-      jfiles.begin(), jfiles.end(), //
-      std::back_inserter(files),    //
-      [](auto& jfile) {
-        std::string_view sv = jfile.as_object().at("path").as_string();
-        return File{Path{sv}.lexically_normal()};
-      } //
-  );
-
-  return files;
+    std::transform(                   //
+        jfiles.begin(), jfiles.end(), //
+        std::back_inserter(files),    //
+        [](auto& jfile) {
+          std::string_view sv = jfile.as_object().at("path").as_string();
+          return File{Path{sv}.lexically_normal()};
+        } //
+    );
+    return files;
+  } catch (boost::exception const&) {
+    throw BadRequest("Invalid JSON");
+  }
 }
 
 Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
 {
-  Paths logical_paths;
-  auto const value =
-      boost::json::parse(boost::json::string_view{body.data(), body.size()});
+  try {
+    Paths logical_paths;
+    auto const value =
+        boost::json::parse(boost::json::string_view{body.data(), body.size()});
 
-  auto const& jpaths = value.as_object().at("paths").as_array();
-  logical_paths.reserve(jpaths.size());
-  std::transform(jpaths.begin(), jpaths.end(),
-                 std::back_inserter(logical_paths), //
-                 [](auto& path) {
-                   return Path{path.as_string().c_str()}.lexically_normal();
-                 });
+    auto const& jpaths = value.as_object().at("paths").as_array();
+    logical_paths.reserve(jpaths.size());
+    std::transform(jpaths.begin(), jpaths.end(),
+                   std::back_inserter(logical_paths), //
+                   [](auto& path) {
+                     return Path{path.as_string().c_str()}.lexically_normal();
+                   });
 
-  return logical_paths;
+    return logical_paths;
+  } catch (boost::exception const&) {
+    throw BadRequest("Invalid JSON");
+  }
 }
 
 void fill_hostinfo_from_forwarded(HostInfo& info,
@@ -252,7 +274,7 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
     auto const dummy_url = std::string("/a?").append(body);
     auto url_view        = boost::urls::parse_origin_form(dummy_url);
     if (!url_view.has_value()) {
-      return TakeOverRequest::invalid;
+      throw BadRequest("Invalid query parameters");
     }
     auto params = url_view.value().params();
     auto it     = params.find("first");
@@ -261,8 +283,10 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
       auto& v        = p.value;
       auto [ptr, ec] = std::from_chars(std::to_address(v.begin()),
                                        std::to_address(v.end()), n_files);
-      if (ptr != std::to_address(v.end())) { // not all input has been consumed
-        return TakeOverRequest::invalid;
+      if (ptr != std::to_address(v.end())
+          || ec != std::errc{}) { // not all input has been consumed or an error
+                                  // occoured
+        throw BadRequest("Invalid query parameters");
       }
     }
   }

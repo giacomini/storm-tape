@@ -10,7 +10,7 @@ struct ReleaseResponse
   StageId id{};
   Paths invalid{};
 
-  ReleaseResponse(StageId i = {}, Paths v = {})
+  ReleaseResponse(StageId i, Paths v = {})
       : id(std::move(i))
       , invalid(std::move(v))
   {}
