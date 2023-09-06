@@ -1,3 +1,4 @@
+#include "app.hpp"
 #include "configuration.hpp"
 #include "database.hpp"
 #include "database_soci.hpp"
@@ -42,7 +43,7 @@ int main(int argc, char* argv[])
 
     auto const config = storm::load_configuration(fs::path{config_file});
 
-    crow::SimpleApp app;
+    storm::CrowApp app;
     app.loglevel(crow::LogLevel::Debug);
     soci::session sql(soci::sqlite3, "storm-tape.sqlite");
     storm::SociDatabase db{sql};

@@ -107,6 +107,7 @@ find_package(yaml-cpp CONFIG REQUIRED)
 add_library(
   libtaperestapi
   OBJECT
+  src/access_logger.cpp
   src/archiveinfo_response.cpp
   src/cancel_response.cpp
   src/configuration.cpp
