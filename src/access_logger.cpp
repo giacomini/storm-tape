@@ -1,6 +1,6 @@
 #include "access_logger.hpp"
-#include <fmt/core.h>
 #include <fmt/chrono.h>
+#include <fmt/core.h>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -13,11 +13,23 @@ void storm::AccessLogger::after_handle(crow::request& req, crow::response& res,
     return fmt::format("{:%FT%T%Ez}", fmt::localtime(std::time({})));
   }();
   auto const request_id = [&] {
-    auto result = req.get_header_value("X-Request-Id");
+    auto result = req.get_header_value("x-request-id");
     if (result.empty()) {
       result = "-";
     }
     return result;
+  }();
+  auto const principal = [&] {
+    if (auto sub = req.get_header_value("x-sub"); !sub.empty()) {
+      return sub;
+    } else if (auto voms_user = req.get_header_value("x-voms_user");
+               !voms_user.empty()) {
+      std::ostringstream os;
+      os << std::quoted(voms_user);
+      return os.str();
+    } else {
+      return std::string{"-"};
+    }
   }();
   auto files = [&](long space_left) {
     space_left -= 6; // for the square brackets, a comma and the ellipsis
@@ -49,7 +61,7 @@ void storm::AccessLogger::after_handle(crow::request& req, crow::response& res,
   };
 
   std::ostringstream os;
-  os << timestamp << ' ' << request_id << ' ' << ctx.user << ' '
+  os << timestamp << ' ' << request_id << ' ' << principal << ' '
      << ctx.operation << ' ' << res.code;
   if (ctx.operation == "STAGE" || ctx.operation == "STATUS"
       || ctx.operation == "CANCEL" || ctx.operation == "RELEASE"

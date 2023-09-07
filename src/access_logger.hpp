@@ -11,7 +11,6 @@ struct AccessLogger
 {
   struct context
   {
-    std::string user{"-"};
     std::string operation{"-"};
     std::string stage_id{"-"};
     Files files;
