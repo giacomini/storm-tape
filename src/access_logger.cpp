@@ -6,6 +6,17 @@
 #include <iostream>
 #include <sstream>
 
+namespace {
+bool acceptable_request_id(std::string_view id)
+{
+  std::string_view acceptable = "ABCDEFGHIJKLMNOPQRSTUVWZ"
+                                "abcdefghijklmnopqrstuvwz"
+                                "0123456789";
+  return id.size() > 0U && id.size() <= 16U
+      && id.find_first_not_of(acceptable) == std::string::npos;
+}
+} // namespace
+
 void storm::AccessLogger::after_handle(crow::request& req, crow::response& res,
                                        context& ctx)
 {
@@ -13,11 +24,8 @@ void storm::AccessLogger::after_handle(crow::request& req, crow::response& res,
     return fmt::format("{:%FT%T%Ez}", fmt::localtime(std::time({})));
   }();
   auto const request_id = [&] {
-    auto result = req.get_header_value("x-request-id");
-    if (result.empty()) {
-      result = "-";
-    }
-    return result;
+    auto id = req.get_header_value("x-request-id");
+    return acceptable_request_id(id) ? id : "-";
   }();
   auto const principal = [&] {
     if (auto sub = req.get_header_value("x-sub"); !sub.empty()) {
