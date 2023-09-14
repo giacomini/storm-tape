@@ -252,6 +252,24 @@ void fill_hostinfo_from_forwarded(HostInfo& info,
   }
 }
 
+void fill_hostinfo_from_host(HostInfo& info, std::string const& http_host)
+{
+  // the value of the Host field is of the form hostname[:port]
+  auto const pos = http_host.find(':');
+  if (pos != 0) {
+    info.host = http_host.substr(0, pos);
+  }
+  if (pos != std::string::npos) {
+    auto port_s = http_host.substr(pos + 1);
+    int port; // uninitialized
+    if (boost::conversion::try_lexical_convert(port_s, port)) {
+      if (port > 0 && port < 65536) {
+        info.port = port_s;
+      }
+    }
+  }
+}
+
 HostInfo get_hostinfo(crow::request const& req, Configuration const& conf)
 {
   HostInfo result{"http", conf.hostname, std::to_string(conf.port)};
@@ -261,7 +279,7 @@ HostInfo get_hostinfo(crow::request const& req, Configuration const& conf)
     fill_hostinfo_from_forwarded(result, http_forwarded);
   } else if (auto const http_host = req.get_header_value("Host");
              !http_host.empty()) {
-    result.host = http_host;
+    fill_hostinfo_from_host(result, http_host);
   }
 
   return result;

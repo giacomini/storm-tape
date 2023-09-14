@@ -59,7 +59,7 @@ StageResponse TapeService::stage(StageRequest stage_request)
     CROW_LOG_ERROR << fmt::format(
         "Failed to insert request {} into the database", id);
   }
-  return inserted ? StageResponse{id} : StageResponse{};
+  return inserted ? StageResponse{id, std::move(files)} : StageResponse{};
 }
 
 static bool recall_in_progress(Path const& physical_path)
