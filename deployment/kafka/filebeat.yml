@@ -1,0 +1,82 @@
+#==================== Log files StoRM input ==========================
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+     - /var/log/storm.log
+#  multiline:
+#    include_lines: [ '^ERR' , '^WARN' ] 
+#    pattern: '^[[:space:]]'
+#    match: after
+
+#============================ Journald input ========================
+# Input for filebeats from Journald. Used include_matches to specify filtering expressions, used multiline.match to  determines how Filebeat combines matching lines into an event.
+filebeat.inputs:
+ - type: journald
+  enabled: true
+  id: everything
+  seek: cursor
+  paths: ["/var/log/journal"]
+  parsers:
+  - multiline:
+    type: pattern
+    pattern: '^\{'
+    negate: true
+    match: after
+
+ - type: journald
+  enabled: true
+  id: service
+  include_matches:
+    - _SYSTEMD_UNIT=consul.service
+
+  - type: journald
+  id: iptables
+  include_matches.match:
+    - _TRANSPORT=kernel
+  processors:
+    - drop_event:
+        when.not.regexp.message: '^iptables'
+
+# The following include matches configuration reads all systemd syslog entries:
+  include_matches.and:
+  - match:
+  - "journald.process.name=systemd"
+  - "systemd.transport=syslog"
+
+# ========================= Access log input ========================
+filebeat.inputs:
+- type: log
+  enabled: true
+  path:
+    - /var/log/access.log
+  multiline:
+    type: patern
+    patern: ^[[:space:]]
+    match: after
+    negate: false 
+
+#============================= Filebeat modules ============================
+#filebeat.config.modules:
+# Glob pattern for configuration loading
+  path: ${path.config}/modules.d/*.yml
+
+#  # Set to true to enable config reloading
+  reload.enabled: true
+
+#==================== Elasticsearch template setting =======================
+setup.template.settings:
+  index.number_of_shards: 3
+ 
+tags : ["sd", "sd", "sd"]
+#=============================== Kafka output ==============================
+output.kafka:
+  hosts: ["cnlog-kafka01.cr.cnaf.infn.it:9192","cnlog-kafka02.cr.cnaf.infn.it:9192","cnlog-kafka03.cr.cnaf.infn.it:9192"]
+  topic: "sd"
+  username: "sd"
+  password: "6cx_jP81%qP5"
+  ssl.certificate_authorities: ["/etc/grid-security/ca.pem"]
+
+#output.console:
+#  pretty: true
+
