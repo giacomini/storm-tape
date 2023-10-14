@@ -207,15 +207,37 @@ Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
     auto const value =
         boost::json::parse(boost::json::string_view{body.data(), body.size()});
 
-    auto const& jpaths = value.as_object().at("paths").as_array();
-    logical_paths.reserve(jpaths.size());
-    std::transform(jpaths.begin(), jpaths.end(),
-                   std::back_inserter(logical_paths), //
-                   [](auto& path) {
-                     return Path{path.as_string().c_str()}.lexically_normal();
-                   });
+    auto const& o = value.as_object();
+
+    if (auto const* p = o.if_contains("paths"); p != nullptr) {
+      auto const& ja = p->as_array();
+      logical_paths.reserve(ja.size());
+
+      std::transform(                        //
+          ja.begin(), ja.end(),              //
+          std::back_inserter(logical_paths), //
+          [](auto& jpath) {
+            std::string_view sv = jpath.as_string();
+            return Path{sv}.lexically_normal();
+          } //
+      );
+
+    } else {
+      auto& ja = o.at("files").as_array();
+      logical_paths.reserve(ja.size());
+
+      std::transform(                        //
+          ja.begin(), ja.end(),              //
+          std::back_inserter(logical_paths), //
+          [](auto& jfile) {
+            std::string_view sv = jfile.as_object().at("path").as_string();
+            return Path{sv}.lexically_normal();
+          } //
+      );
+    }
 
     return logical_paths;
+
   } catch (boost::exception const&) {
     throw BadRequest("Invalid JSON");
   }
