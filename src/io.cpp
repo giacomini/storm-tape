@@ -44,7 +44,7 @@ crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
   } else {
     auto jbody = to_json(resp);
     crow::response cresp{crow::status::CREATED, "json",
-                         boost::json::serialize(jbody)};
+                         fmt::format("{}\n", boost::json::serialize(jbody))};
     cresp.set_header("Location", make_location(info, resp.id()));
     return cresp;
   }
@@ -112,13 +112,15 @@ crow::response to_crow_response(DeleteResponse const&)
 crow::response to_crow_response(CancelResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid, resp.id);
-  return {crow::status::BAD_REQUEST, "json", boost::json::serialize(jbody)};
+  return {crow::status::BAD_REQUEST, "json",
+          fmt::format("{}\n", boost::json::serialize(jbody))};
 }
 
 crow::response to_crow_response(ReleaseResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid, resp.id);
-  return {crow::status::BAD_REQUEST, "json", boost::json::serialize(jbody)};
+  return {crow::status::BAD_REQUEST, "json",
+          fmt::format("{}\n", boost::json::serialize(jbody))};
 }
 
 struct PathInfoVisitor
@@ -147,9 +149,8 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
                    return boost::variant2::visit(visitor, info.info);
                  });
 
-  auto body = boost::json::serialize(jbody);
-  body += '\n';
-  return crow::response{crow::status::OK, "json", body};
+  return crow::response{crow::status::OK, "json",
+                        fmt::format("{}\n", boost::json::serialize(jbody))};
 }
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp)
