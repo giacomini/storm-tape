@@ -44,7 +44,7 @@ crow::response to_crow_response(StageResponse const& resp, HostInfo const& info)
   } else {
     auto jbody = to_json(resp);
     crow::response cresp{crow::status::CREATED, "json",
-                         boost::json::serialize(jbody)};
+                         fmt::format("{}\n", boost::json::serialize(jbody))};
     cresp.set_header("Location", make_location(info, resp.id()));
     return cresp;
   }
@@ -112,13 +112,15 @@ crow::response to_crow_response(DeleteResponse const&)
 crow::response to_crow_response(CancelResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid, resp.id);
-  return {crow::status::BAD_REQUEST, "json", boost::json::serialize(jbody)};
+  return {crow::status::BAD_REQUEST, "json",
+          fmt::format("{}\n", boost::json::serialize(jbody))};
 }
 
 crow::response to_crow_response(ReleaseResponse const& resp)
 {
   auto jbody = file_missing_to_json(resp.invalid, resp.id);
-  return {crow::status::BAD_REQUEST, "json", boost::json::serialize(jbody)};
+  return {crow::status::BAD_REQUEST, "json",
+          fmt::format("{}\n", boost::json::serialize(jbody))};
 }
 
 struct PathInfoVisitor
@@ -147,9 +149,8 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
                    return boost::variant2::visit(visitor, info.info);
                  });
 
-  auto body = boost::json::serialize(jbody);
-  body += '\n';
-  return crow::response{crow::status::OK, "json", body};
+  return crow::response{crow::status::OK, "json",
+                        fmt::format("{}\n", boost::json::serialize(jbody))};
 }
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp)
@@ -207,15 +208,37 @@ Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
     auto const value =
         boost::json::parse(boost::json::string_view{body.data(), body.size()});
 
-    auto const& jpaths = value.as_object().at("paths").as_array();
-    logical_paths.reserve(jpaths.size());
-    std::transform(jpaths.begin(), jpaths.end(),
-                   std::back_inserter(logical_paths), //
-                   [](auto& path) {
-                     return Path{path.as_string().c_str()}.lexically_normal();
-                   });
+    auto const& o = value.as_object();
+
+    if (auto const* p = o.if_contains("paths"); p != nullptr) {
+      auto const& ja = p->as_array();
+      logical_paths.reserve(ja.size());
+
+      std::transform(                        //
+          ja.begin(), ja.end(),              //
+          std::back_inserter(logical_paths), //
+          [](auto& jpath) {
+            std::string_view sv = jpath.as_string();
+            return Path{sv}.lexically_normal();
+          } //
+      );
+
+    } else {
+      auto& ja = o.at("files").as_array();
+      logical_paths.reserve(ja.size());
+
+      std::transform(                        //
+          ja.begin(), ja.end(),              //
+          std::back_inserter(logical_paths), //
+          [](auto& jfile) {
+            std::string_view sv = jfile.as_object().at("path").as_string();
+            return Path{sv}.lexically_normal();
+          } //
+      );
+    }
 
     return logical_paths;
+
   } catch (boost::exception const&) {
     throw BadRequest("Invalid JSON");
   }
