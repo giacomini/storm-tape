@@ -198,8 +198,9 @@ bool SociDatabase::update(StageId const& id, LogicalPath const& path,
 
   } catch (soci::soci_error const& e) {
     std::cerr << "Soci error: " << e.what() << '\n';
+    return false;
   }
-  return false;
+  return true;
 }
 
 bool SociDatabase::update(Path const& physical_path, File::State state,
