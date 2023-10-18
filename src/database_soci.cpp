@@ -171,7 +171,6 @@ bool SociDatabase::update(StageId const& id, LogicalPath const& path,
     auto const cstate = to_underlying(state);
     auto const cpath  = path.string();
     switch (state) {
-      assert(false && "invalid state");
     case File::State::started: {
       m_sql << "UPDATE File SET state = :state, started_at = :tp "
                "WHERE stage_id = :id AND logical_path = :logical_path;",
