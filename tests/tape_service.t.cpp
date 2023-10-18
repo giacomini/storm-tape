@@ -5,9 +5,11 @@
 #include <iostream>
 #include <thread>
 
+#include "cancel_response.hpp"
 #include "extended_attributes.hpp"
 #include "file.hpp"
 #include "fixture.t.hpp"
+#include "requests_with_paths.hpp"
 #include "stage_request.hpp"
 #include "stage_response.hpp"
 #include "status_response.hpp"
@@ -33,7 +35,6 @@ auto make_stub = [](Path const& path, const char* size = "1M") {
 };
 
 auto delete_file = [](Path const& path) { std::filesystem::remove(path); };
-
 
 TEST_SUITE_BEGIN("TapeService");
 
@@ -178,11 +179,11 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     CHECK_EQ(files.at(0).state, File::State::completed);
     CHECK_GT(files.at(0).finished_at, files.at(0).started_at);
     CHECK_GT(files.at(0).started_at, files.at(1).started_at);
-    
+
     CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
     CHECK_EQ(files.at(1).state, File::State::completed);
     CHECK_EQ(files.at(1).started_at, files.at(1).finished_at);
-   
+
     CHECK_GE(stage.started_at, stage.created_at);
     CHECK_GT(stage.completed_at, stage.created_at);
     CHECK_EQ(stage.started_at, files.at(1).started_at);
@@ -213,5 +214,30 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   for (auto& f : request.files) {
     delete_file(f.physical_path);
   }
+}
+
+TEST_CASE_FIXTURE(TestFixture, "Cancel")
+{
+  StageRequest request{FILES, now, 0, 0};
+  make_stub(request.files.at(0).physical_path);
+  make_file(request.files.at(1).physical_path);
+  // Do stage
+  auto stage_response = m_service.stage(std::move(request));
+  auto id             = stage_response.id();
+  // Do cancel
+  Paths paths;
+  std::transform(FILES.begin(), FILES.end(), std::back_inserter(paths),
+                 [](File const& f) { return LogicalPath{f.logical_path}; });
+  m_service.cancel(id, CancelRequest{paths});
+  // Sleep for a while...
+  using namespace std::chrono_literals;
+  std::this_thread::sleep_for(2s);
+  // Do status
+  auto stage = m_service.status(id).stage();
+  CHECK_EQ(stage.created_at, now);
+  CHECK_GT(stage.started_at, now);
+  CHECK_EQ(stage.started_at, stage.completed_at);
+  CHECK(std::all_of(stage.files.begin(), stage.files.end(),
+              [](auto& f) { return f.state == File::State::cancelled; }));
 }
 } // namespace storm
