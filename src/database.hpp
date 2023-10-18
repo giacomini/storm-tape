@@ -54,8 +54,12 @@ class Database
   virtual std::optional<StageRequest> find(StageId const& id) const = 0;
   virtual bool update(StageId const& id, Path const& logical_path,
                       File::State state)                            = 0;
+  virtual bool update(StageId const& id, LogicalPath const& path,
+                      File::State state, TimePoint tp)              = 0;
   virtual bool update(Path const& physical_path, File::State state,
                       TimePoint tp)                                 = 0;
+  virtual bool update(StageId const& id, std::span<LogicalPath const> paths,
+                      File::State state, TimePoint tp)              = 0;
   virtual bool update(std::span<Path const> physical_paths, File::State state,
                       TimePoint tp)                                 = 0;
   virtual bool update(StageUpdate const& stage_update)              = 0;
@@ -112,6 +116,12 @@ class MockDatabase : public Database
     return false;
   }
 
+  bool update(StageId const&, LogicalPath const&, File::State,
+              TimePoint) override
+  {
+    return true;
+  }
+
   bool update(Path const& physical_path, File::State state, TimePoint tp) override
   {
     for (auto&& [id, stage] : m_db) {
@@ -140,6 +150,12 @@ class MockDatabase : public Database
       }
     }
 
+    return true;
+  }
+
+  bool update(StageId const&, std::span<LogicalPath const>, File::State,
+              TimePoint) override
+  {
     return true;
   }
 

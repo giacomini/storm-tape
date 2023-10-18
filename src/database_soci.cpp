@@ -97,7 +97,7 @@ bool SociDatabase::insert(StageId const& id, StageRequest const& stage)
 {
   PROFILE_FUNCTION();
   StageEntity s_entity{id, stage.created_at, stage.started_at,
-            stage.completed_at};
+                       stage.completed_at};
 
   try {
     soci::transaction tr{m_sql};
@@ -163,7 +163,48 @@ bool SociDatabase::update(StageId const& id, Path const& logical_path,
   return true;
 }
 
-bool SociDatabase::update(Path const& physical_path, File::State state, TimePoint tp)
+bool SociDatabase::update(StageId const& id, LogicalPath const& path,
+                          File::State state, TimePoint tp)
+{
+  PROFILE_FUNCTION();
+  try {
+    auto const cstate = to_underlying(state);
+    auto const cpath  = path.string();
+    switch (state) {
+      assert(false && "invalid state");
+    case File::State::started: {
+      m_sql << "UPDATE File SET state = :state, started_at = :tp "
+               "WHERE stage_id = :id AND logical_path = :logical_path;",
+          soci::use(cstate), soci::use(tp), soci::use(id), soci::use(cpath);
+      break;
+    }
+    case File::State::completed:
+    case File::State::cancelled:
+    case File::State::failed: {
+      m_sql << "UPDATE File SET state = :state, "
+               "started_at = CASE WHEN started_at = 0 THEN :tp_start ELSE "
+               "started_at END, "
+               "finished_at = :tp_end "
+               "WHERE stage_id = :id AND logical_path = :logical_path;",
+          soci::use(cstate), soci::use(tp), soci::use(tp), soci::use(id),
+          soci::use(cpath);
+      break;
+    }
+    case File::State::submitted:
+      // this transition is not foreseen, ignore
+      break;
+    default:
+      assert(false && "invalid state");
+    }
+
+  } catch (soci::soci_error const& e) {
+    std::cerr << "Soci error: " << e.what() << '\n';
+  }
+  return false;
+}
+
+bool SociDatabase::update(Path const& physical_path, File::State state,
+                          TimePoint tp)
 {
   PROFILE_FUNCTION();
   try {
@@ -204,6 +245,17 @@ bool SociDatabase::update(Path const& physical_path, File::State state, TimePoin
     std::cerr << "SOCI error: " << e.what() << '\n';
     return false;
   }
+  return true;
+}
+
+bool SociDatabase::update(StageId const& id, std::span<LogicalPath const> paths,
+                          File::State state, TimePoint tp)
+{
+  PROFILE_FUNCTION();
+  soci::transaction tr{m_sql};
+  std::for_each(paths.begin(), paths.end(),
+                [&](auto& p) { update(id, p, state, tp); });
+  tr.commit();
   return true;
 }
 
@@ -257,7 +309,8 @@ std::size_t SociDatabase::count_files(File::State state) const
   PROFILE_FUNCTION();
   std::size_t count{};
   auto const cstate = to_underlying(state);
-  m_sql << "SELECT COUNT(DISTINCT physical_path) FROM File WHERE state = :state;",
+  m_sql
+      << "SELECT COUNT(DISTINCT physical_path) FROM File WHERE state = :state;",
       soci::into(count), soci::use(cstate);
   return std::size_t{count};
 }
@@ -268,8 +321,8 @@ Paths SociDatabase::get_files(File::State state, std::size_t n_files) const
   std::vector<Filename> filenames(n_files);
   auto const cstate = to_underlying(state);
 
-  m_sql
-      << "SELECT DISTINCT physical_path FROM File WHERE state = :state LIMIT :n_files;",
+  m_sql << "SELECT DISTINCT physical_path FROM File WHERE state = :state LIMIT "
+           ":n_files;",
       soci::into(filenames), soci::use(cstate), soci::use(n_files);
 
   Paths result;
