@@ -229,9 +229,6 @@ TEST_CASE_FIXTURE(TestFixture, "Cancel")
   std::transform(FILES.begin(), FILES.end(), std::back_inserter(paths),
                  [](File const& f) { return LogicalPath{f.logical_path}; });
   m_service.cancel(id, CancelRequest{paths});
-  // Sleep for a while...
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(2s);
   // Do status
   auto stage = m_service.status(id).stage();
   CHECK_EQ(stage.created_at, now);
