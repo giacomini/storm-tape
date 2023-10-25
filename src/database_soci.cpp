@@ -146,6 +146,20 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
                       s_entity.started_at, s_entity.completed_at};
 }
 
+std::vector<StageId> SociDatabase::find_incomplete_stages() const
+{
+  PROFILE_FUNCTION();
+
+  std::size_t n_stages{0};
+  m_sql << "SELECT COUNT(*) FROM Stage WHERE completed_at = 0",
+      soci::into(n_stages);
+
+  std::vector<StageId> result(n_stages);
+  m_sql << "SELECT id FROM Stage WHERE completed_at = 0", soci::into(result);
+
+  return result;
+}
+
 bool SociDatabase::update(StageId const& id, LogicalPath const& path,
                           File::State state)
 {
