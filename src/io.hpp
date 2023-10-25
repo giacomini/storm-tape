@@ -53,12 +53,6 @@ LogicalPaths from_json(std::string_view const& body, RequestWithPaths::Tag);
 void fill_hostinfo_from_forwarded(HostInfo& info, std::string const& http_forwarded);
 HostInfo get_hostinfo(crow::request const& req, Configuration const& conf);
 
-template<class Enum>
-constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
-{
-  return static_cast<std::underlying_type_t<Enum>>(e);
-}
-
 std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag);
 
 } // namespace storm
