@@ -27,6 +27,7 @@ class ArchiveInfoResponse;
 class ReadyTakeOverResponse;
 class TakeOverRequest;
 class TakeOverResponse;
+class InProgressResponse;
 class File;
 
 class TapeService
@@ -51,6 +52,7 @@ class TapeService
   // for GEMSS
   ReadyTakeOverResponse ready_take_over();
   TakeOverResponse take_over(TakeOverRequest);
+  InProgressResponse in_progress();
 };
 
 } // namespace storm

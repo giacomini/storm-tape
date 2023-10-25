@@ -23,6 +23,7 @@ class ReleaseResponse;
 class ArchiveInfoResponse;
 class ReadyTakeOverResponse;
 class TakeOverResponse;
+class InProgressResponse;
 class Configuration;
 
 struct HostInfo
@@ -45,6 +46,7 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp);
 
 crow::response to_crow_response(ReadyTakeOverResponse const& resp);
 crow::response to_crow_response(TakeOverResponse const& resp);
+crow::response to_crow_response(InProgressResponse const& resp);
 crow::response to_crow_response(storm::HttpError const& exception);
 
 Files from_json(std::string_view const& body, StageRequest::Tag);
