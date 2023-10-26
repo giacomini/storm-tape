@@ -27,3 +27,5 @@ RUN sed -i "s/#DEVTOOLSET_VERSION#/${DEVTOOLSET_VERSION}/g" /opt/app-root/etc/sc
     library-scripts/provide-user.sh ${USERNAME} ${USER_UID} ${USER_GID} && \
     base-scripts/install-vcpkg.sh ${USERNAME} && \
     rm -rf library-scripts base-scripts
+
+USER ${USERNAME}
