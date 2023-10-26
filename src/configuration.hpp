@@ -11,8 +11,8 @@ namespace storm {
 struct StorageArea
 {
   std::string name;
-  Path root;
-  Path access_point;
+  PhysicalPath root;
+  LogicalPath access_point;
 };
 
 using StorageAreas = std::vector<StorageArea>;

@@ -83,7 +83,7 @@ crow::response to_crow_response(StatusResponse const& resp)
 
 // Creates a JSON object when one or more files targeted for cancellation do
 // not belong to the initially submitted stage request.
-boost::json::object file_missing_to_json(Paths const& missing,
+boost::json::object file_missing_to_json(LogicalPaths const& missing,
                                          StageId const& id)
 {
   std::string const sfile = std::accumulate(
@@ -145,7 +145,7 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
 
   std::transform(infos.begin(), infos.end(), std::back_inserter(jbody),
                  [&](PathInfo const& info) {
-                   PathInfoVisitor visitor{info.logical_path.string()};
+                   PathInfoVisitor visitor{info.path.string()};
                    return boost::variant2::visit(visitor, info.info);
                  });
 
@@ -163,7 +163,7 @@ crow::response to_crow_response(TakeOverResponse const& resp)
 {
   auto const body =
       std::accumulate(resp.paths.begin(), resp.paths.end(), std::string{}, //
-                      [](std::string const& acc, Path const& path) {
+                      [](std::string const& acc, PhysicalPath const& path) {
                         return fmt::format("{}unused {}\n", acc, path.string());
                       });
   return crow::response{crow::status::OK, "txt", body};
@@ -192,7 +192,7 @@ Files from_json(std::string_view const& body, StageRequest::Tag)
         std::back_inserter(files),    //
         [](auto& jfile) {
           std::string_view sv = jfile.as_object().at("path").as_string();
-          return File{Path{sv}.lexically_normal()};
+          return File{LogicalPath{Path{sv}.lexically_normal()}};
         } //
     );
     return files;
@@ -201,10 +201,10 @@ Files from_json(std::string_view const& body, StageRequest::Tag)
   }
 }
 
-Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
+LogicalPaths from_json(std::string_view const& body, RequestWithPaths::Tag)
 {
   try {
-    Paths logical_paths;
+    LogicalPaths paths;
     auto const value =
         boost::json::parse(boost::json::string_view{body.data(), body.size()});
 
@@ -212,32 +212,32 @@ Paths from_json(std::string_view const& body, RequestWithPaths::Tag)
 
     if (auto const* p = o.if_contains("paths"); p != nullptr) {
       auto const& ja = p->as_array();
-      logical_paths.reserve(ja.size());
+      paths.reserve(ja.size());
 
       std::transform(                        //
           ja.begin(), ja.end(),              //
-          std::back_inserter(logical_paths), //
+          std::back_inserter(paths),         //
           [](auto& jpath) {
             std::string_view sv = jpath.as_string();
-            return Path{sv}.lexically_normal();
+            return LogicalPath{Path{sv}.lexically_normal()};
           } //
       );
 
     } else {
       auto& ja = o.at("files").as_array();
-      logical_paths.reserve(ja.size());
+      paths.reserve(ja.size());
 
       std::transform(                        //
           ja.begin(), ja.end(),              //
-          std::back_inserter(logical_paths), //
+          std::back_inserter(paths),         //
           [](auto& jfile) {
             std::string_view sv = jfile.as_object().at("path").as_string();
-            return Path{sv}.lexically_normal();
+            return LogicalPath{Path{sv}.lexically_normal()};
           } //
       );
     }
 
-    return logical_paths;
+    return paths;
 
   } catch (boost::exception const&) {
     throw BadRequest("Invalid JSON");

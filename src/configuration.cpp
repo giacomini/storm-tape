@@ -104,8 +104,8 @@ static fs::path load_storage_area_access_point(YAML::Node const& node)
 static StorageArea load_storage_area(YAML::Node const& sa)
 {
   std::string name = load_storage_area_name(sa["name"]);
-  fs::path root    = load_storage_area_root(sa["root"]);
-  fs::path ap      = load_storage_area_access_point(sa["access-point"]);
+  PhysicalPath root{load_storage_area_root(sa["root"])};
+  LogicalPath ap{load_storage_area_access_point(sa["access-point"])};
   return {name, root, ap};
 }
 
@@ -168,7 +168,7 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
   // copy all the access points in another vector, together with a pointer to
   // the corresponding storage area
   auto const access_points = [&] {
-    std::vector<std::pair<Path, StorageArea const*>> aps;
+    std::vector<std::pair<LogicalPath, StorageArea const*>> aps;
     aps.reserve(result.size());
     std::transform(result.begin(), result.end(), std::back_inserter(aps),
                    [](StorageArea const& sa) {

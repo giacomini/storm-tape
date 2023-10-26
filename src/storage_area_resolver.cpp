@@ -6,7 +6,7 @@ namespace storm {
 
 namespace {
 
-auto prefix_match_size(Path const& p1, Path const& p2)
+auto prefix_match_size(LogicalPath const& p1, LogicalPath const& p2)
 {
   auto [it, _] = std::mismatch(p1.begin(), p1.end(), p2.begin(), p2.end());
   return std::distance(p1.begin(), it);
@@ -14,11 +14,10 @@ auto prefix_match_size(Path const& p1, Path const& p2)
 
 } // namespace
 
-Path StorageAreaResolver::operator()(Path const& logical_path) const
+PhysicalPath StorageAreaResolver::operator()(LogicalPath const& path) const
 {
-  if (logical_path.is_relative()
-      || logical_path != logical_path.lexically_normal()) {
-    return Path{};
+  if (path.is_relative() || path != path.lexically_normal()) {
+    return PhysicalPath{};
   }
 
   BOOST_ASSERT(!m_sas.empty());
@@ -26,10 +25,10 @@ Path StorageAreaResolver::operator()(Path const& logical_path) const
   auto sa_it =
       std::max_element(m_sas.begin(), m_sas.end(),
                        [&](StorageArea const& sa1, StorageArea const& sa2) {
-                         return prefix_match_size(logical_path, sa1.access_point)
-                              < prefix_match_size(logical_path, sa2.access_point);
+                         return prefix_match_size(path, sa1.access_point)
+                              < prefix_match_size(path, sa2.access_point);
                        });
-  auto rel_path = logical_path.lexically_relative(sa_it->access_point);
+  auto rel_path = path.lexically_relative(sa_it->access_point);
   BOOST_ASSERT(!rel_path.empty());
 
   if (rel_path == ".") {
@@ -39,10 +38,10 @@ Path StorageAreaResolver::operator()(Path const& logical_path) const
 
   if (*rel_path.begin() == "..") {
     // no match
-    return Path{};
+    return PhysicalPath{};
   }
-
-  return sa_it->root / rel_path;
+  
+  return static_cast<PhysicalPath>(sa_it->root / rel_path);
 }
 
 } // namespace storm

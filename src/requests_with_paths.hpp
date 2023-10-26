@@ -10,7 +10,7 @@ struct RequestWithPaths
   struct Tag {};
   static constexpr Tag tag{};
 
-  Paths paths;
+  LogicalPaths paths;
 };
 
 struct CancelRequest : RequestWithPaths

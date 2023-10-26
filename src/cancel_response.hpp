@@ -8,9 +8,9 @@ namespace storm {
 struct CancelResponse
 {
   StageId id{};
-  Paths invalid{};
+  LogicalPaths invalid{};
 
-  explicit CancelResponse(StageId i, Paths v = {})
+  explicit CancelResponse(StageId i, LogicalPaths v = {})
       : id(std::move(i))
       , invalid(std::move(v))
   {}

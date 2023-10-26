@@ -62,15 +62,15 @@ StageResponse TapeService::stage(StageRequest stage_request)
   return inserted ? StageResponse{id, std::move(files)} : StageResponse{};
 }
 
-static bool recall_in_progress(Path const& physical_path)
+static bool recall_in_progress(PhysicalPath const& path)
 {
   XAttrName const tsm_rect{"user.TSMRecT"};
   std::error_code ec;
-  auto const in_progress = has_xattr(physical_path, tsm_rect, ec);
+  auto const in_progress = has_xattr(path, tsm_rect, ec);
   return ec == std::error_code{} && in_progress;
 }
 
-static bool override_locality(Locality& locality, Path const& path)
+static bool override_locality(Locality& locality, PhysicalPath const& path)
 {
   if (locality == Locality::lost) {
     CROW_LOG_ERROR << fmt::format(
@@ -96,7 +96,7 @@ StatusResponse TapeService::status(StageId const& id)
   const auto now = std::time(nullptr);
 
   // determine the actual state of files and update the db
-  std::vector<std::pair<Path, File::State>> files_to_update;
+  std::vector<std::pair<PhysicalPath, File::State>> files_to_update;
   auto& stage = maybe_stage.value();
   for (auto& files = stage.files; auto& file : files) {
     switch (file.state) {
@@ -165,13 +165,13 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
     throw StageNotFound{id};
   }
 
-  auto proj = [](File const& stage_file) -> Path const& {
+  auto proj = [](File const& stage_file) -> LogicalPath const& {
     return stage_file.logical_path;
   };
 
   std::sort(cancel.paths.begin(), cancel.paths.end());
 
-  Paths invalid{};
+  LogicalPaths invalid{};
   std::set_difference(
       cancel.paths.begin(), cancel.paths.end(),
       boost::make_transform_iterator(stage->files.begin(), proj),
@@ -182,10 +182,8 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
     return CancelResponse{id, std::move(invalid)};
   }
 
-  for (auto const& logical_path : cancel.paths) {
-    m_db->update(id, logical_path, File::State::cancelled);
-  }
-
+  const auto now = std::time(nullptr);
+  m_db->update(id, cancel.paths, File::State::cancelled, now);
   // do not bother cancelling the recalls in progress
 
   return CancelResponse{id};
@@ -211,13 +209,13 @@ ReleaseResponse TapeService::release(StageId const& id,
     throw StageNotFound{id};
   }
 
-  auto proj = [](File const& stage_file) -> Path const& {
+  auto proj = [](File const& stage_file) -> LogicalPath const& {
     return stage_file.logical_path;
   };
 
   std::sort(release.paths.begin(), release.paths.end());
 
-  Paths invalid{};
+  LogicalPaths invalid{};
   std::set_difference(
       release.paths.begin(), release.paths.end(),
       boost::make_transform_iterator(stage->files.begin(), proj),
@@ -244,7 +242,7 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
 
   std::transform( //
       paths.begin(), paths.end(), std::back_inserter(infos),
-      [&](Path& logical_path) {
+      [&](LogicalPath& logical_path) {
         using namespace std::string_literals;
 
         auto const physical_path = resolve(logical_path);
@@ -281,9 +279,9 @@ ReadyTakeOverResponse TapeService::ready_take_over()
   return ReadyTakeOverResponse{n};
 }
 
-using PathLocality = std::pair<Path, Locality>;
+using PathLocality = std::pair<PhysicalPath, Locality>;
 
-static auto extend_paths_with_localities(storm::Paths&& paths, Storage& storage)
+static auto extend_paths_with_localities(PhysicalPaths&& paths, Storage& storage)
 {
   std::vector<PathLocality> path_localities;
   path_localities.reserve(paths.size());
