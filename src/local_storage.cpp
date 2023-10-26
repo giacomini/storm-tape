@@ -5,13 +5,13 @@
 
 namespace storm {
 
-Locality LocalStorage::locality(Path const& physical_path)
+Locality LocalStorage::locality(PhysicalPath const& path)
 {
   PROFILE_FUNCTION();
 
   struct stat sb = {};
 
-  if (::stat(physical_path.c_str(), &sb) == -1) {
+  if (::stat(path.c_str(), &sb) == -1) {
     return Locality::unavailable;
   }
 
@@ -26,7 +26,7 @@ Locality LocalStorage::locality(Path const& physical_path)
 
   bool const is_being_recalled{[&] {
     XAttrName const tsm_rect{"user.TSMRecT"};
-    return has_xattr(physical_path, tsm_rect, ec);
+    return has_xattr(path, tsm_rect, ec);
   }()};
 
   if (ec != std::error_code{}) {
@@ -37,7 +37,7 @@ Locality LocalStorage::locality(Path const& physical_path)
 
   bool const is_on_tape{[&] {
     XAttrName const storm_migrated{"user.storm.migrated"};
-    return has_xattr(physical_path, storm_migrated, ec);
+    return has_xattr(path, storm_migrated, ec);
   }()};
 
   if (ec != std::error_code{}) {

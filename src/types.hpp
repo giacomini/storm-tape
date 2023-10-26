@@ -4,14 +4,21 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+
 namespace storm {
 
 namespace fs = std::filesystem;
 
-struct LogicalPath;
-struct PhysicalPath;
-using Path          = fs::path;
-using Paths         = std::vector<Path>;
+using Path = fs::path;
+struct LogicalPath : Path
+{
+  using Path::Path;
+};
+
+struct PhysicalPath : Path
+{
+  using Path::Path;
+};
 using LogicalPaths  = std::vector<LogicalPath>;
 using PhysicalPaths = std::vector<PhysicalPath>;
 using TimePoint     = long long int;
@@ -25,16 +32,6 @@ enum class Locality : unsigned char
   disk_and_tape,
   lost,
   none
-};
-
-struct LogicalPath : fs::path
-{
-  using fs::path::path;
-};
-
-struct PhysicalPath : fs::path
-{
-  using fs::path::path;
 };
 
 std::string to_string(Locality locality);

@@ -16,8 +16,8 @@ struct File
     failed,
     completed
   };
-  Path logical_path{};
-  Path physical_path{};
+  LogicalPath logical_path{};
+  PhysicalPath physical_path{};
   State state{State::submitted};
   Locality locality{Locality::unavailable};
   TimePoint started_at{0};

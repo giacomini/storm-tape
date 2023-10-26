@@ -8,9 +8,9 @@ namespace storm {
 struct ReleaseResponse
 {
   StageId id{};
-  Paths invalid{};
+  LogicalPaths invalid{};
 
-  ReleaseResponse(StageId i, Paths v = {})
+  ReleaseResponse(StageId i, LogicalPaths v = {})
       : id(std::move(i))
       , invalid(std::move(v))
   {}

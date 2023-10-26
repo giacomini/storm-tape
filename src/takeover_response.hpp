@@ -7,7 +7,7 @@ namespace storm {
 
 struct TakeOverResponse
 {
-  Paths paths;
+  PhysicalPaths paths;
 };
 
 } // namespace storm

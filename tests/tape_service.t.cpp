@@ -19,14 +19,14 @@
 
 namespace storm {
 
-auto make_file = [](Path const& path, const char* size = "1M") {
+auto make_file = [](PhysicalPath const& path, const char* size = "1M") {
   auto const cmd = fmt::format(
       "dd if=/dev/random bs={} count=1 of={} &> /dev/null", size, path.c_str());
   std::system(cmd.c_str());
   set_xattr(path, XAttrName{"user.storm.migrated"}, XAttrValue{""});
 };
 
-auto make_stub = [](Path const& path, const char* size = "1M") {
+auto make_stub = [](PhysicalPath const& path, const char* size = "1M") {
   auto const cmd = fmt::format(
       "dd if=/dev/zero conv=sparse bs={} count=1 of={} &> /dev/null", size,
       path.c_str());
@@ -34,7 +34,7 @@ auto make_stub = [](Path const& path, const char* size = "1M") {
   set_xattr(path, XAttrName{"user.storm.migrated"}, XAttrValue{""});
 };
 
-auto delete_file = [](Path const& path) { std::filesystem::remove(path); };
+auto delete_file = [](PhysicalPath const& path) { std::filesystem::remove(path); };
 
 TEST_SUITE_BEGIN("TapeService");
 
@@ -119,9 +119,9 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     // Since one file was already on disk, only the stub file should be returned
     auto const takeover_response = m_service.take_over({42});
     CHECK_EQ(takeover_response.paths.size(), 1);
-    CHECK(has_xattr(Path{"/tmp/example1.txt"}, XAttrName{"user.TSMRecT"}));
+    CHECK(has_xattr(PhysicalPath{"/tmp/example1.txt"}, XAttrName{"user.TSMRecT"}));
     CHECK_FALSE(
-        has_xattr(Path{"/tmp/example2.txt"}, XAttrName{"user.TSMRecT"}));
+        has_xattr(PhysicalPath{"/tmp/example2.txt"}, XAttrName{"user.TSMRecT"}));
   }
 
   // Sleep for a while...
@@ -225,7 +225,7 @@ TEST_CASE_FIXTURE(TestFixture, "Cancel")
   auto stage_response = m_service.stage(std::move(request));
   auto id             = stage_response.id();
   // Do cancel
-  Paths paths;
+  LogicalPaths paths;
   std::transform(FILES.begin(), FILES.end(), std::back_inserter(paths),
                  [](File const& f) { return LogicalPath{f.logical_path}; });
   m_service.cancel(id, CancelRequest{paths});

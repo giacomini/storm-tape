@@ -9,7 +9,7 @@ namespace storm {
 
 struct PathInfo
 {
-  Path logical_path;
+  LogicalPath path;
   boost::variant2::variant<Locality, std::string> info;
 };
 

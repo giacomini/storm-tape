@@ -11,8 +11,8 @@ namespace storm {
 struct StorageArea
 {
   std::string name;
-  Path root;
-  Path access_point;
+  PhysicalPath root;
+  LogicalPath access_point;
 };
 
 using StorageAreas = std::vector<StorageArea>;
@@ -25,7 +25,7 @@ struct Configuration
 };
 
 Configuration load_configuration(std::istream& is);
-Configuration load_configuration(Path const& p);
+Configuration load_configuration(std::filesystem::path const& p);
 
 } // namespace storm
 
