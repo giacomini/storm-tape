@@ -10,6 +10,7 @@ variables:
 build-ci:
   stage: build-ci
   image: docker:latest
+  tags: [fast]
   services:
     - docker:dind
   before_script:
@@ -26,6 +27,7 @@ build-ci:
 build-storm-tape:debug:
   stage: build
   image: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+  tags: [fast]
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
@@ -52,6 +54,7 @@ build-storm-tape:debug:
 build-storm-tape:release:
   stage: build
   image: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+  tags: [fast]
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
@@ -71,6 +74,7 @@ build-storm-tape:release:
 package-storm-tape:
   stage: build
   image: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+  tags: [fast]
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
@@ -95,6 +99,7 @@ package-storm-tape:
 build-docker:debug:
   stage: docker-build
   image: docker:latest
+  tags: [fast]
   services:
     - docker:dind
   needs:
@@ -119,6 +124,7 @@ build-docker:debug:
 build-docker:release:
   stage: docker-build
   image: docker:latest
+  tags: [fast]
   services:
     - docker:dind
   needs:
@@ -138,6 +144,7 @@ test:
   image: 
     name: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-debug
     entrypoint: [""]
+  tags: [fast]
   needs:
     - build-docker:debug
   script:
