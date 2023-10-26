@@ -25,7 +25,7 @@ struct Configuration
 };
 
 Configuration load_configuration(std::istream& is);
-Configuration load_configuration(std::filesystem::path const& p);
+Configuration load_configuration(Path const& p);
 
 } // namespace storm
 
