@@ -10,6 +10,7 @@ namespace storm {
 namespace fs = std::filesystem;
 
 using Path = fs::path;
+
 struct LogicalPath : Path
 {
   using Path::Path;
@@ -19,6 +20,7 @@ struct PhysicalPath : Path
 {
   using Path::Path;
 };
+
 using LogicalPaths  = std::vector<LogicalPath>;
 using PhysicalPaths = std::vector<PhysicalPath>;
 using TimePoint     = long long int;
