@@ -183,12 +183,7 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
   }
 
   const auto now = std::time(nullptr);
-  LogicalPaths paths;
-  paths.reserve(cancel.paths.size());
-  std::transform(cancel.paths.begin(), cancel.paths.end(),
-                 std::back_inserter(paths),
-                 [](auto& p) { return LogicalPath{p}; });
-  m_db->update(id, paths, File::State::cancelled, now);
+  m_db->update(id, cancel.paths, File::State::cancelled, now);
   // do not bother cancelling the recalls in progress
 
   return CancelResponse{id};
