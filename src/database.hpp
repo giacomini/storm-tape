@@ -66,9 +66,8 @@ class Database
   virtual bool update(StageUpdate const& stage_update)              = 0;
   virtual bool erase(StageId const& id)                             = 0;
   virtual std::size_t count_files(File::State state) const          = 0;
-  // get physical paths
   virtual PhysicalPaths get_files(File::State state,
-                                  std::size_t n_files) const = 0;
+                                  std::size_t n_files) const        = 0;
 };
 
 class MockDatabase : public Database
