@@ -283,7 +283,8 @@ ReadyTakeOverResponse TapeService::ready_take_over()
 
 using PathLocality = std::pair<PhysicalPath, Locality>;
 
-static auto extend_paths_with_localities(PhysicalPaths&& paths, Storage& storage)
+static auto extend_paths_with_localities(PhysicalPaths&& paths,
+                                         Storage& storage)
 {
   std::vector<PathLocality> path_localities;
   path_localities.reserve(paths.size());
@@ -404,7 +405,7 @@ auto to_underlying_state(File f)
   return to_underlying(f.state);
 }
 
-Paths get_paths_in_progress(TapeService& ts, StageId const& id)
+PhysicalPaths get_paths_in_progress(TapeService& ts, StageId const& id)
 {
   auto st     = ts.status(id);
   auto& files = st.stage().files;
@@ -415,13 +416,13 @@ Paths get_paths_in_progress(TapeService& ts, StageId const& id)
         return to_underlying_state(e1) < to_underlying_state(e2);
       });
 
-  auto proj = [](File const& file) -> Path const& {
+  auto proj = [](File const& file) -> PhysicalPath const& {
     return file.physical_path;
   };
 
   auto const d = std::distance(in_progress.first, in_progress.second);
   BOOST_ASSERT(d >= 0);
-  Paths result{};
+  PhysicalPaths result{};
   result.reserve(static_cast<std::size_t>(d));
   std::move(boost::make_transform_iterator(in_progress.first, proj),
             boost::make_transform_iterator(in_progress.second, proj),
@@ -439,8 +440,8 @@ InProgressResponse TapeService::in_progress()
   auto const stage_ids = m_db->find_incomplete_stages();
 
   auto paths = std::transform_reduce(
-      stage_ids.begin(), stage_ids.end(), Paths{},
-      [](Paths acc, Paths other) {
+      stage_ids.begin(), stage_ids.end(), PhysicalPaths{},
+      [](PhysicalPaths acc, PhysicalPaths other) {
         acc.reserve(acc.size() + other.size());
         std::move(other.begin(), other.end(), std::back_inserter(acc));
         return acc;

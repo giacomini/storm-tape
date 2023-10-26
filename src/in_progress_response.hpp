@@ -7,7 +7,7 @@ namespace storm {
 
 struct InProgressResponse
 {
-  Paths paths;
+  PhysicalPaths paths;
 };
 
 } // namespace storm
