@@ -408,7 +408,14 @@ auto to_underlying_state(File f)
 PhysicalPaths get_paths_in_progress(TapeService& ts, StageId const& id)
 {
   auto st     = ts.status(id);
+
+  // after the status update, the stage can result completed
+  if (st.stage().completed_at != 0) {
+    return {};
+  }
+
   auto& files = st.stage().files;
+
   // files are sorted by state
   auto in_progress = std::equal_range(
       files.begin(), files.end(), File::State::started,
