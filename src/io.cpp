@@ -175,7 +175,7 @@ crow::response to_crow_response(InProgressResponse const& resp)
   auto const body =
       std::accumulate(resp.paths.begin(), resp.paths.end(), std::string{}, //
                       [](std::string const& acc, PhysicalPath const& path) {
-                        return fmt::format("{}\n", acc, path.string());
+                        return fmt::format("{}{}\n", acc, path.string());
                       });
   return crow::response{crow::status::OK, "txt", body};
 }
