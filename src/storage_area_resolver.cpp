@@ -25,10 +25,10 @@ PhysicalPath StorageAreaResolver::operator()(LogicalPath const& path) const
   auto sa_it =
       std::max_element(m_sas.begin(), m_sas.end(),
                        [&](StorageArea const& sa1, StorageArea const& sa2) {
-                         return prefix_match_size(path, sa1.access_point)
-                              < prefix_match_size(path, sa2.access_point);
+                         return prefix_match_size(path, sa1.access_points.front())
+                              < prefix_match_size(path, sa2.access_points.front());
                        });
-  auto rel_path = path.lexically_relative(sa_it->access_point);
+  auto rel_path = path.lexically_relative(sa_it->access_points.front());
   BOOST_ASSERT(!rel_path.empty());
 
   if (rel_path == ".") {

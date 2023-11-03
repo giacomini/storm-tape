@@ -8,10 +8,10 @@ TEST_SUITE_BEGIN("StorageAreaResolver");
 TEST_CASE("An invalid path is resolved to an empty path")
 {
   storm::StorageAreas const sas{
-    {"sa1", "/storage/atlas"        , "/atlas"},
-    {"sa2", "/storage/atlas/scratch", "/atlasscratch"},
-    {"sa3", "/storage/cms"          , "/cms"},
-    {"sa4", "/storage2/cms"         , "/cms/data"}
+    {"sa1", "/storage/atlas"        , {"/atlas"}},
+    {"sa2", "/storage/atlas/scratch", {"/atlasscratch"}},
+    {"sa3", "/storage/cms"          , {"/cms"}},
+    {"sa4", "/storage2/cms"         , {"/cms/data"}}
   };
   storm::StorageAreaResolver resolve{sas};
 
@@ -23,8 +23,8 @@ TEST_CASE("An invalid path is resolved to an empty path")
 TEST_CASE("Resolve storage areas with nested roots")
 {
   storm::StorageAreas const sas{
-    {"sa1", "/storage/atlas"        , "/atlas"},
-    {"sa2", "/storage/atlas/scratch", "/atlasscratch"}
+    {"sa1", "/storage/atlas"        , {"/atlas"}},
+    {"sa2", "/storage/atlas/scratch", {"/atlasscratch"}}
   };
   storm::StorageAreaResolver resolve{sas};
 
@@ -39,8 +39,8 @@ TEST_CASE("Resolve storage areas with nested roots")
 TEST_CASE("Resolve storage areas with nested access points")
 {
   storm::StorageAreas const sas{
-    {"sa3", "/storage/cms" , "/cms"},
-    {"sa4", "/storage2/cms", "/cms/data"}
+    {"sa3", "/storage/cms" , {"/cms"}},
+    {"sa4", "/storage2/cms", {"/cms/data"}}
   };
   storm::StorageAreaResolver resolve{sas};
 
@@ -51,8 +51,8 @@ TEST_CASE("Resolve storage areas with nested access points")
 TEST_CASE("Resolve storage areas with nested access points and nested roots")
 {
   storm::StorageAreas const sas{
-    {"sa3", "/storage/cms"        , "/cms"},
-    {"sa4", "/storage/cms/scratch", "/cms/data"}
+    {"sa3", "/storage/cms"        , {"/cms"}},
+    {"sa4", "/storage/cms/scratch", {"/cms/data"}}
   };
   storm::StorageAreaResolver resolve{sas};
 
@@ -63,8 +63,8 @@ TEST_CASE("Resolve storage areas with nested access points and nested roots")
 TEST_CASE("Resolve storage areas with nested access points and nested roots, inverted")
 {
   storm::StorageAreas const sas{
-    {"sa3", "/storage/cms/scratch", "/cms"},
-    {"sa4", "/storage/cms"        , "/cms/data"}
+    {"sa3", "/storage/cms/scratch", {"/cms"}},
+    {"sa4", "/storage/cms"        , {"/cms/data"}}
   };
   storm::StorageAreaResolver resolve{sas};
 

@@ -12,7 +12,7 @@ struct StorageArea
 {
   std::string name;
   PhysicalPath root;
-  LogicalPath access_point;
+  LogicalPaths access_points;
 };
 
 using StorageAreas = std::vector<StorageArea>;

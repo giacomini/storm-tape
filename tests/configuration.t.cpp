@@ -103,6 +103,102 @@ storage-areas:
                        std::runtime_error);
 }
 
+TEST_CASE("A storage area must have an access-point")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+)";
+  std::istringstream is(conf);
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       R"(storage area 'test' has no access-point)",
+                       std::runtime_error);
+}
+
+TEST_CASE("A storage area must have at least one access-point")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point:
+)";
+
+  std::istringstream is(conf);
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       R"(storage area 'test' has an empty access-point)",
+                       std::runtime_error);
+}
+
+TEST_CASE("A single access point for a storage area can be expressed in "
+          "multiple ways")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test1
+  root: /tmp
+  access-point: /data1
+- name: test2
+  root: /tmp
+  access-point:
+    - /data2
+- name: test3
+  root: /tmp
+  access-point: [ "/data3" ]
+)";
+
+  std::istringstream is(conf);
+  auto const configuration = storm::load_configuration(is);
+  REQUIRE_EQ(configuration.storage_areas.size(), 3);
+  auto const& sa1 = configuration.storage_areas[0];
+  auto const& sa2 = configuration.storage_areas[1];
+  auto const& sa3 = configuration.storage_areas[2];
+  CHECK_EQ(sa1.access_points, storm::LogicalPaths{"/data1"});
+  CHECK_EQ(sa2.access_points, storm::LogicalPaths{"/data2"});
+  CHECK_EQ(sa3.access_points, storm::LogicalPaths{"/data3"});
+}
+
+TEST_CASE("A storage area can have many access points")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: atlas
+  root: /tmp
+  access-point:
+    - /atlas1
+    - /atlas2
+- name: cms
+  root: /tmp
+  access-point: ["/cms1", "/cms2", "/cms3"]
+)";
+  std::istringstream is(conf);
+  auto configuration = storm::load_configuration(is);
+  REQUIRE_EQ(configuration.storage_areas.size(), 2);
+  auto const& atlas = configuration.storage_areas[0];
+  auto const& cms   = configuration.storage_areas[1];
+  CHECK_EQ(atlas.access_points, storm::LogicalPaths{"/atlas1", "/atlas2"});
+  CHECK_EQ(cms.access_points, storm::LogicalPaths{"/cms1", "/cms2", "/cms3"});
+}
+
+TEST_CASE("The access points of a storage area are locally unique")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point:
+    - /atlas1
+    - /atlas2
+    - /atlas1
+)";
+  std::istringstream is(conf);
+  CHECK_THROWS_WITH_AS(
+      storm::load_configuration(is),
+      R"(storage areas 'test' and 'test' have the access point '/atlas1' in common)",
+      std::runtime_error);
+}
+
 TEST_CASE("Two storage areas cannot have the same access point")
 {
   std::string const conf = R"(
@@ -117,7 +213,30 @@ storage-areas:
   std::istringstream is(conf);
   CHECK_THROWS_WITH_AS(
       storm::load_configuration(is),
-      R"(storage areas 'test1' and 'test2' have the same access point '/someexp')",
+      R"(storage areas 'test1' and 'test2' have the access point '/someexp' in common)",
+      std::runtime_error);
+}
+
+TEST_CASE("Two storage areas cannot have an access point in common")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test1
+  root: /tmp
+  access-point:
+    - /ap1
+    - /ap2
+    - /ap3
+- name: test2
+  root: /tmp
+  access-point:
+    - /ap4
+    - /ap1
+)";
+  std::istringstream is(conf);
+  CHECK_THROWS_WITH_AS(
+      storm::load_configuration(is),
+      R"(storage areas 'test1' and 'test2' have the access point '/ap1' in common)",
       std::runtime_error);
 }
 
@@ -137,15 +256,44 @@ storage-areas:
   std::istringstream is(conf);
   auto configuration = storm::load_configuration(is);
   REQUIRE_EQ(configuration.storage_areas.size(), 2);
-  auto const& sa1   = configuration.storage_areas[0];
-  auto const& sa2   = configuration.storage_areas[1];
-  CHECK_EQ(sa2.access_point.lexically_relative(sa1.access_point), "somedir");
+  auto const& sa1 = configuration.storage_areas[0];
+  auto const& sa2 = configuration.storage_areas[1];
+  CHECK_EQ(
+      sa2.access_points.front().lexically_relative(sa1.access_points.front()),
+      "somedir");
 
   try {
     fs::remove_all("/tmp/data1");
     fs::remove_all("/tmp/data2");
   } catch (...) {
   }
+}
+
+TEST_CASE("A storage area must have a root")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test
+  access-point: /data
+)";
+  std::istringstream is(conf);
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       R"(storage area 'test' has no root)",
+                       std::runtime_error);
+}
+
+TEST_CASE("A storage area must have a non-empty root")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test
+  root:
+  access-point: /data
+)";
+  std::istringstream is(conf);
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       R"(storage area 'test' has an empty root)",
+                       std::runtime_error);
 }
 
 TEST_CASE("Two storage areas can have the same root")
@@ -162,8 +310,8 @@ storage-areas:
   std::istringstream is(conf);
   auto configuration = storm::load_configuration(is);
   REQUIRE_EQ(configuration.storage_areas.size(), 2);
-  auto const& sa1   = configuration.storage_areas[0];
-  auto const& sa2   = configuration.storage_areas[1];
+  auto const& sa1 = configuration.storage_areas[0];
+  auto const& sa2 = configuration.storage_areas[1];
   CHECK_EQ(sa1.root, sa2.root);
 }
 
@@ -182,8 +330,8 @@ storage-areas:
   std::istringstream is(conf);
   auto configuration = storm::load_configuration(is);
   REQUIRE_EQ(configuration.storage_areas.size(), 2);
-  auto const& sa1   = configuration.storage_areas[0];
-  auto const& sa2   = configuration.storage_areas[1];
+  auto const& sa1 = configuration.storage_areas[0];
+  auto const& sa2 = configuration.storage_areas[1];
   CHECK_EQ(sa2.root.lexically_relative(sa1.root), "data");
 
   try {
@@ -207,9 +355,11 @@ storage-areas:
   std::istringstream is(conf);
   auto configuration = storm::load_configuration(is);
   REQUIRE_EQ(configuration.storage_areas.size(), 2);
-  auto const& sa1   = configuration.storage_areas[0];
-  auto const& sa2   = configuration.storage_areas[1];
-  CHECK_EQ(sa2.access_point.lexically_relative(sa1.access_point), "somedir");
+  auto const& sa1 = configuration.storage_areas[0];
+  auto const& sa2 = configuration.storage_areas[1];
+  CHECK_EQ(
+      sa2.access_points.front().lexically_relative(sa1.access_points.front()),
+      "somedir");
   CHECK_EQ(sa2.root.lexically_relative(sa1.root), "data");
 
   try {
@@ -218,7 +368,8 @@ storage-areas:
   }
 }
 
-TEST_CASE("Two storage areas can have nested access points and nested roots, inverted")
+TEST_CASE("Two storage areas can have nested access points and nested roots, "
+          "inverted")
 {
   fs::create_directory("/tmp/data");
   std::string const conf = R"(
@@ -233,9 +384,11 @@ storage-areas:
   std::istringstream is(conf);
   auto configuration = storm::load_configuration(is);
   REQUIRE_EQ(configuration.storage_areas.size(), 2);
-  auto const& sa1   = configuration.storage_areas[0];
-  auto const& sa2   = configuration.storage_areas[1];
-  CHECK_EQ(sa2.access_point.lexically_relative(sa1.access_point), "somedir");
+  auto const& sa1 = configuration.storage_areas[0];
+  auto const& sa2 = configuration.storage_areas[1];
+  CHECK_EQ(
+      sa2.access_points.front().lexically_relative(sa1.access_points.front()),
+      "somedir");
   CHECK_EQ(sa1.root.lexically_relative(sa2.root), "data");
 
   try {
@@ -318,13 +471,13 @@ storage-areas:
   access-point: /someexp
 )";
   std::istringstream is(conf);
-  auto configuration = storm::load_configuration(is);
-  auto name          = configuration.storage_areas.front().name;
-  auto root          = configuration.storage_areas.front().root;
-  auto access_point  = configuration.storage_areas.front().access_point;
+  auto configuration  = storm::load_configuration(is);
+  auto name           = configuration.storage_areas.front().name;
+  auto root           = configuration.storage_areas.front().root;
+  auto& access_points = configuration.storage_areas.front().access_points;
   CHECK_EQ("test", name);
-  CHECK_EQ(fs::path{"/tmp"}, root);
-  CHECK_EQ(fs::path{"/someexp"}, access_point);
+  CHECK_EQ(storm::PhysicalPath{"/tmp"}, root);
+  CHECK_EQ(storm::LogicalPaths{"/someexp"}, access_points);
 }
 
 TEST_CASE("The configuration can be loaded from a file")
@@ -339,12 +492,12 @@ TEST_CASE("The configuration can be loaded from a file")
   ofs.close();
   auto configuration =
       storm::load_configuration(fs::path{"/tmp/application.yml"});
-  auto name         = configuration.storage_areas.front().name;
-  auto root         = configuration.storage_areas.front().root;
-  auto access_point = configuration.storage_areas.front().access_point;
+  auto name           = configuration.storage_areas.front().name;
+  auto root           = configuration.storage_areas.front().root;
+  auto& access_points = configuration.storage_areas.front().access_points;
   CHECK_EQ("test", name);
-  CHECK_EQ(fs::path{"/tmp"}, root);
-  CHECK_EQ(fs::path{"/someexp"}, access_point);
+  CHECK_EQ(storm::PhysicalPath{"/tmp"}, root);
+  CHECK_EQ(storm::LogicalPaths{"/someexp"}, access_points);
 
   try {
     fs::remove("/tmp/application.yml");
