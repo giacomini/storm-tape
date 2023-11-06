@@ -438,6 +438,13 @@ PhysicalPaths get_paths_in_progress(TapeService& ts, StageId const& id)
   return result;
 }
 
+void remove_duplicates(PhysicalPaths& paths)
+{
+  std::sort(paths.begin(), paths.end());
+  auto last = std::unique(paths.begin(), paths.end());
+  paths.erase(last, paths.end());
+}
+
 } // namespace
 
 InProgressResponse TapeService::in_progress()
@@ -454,6 +461,8 @@ InProgressResponse TapeService::in_progress()
         return acc;
       },
       [this](StageId const& id) { return get_paths_in_progress(*this, id); });
+
+  remove_duplicates(paths);
 
   return InProgressResponse{std::move(paths)};
 }
