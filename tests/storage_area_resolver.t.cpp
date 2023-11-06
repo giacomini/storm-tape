@@ -72,6 +72,18 @@ TEST_CASE("Resolve storage areas with nested access points and nested roots, inv
   CHECK(resolve("/cms/data/file") == "/storage/cms/file");
 }
 
+TEST_CASE("Resolve storage areas with multiple access points")
+{
+  storm::StorageAreas const sas{
+    {"cms", "/storage/cms", {"/cms", "/cmsdata"}}
+  };
+  storm::StorageAreaResolver resolve{sas};
+
+  CHECK(resolve("/cms/file")      == "/storage/cms/file");
+  CHECK(resolve("/cmsdata/file") == "/storage/cms/file");
+  CHECK(resolve("/cms/data/file") == "/storage/cms/data/file");
+}
+
 // clang-format on
 
 TEST_SUITE_END;
