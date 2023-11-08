@@ -154,6 +154,10 @@ std::vector<StageId> SociDatabase::find_incomplete_stages() const
   m_sql << "SELECT COUNT(*) FROM Stage WHERE completed_at = 0",
       soci::into(n_stages);
 
+  if (n_stages == 0) {
+    return {};
+  }
+
   std::vector<StageId> result(n_stages);
   m_sql << "SELECT id FROM Stage WHERE completed_at = 0", soci::into(result);
 
