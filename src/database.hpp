@@ -9,6 +9,7 @@
 #include <numeric>
 #include <optional>
 #include <span>
+#include <vector>
 
 namespace storm {
 
@@ -53,6 +54,7 @@ class Database
   virtual ~Database()                                               = default;
   virtual bool insert(StageId const& id, StageRequest const& stage) = 0;
   virtual std::optional<StageRequest> find(StageId const& id) const = 0;
+  virtual std::vector<StageId> find_incomplete_stages() const       = 0;
   virtual bool update(StageId const& id, LogicalPath const& path,
                       File::State state)                            = 0;
   virtual bool update(StageId const& id, LogicalPath const& path,

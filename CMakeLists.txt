@@ -117,6 +117,7 @@ add_library(
   src/extended_attributes.cpp
   src/file.cpp
   src/io.cpp
+  src/in_progress_response.cpp
   src/json.cpp
   src/local_storage.cpp
   src/profiler.cpp

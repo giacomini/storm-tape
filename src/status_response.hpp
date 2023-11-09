@@ -20,6 +20,7 @@ class StatusResponse
 
   StageId const& id() const { return m_id; }
   StageRequest const& stage() const { return m_stage; }
+  StageRequest& stage() { return m_stage; }
 };
 
 } // namespace storm

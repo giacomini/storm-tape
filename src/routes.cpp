@@ -15,6 +15,7 @@
 #include "status_response.hpp"
 #include "takeover_request.hpp"
 #include "takeover_response.hpp"
+#include "in_progress_response.hpp"
 #include "tape_service.hpp"
 #include <ctime>
 #include <exception>
@@ -202,6 +203,25 @@ void create_internal_routes(CrowApp& app, storm::Configuration const&,
           return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
       });
+
+  CROW_ROUTE(app, "/recalltable/in_progress")
+  ([&](crow::request const& req) {
+    PROFILE_SCOPE("IN_PROGRESS");
+    app.get_context<AccessLogger>(req).operation = "IN_PROGRESS";
+    try {
+      auto resp = service.in_progress();
+      return to_crow_response(resp);
+    } catch (HttpError const& e) {
+      CROW_LOG_ERROR << e.what() << '\n';
+      return to_crow_response(e);
+    } catch (std::exception const& e) {
+      CROW_LOG_ERROR << e.what() << '\n';
+      return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+    } catch (...) {
+      CROW_LOG_ERROR << "Unknown exception\n";
+      return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+    }
+  });
 }
 
 } // namespace storm

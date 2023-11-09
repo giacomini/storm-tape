@@ -6,6 +6,7 @@
 #include "delete_response.hpp"
 #include "errors.hpp"
 #include "extended_attributes.hpp"
+#include "in_progress_response.hpp"
 #include "io.hpp"
 #include "profiler.hpp"
 #include "readytakeover_response.hpp"
@@ -21,6 +22,7 @@
 #include <crow/logging.h>
 #include <fmt/core.h>
 #include <ctime>
+#include <numeric>
 #include <span>
 #include <string>
 
@@ -281,7 +283,8 @@ ReadyTakeOverResponse TapeService::ready_take_over()
 
 using PathLocality = std::pair<PhysicalPath, Locality>;
 
-static auto extend_paths_with_localities(PhysicalPaths&& paths, Storage& storage)
+static auto extend_paths_with_localities(PhysicalPaths&& paths,
+                                         Storage& storage)
 {
   std::vector<PathLocality> path_localities;
   path_localities.reserve(paths.size());
@@ -388,6 +391,80 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
   m_db->update(physical_paths, File::State::started, now);
 
   return TakeOverResponse{std::move(physical_paths)};
+}
+
+namespace {
+
+auto to_underlying_state(File::State s)
+{
+  return to_underlying(s);
+}
+
+auto to_underlying_state(File f)
+{
+  return to_underlying(f.state);
+}
+
+PhysicalPaths get_paths_in_progress(TapeService& ts, StageId const& id)
+{
+  auto st     = ts.status(id);
+
+  // after the status update, the stage can result completed
+  if (st.stage().completed_at != 0) {
+    return {};
+  }
+
+  auto& files = st.stage().files;
+
+  // files are sorted by state
+  auto in_progress = std::equal_range(
+      files.begin(), files.end(), File::State::started,
+      [](auto const& e1, auto const& e2) {
+        return to_underlying_state(e1) < to_underlying_state(e2);
+      });
+
+  auto proj = [](File const& file) -> PhysicalPath const& {
+    return file.physical_path;
+  };
+
+  auto const d = std::distance(in_progress.first, in_progress.second);
+  BOOST_ASSERT(d >= 0);
+  PhysicalPaths result{};
+  result.reserve(static_cast<std::size_t>(d));
+  std::move(boost::make_transform_iterator(in_progress.first, proj),
+            boost::make_transform_iterator(in_progress.second, proj),
+            std::back_inserter(result));
+
+  return result;
+}
+
+void remove_duplicates(PhysicalPaths& paths)
+{
+  std::sort(paths.begin(), paths.end());
+  auto last = std::unique(paths.begin(), paths.end());
+  paths.erase(last, paths.end());
+}
+
+} // namespace
+
+InProgressResponse TapeService::in_progress()
+{
+  PROFILE_FUNCTION();
+
+  auto const stage_ids = m_db->find_incomplete_stages();
+
+  auto paths = std::transform_reduce(
+      stage_ids.begin(), stage_ids.end(), PhysicalPaths{},
+      [](PhysicalPaths acc, PhysicalPaths other) {
+        acc.reserve(acc.size() + other.size());
+        std::move(other.begin(), other.end(), std::back_inserter(acc));
+        return acc;
+      },
+      [this](StageId const& id) { return get_paths_in_progress(*this, id); });
+
+  remove_duplicates(paths);
+
+  return InProgressResponse{std::move(paths)};
 }
 
 } // namespace storm

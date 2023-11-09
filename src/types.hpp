@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace storm {
@@ -37,6 +38,12 @@ enum class Locality : unsigned char
 };
 
 std::string to_string(Locality locality);
+
+template<class Enum>
+constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
+{
+  return static_cast<std::underlying_type_t<Enum>>(e);
+}
 
 } // namespace storm
 

@@ -4,6 +4,7 @@
 #include "configuration.hpp"
 #include "delete_response.hpp"
 #include "errors.hpp"
+#include "in_progress_response.hpp"
 #include "readytakeover_response.hpp"
 #include "release_response.hpp"
 #include "stage_request.hpp"
@@ -169,6 +170,16 @@ crow::response to_crow_response(TakeOverResponse const& resp)
   return crow::response{crow::status::OK, "txt", body};
 }
 
+crow::response to_crow_response(InProgressResponse const& resp)
+{
+  auto const body =
+      std::accumulate(resp.paths.begin(), resp.paths.end(), std::string{}, //
+                      [](std::string const& acc, PhysicalPath const& path) {
+                        return fmt::format("{}{}\n", acc, path.string());
+                      });
+  return crow::response{crow::status::OK, "txt", body};
+}
+
 crow::response to_crow_response(storm::HttpError const& e)
 {
   static auto constexpr body_format = R"({{"status":{},"title":"{}"}})";
@@ -214,9 +225,9 @@ LogicalPaths from_json(std::string_view const& body, RequestWithPaths::Tag)
       auto const& ja = p->as_array();
       paths.reserve(ja.size());
 
-      std::transform(                        //
-          ja.begin(), ja.end(),              //
-          std::back_inserter(paths),         //
+      std::transform(                //
+          ja.begin(), ja.end(),      //
+          std::back_inserter(paths), //
           [](auto& jpath) {
             std::string_view sv = jpath.as_string();
             return LogicalPath{Path{sv}.lexically_normal()};
@@ -227,9 +238,9 @@ LogicalPaths from_json(std::string_view const& body, RequestWithPaths::Tag)
       auto& ja = o.at("files").as_array();
       paths.reserve(ja.size());
 
-      std::transform(                        //
-          ja.begin(), ja.end(),              //
-          std::back_inserter(paths),         //
+      std::transform(                //
+          ja.begin(), ja.end(),      //
+          std::back_inserter(paths), //
           [](auto& jfile) {
             std::string_view sv = jfile.as_object().at("path").as_string();
             return LogicalPath{Path{sv}.lexically_normal()};

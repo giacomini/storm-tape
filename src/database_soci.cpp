@@ -146,6 +146,31 @@ std::optional<StageRequest> SociDatabase::find(StageId const& id) const
                       s_entity.started_at, s_entity.completed_at};
 }
 
+std::vector<StageId> SociDatabase::find_incomplete_stages() const
+{
+  PROFILE_FUNCTION();
+
+  std::size_t n_stages{0};
+  m_sql << "SELECT COUNT(*) FROM Stage WHERE completed_at = 0",
+      soci::into(n_stages);
+
+  if (n_stages == 0) {
+    return {};
+  }
+
+  std::vector<StageId> result(n_stages);
+  m_sql << "SELECT id FROM Stage WHERE completed_at = 0", soci::into(result);
+
+  // NB an incomplete stage is a stage whose files are not all in a final state;
+  // in such cases the completed_at timestamp is 0. Since the DB contains stale
+  // information, which is reconciled with reality only when a status is called,
+  // the result may include stages that are actually completed; this is not a
+  // problem for the current use, because the important thing is that the result
+  // includes all incomplete stages
+
+  return result;
+}
+
 bool SociDatabase::update(StageId const& id, LogicalPath const& path,
                           File::State state)
 {
@@ -315,7 +340,8 @@ std::size_t SociDatabase::count_files(File::State state) const
   return std::size_t{count};
 }
 
-PhysicalPaths SociDatabase::get_files(File::State state, std::size_t n_files) const
+PhysicalPaths SociDatabase::get_files(File::State state,
+                                      std::size_t n_files) const
 {
   PROFILE_FUNCTION();
   std::vector<Filename> filenames(n_files);
