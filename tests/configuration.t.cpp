@@ -159,6 +159,20 @@ storage-areas:
   CHECK_EQ(sa3.access_points, storm::LogicalPaths{"/data3"});
 }
 
+TEST_CASE("The access point of a storage area can be the filesystem root")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: atlas
+  root: /tmp
+  access-point: /
+)";
+  std::istringstream is(conf);
+  auto configuration = storm::load_configuration(is);
+  CHECK_EQ(configuration.storage_areas[0].access_points,
+           storm::LogicalPaths{"/"});
+}
+
 TEST_CASE("A storage area can have many access points")
 {
   std::string const conf = R"(
@@ -284,9 +298,7 @@ storage-areas:
   REQUIRE_EQ(configuration.storage_areas.size(), 1);
   auto const& sa = configuration.storage_areas[0];
   REQUIRE_EQ(sa.access_points.size(), 2);
-  CHECK_EQ(
-      sa.access_points[1].lexically_relative(sa.access_points[0]),
-      "data");
+  CHECK_EQ(sa.access_points[1].lexically_relative(sa.access_points[0]), "data");
 }
 
 TEST_CASE("A storage area must have a root")
