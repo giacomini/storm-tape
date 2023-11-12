@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <numeric>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -87,25 +88,56 @@ static bool storm_has_all_permissions(fs::path const& path)
   return true;
 }
 
-static fs::path load_storage_area_root(YAML::Node const& root)
+static PhysicalPath load_storage_area_root(YAML::Node const& root,
+                                           std::string_view sa_name)
 {
+  if (!root.IsDefined()) {
+    throw std::runtime_error{
+        fmt::format("storage area '{}' has no root", sa_name)};
+  }
+
+  if (root.IsNull()) {
+    throw std::runtime_error{
+        fmt::format("storage area '{}' has an empty root", sa_name)};
+  }
+
   fs::path root_path{root.as<std::string>("")};
 
-  return root_path.lexically_normal();
+  return PhysicalPath{root_path.lexically_normal()};
 }
 
-static fs::path load_storage_area_access_point(YAML::Node const& node)
+static LogicalPaths load_storage_area_access_points(YAML::Node const& node,
+                                                    std::string_view sa_name)
 {
-  fs::path access_point{node.as<std::string>("")};
+  if (!node.IsDefined()) {
+    throw std::runtime_error{
+        fmt::format("storage area '{}' has no access-point", sa_name)};
+  }
 
-  return access_point.lexically_normal();
+  if (node.IsNull()) {
+    throw std::runtime_error{
+        fmt::format("storage area '{}' has an empty access-point", sa_name)};
+  }
+
+  if (LogicalPath access_point{node.as<std::string>("")};
+      !access_point.empty()) {
+    return {LogicalPath{access_point.lexically_normal()}};
+  }
+
+  using Strings = std::vector<std::string>;
+  auto strings  = node.as<Strings>(Strings{});
+  LogicalPaths paths;
+  paths.reserve(strings.size());
+  std::transform(strings.begin(), strings.end(), std::back_inserter(paths),
+                 [](auto& s) { return LogicalPath{std::move(s)}; });
+  return paths;
 }
 
 static StorageArea load_storage_area(YAML::Node const& sa)
 {
   std::string name = load_storage_area_name(sa["name"]);
-  PhysicalPath root{load_storage_area_root(sa["root"])};
-  LogicalPath ap{load_storage_area_access_point(sa["access-point"])};
+  PhysicalPath root{load_storage_area_root(sa["root"], name)};
+  LogicalPaths ap{load_storage_area_access_points(sa["access-point"], name)};
   return {name, root, ap};
 }
 
@@ -168,12 +200,24 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
   // copy all the access points in another vector, together with a pointer to
   // the corresponding storage area
   auto const access_points = [&] {
-    std::vector<std::pair<LogicalPath, StorageArea const*>> aps;
-    aps.reserve(result.size());
-    std::transform(result.begin(), result.end(), std::back_inserter(aps),
-                   [](StorageArea const& sa) {
-                     return std::pair{sa.access_point, &sa};
-                   });
+    using Aps = std::vector<std::pair<LogicalPath, StorageArea const*>>;
+    auto aps  = std::transform_reduce(
+        result.begin(), result.end(), Aps{},
+        [](Aps r1, Aps r2) {
+          r1.reserve(r1.size() + r2.size());
+          std::move(r2.begin(), r2.end(), std::back_inserter(r1));
+          return r1;
+        },
+        [](auto& sa) {
+          Aps partial;
+          auto const& sa_aps = sa.access_points;
+          partial.reserve(sa_aps.size());
+          std::transform(sa_aps.begin(), sa_aps.end(),
+                          std::back_inserter(partial), [&](auto& ap) {
+                           return std::pair{ap, &sa};
+                         });
+          return partial;
+        });
     std::sort(aps.begin(), aps.end(),
               [](auto const& a, auto const& b) { return a.first < b.first; });
     return aps;
@@ -195,7 +239,7 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
   }
 
   {
-    // two storage areas cannot have the same access point
+    // two storage areas cannot have an access point in common
     auto it = std::adjacent_find(
         access_points.begin(),
         access_points.end(), //
@@ -203,7 +247,7 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
 
     if (it != access_points.end()) {
       throw std::runtime_error{fmt::format(
-          "storage areas '{}' and '{}' have the same access point '{}'",
+          "storage areas '{}' and '{}' have the access point '{}' in common",
           it->second->name, std::next(it)->second->name, it->first.string())};
     }
   }

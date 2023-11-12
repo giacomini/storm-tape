@@ -1,16 +1,39 @@
 #include "storage_area_resolver.hpp"
 #include "errors.hpp"
 #include <algorithm>
+#include <memory>
+#include <numeric>
+#include <optional>
 
 namespace storm {
 
 namespace {
 
-auto prefix_match_size(LogicalPath const& p1, LogicalPath const& p2)
+using PrefixMatchOpt = std::optional<std::ptrdiff_t>;
+
+PrefixMatchOpt prefix_match(LogicalPath const& path, LogicalPath const& ap)
 {
-  auto [it, _] = std::mismatch(p1.begin(), p1.end(), p2.begin(), p2.end());
-  return std::distance(p1.begin(), it);
+  auto [_, it] = std::mismatch(path.begin(), path.end(), ap.begin(), ap.end());
+  if (it == ap.end()) {
+    // full prefix match
+    return std::distance(ap.begin(), it);
+  } else {
+    return std::nullopt;
+  }
 }
+
+struct BestMatch
+{
+  std::ptrdiff_t match_size;
+  LogicalPath const* path{nullptr};
+  StorageArea const* sa{nullptr};
+  friend auto operator<(BestMatch const& bm1, BestMatch const& bm2)
+  {
+    return bm1.match_size < bm2.match_size;
+  }
+};
+
+using BestMatchOpt = std::optional<BestMatch>;
 
 } // namespace
 
@@ -21,27 +44,43 @@ PhysicalPath StorageAreaResolver::operator()(LogicalPath const& path) const
   }
 
   BOOST_ASSERT(!m_sas.empty());
-  // find sa whose access_point has longest prefix match with logical_path
-  auto sa_it =
-      std::max_element(m_sas.begin(), m_sas.end(),
-                       [&](StorageArea const& sa1, StorageArea const& sa2) {
-                         return prefix_match_size(path, sa1.access_point)
-                              < prefix_match_size(path, sa2.access_point);
-                       });
-  auto rel_path = path.lexically_relative(sa_it->access_point);
+
+  // find the access point that is the longest prefix of the path, with the
+  // corresponding SA
+  auto best_match = std::transform_reduce(
+      m_sas.begin(), m_sas.end(), BestMatchOpt{},
+      [](BestMatchOpt const& bm1, BestMatchOpt const& bm2) {
+        return std::max(bm1, bm2);
+      },
+      [&](StorageArea const& sa) -> BestMatchOpt {
+        // find the access point in this SA that is the longest prefix of the
+        // path, if it exists
+        auto ap_it = std::max_element(
+            sa.access_points.begin(), sa.access_points.end(),
+            [&](auto& ap1, auto& ap2) {
+              return prefix_match(path, ap1) < prefix_match(path, ap2);
+            });
+        if (auto m = prefix_match(path, *ap_it); m.has_value()) {
+          return BestMatch{m.value(), std::to_address(ap_it),
+                           std::addressof(sa)};
+        } else {
+          return std::nullopt;
+        }
+      });
+
+  if (!best_match) {
+    return PhysicalPath{};
+  }
+
+  auto const rel_path = path.lexically_relative(*best_match->path);
   BOOST_ASSERT(!rel_path.empty());
 
   if (rel_path == ".") {
-    // logical_path exactly matches the access point
-    return sa_it->root;
+    // path is exactly the access point
+    return best_match->sa->root;
   }
 
-  if (*rel_path.begin() == "..") {
-    // no match
-    return PhysicalPath{};
-  }
-  
-  return static_cast<PhysicalPath>(sa_it->root / rel_path);
+  return static_cast<PhysicalPath>(best_match->sa->root / rel_path);
 }
 
 } // namespace storm
