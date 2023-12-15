@@ -290,10 +290,7 @@ static Configuration load(YAML::Node const& node)
 
 Configuration load_configuration(std::istream& is)
 {
-  Configuration result;
-
   YAML::Node const config = YAML::Load(is);
-
   return load(config);
 }
 
