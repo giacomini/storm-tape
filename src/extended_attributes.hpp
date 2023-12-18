@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 #include "types.hpp"
-#include <attr/xattr.h>
+#include <sys/xattr.h>
 #include <iosfwd>
 #include <regex>
 #include <string>
