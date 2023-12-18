@@ -22,7 +22,6 @@ yum install -y --setopt=tsflags=nodocs \
     unzip \
     tar \
     ninja-build \
-    libattr-devel \
     rpm-build \
     devtoolset-"${DEVTOOLSET_VERSION}" \
     devtoolset-"${DEVTOOLSET_VERSION}"-libubsan-devel \
