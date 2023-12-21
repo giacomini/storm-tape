@@ -100,7 +100,7 @@ if (NOT _CROW_ICD)
   set_target_properties(Crow::Crow PROPERTIES INTERFACE_COMPILE_DEFINITIONS "")
 endif()
 find_package(SOCI CONFIG REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(Boost REQUIRED COMPONENTS program_options url)
 find_package(Fmt REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
 
@@ -131,7 +131,6 @@ add_library(
   src/takeover_request.cpp
   src/tape_service.cpp
   src/types.cpp
-  src/url.cpp
 )
 
 target_link_libraries(
@@ -140,11 +139,11 @@ target_link_libraries(
   Crow::Crow 
   SOCI::soci_sqlite3_static 
   SOCI::soci_core_static 
-  SOCI::soci_empty_static 
   Boost::boost
   Boost::program_options
+  Boost::url
   fmt::fmt
-  yaml-cpp
+  yaml-cpp::yaml-cpp
 )
 
 add_executable(storm-tape src/main.cpp)
