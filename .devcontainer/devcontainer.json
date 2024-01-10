@@ -29,5 +29,9 @@
   "features": {
     "git": "os-provided"
   },
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "CC": "/usr/local/bin/gcc",
+    "CXX": "/usr/local/bin/g++"
+  }
 }
