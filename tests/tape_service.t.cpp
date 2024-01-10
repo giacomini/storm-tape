@@ -237,4 +237,150 @@ TEST_CASE_FIXTURE(TestFixture, "Cancel")
   CHECK(std::all_of(stage.files.begin(), stage.files.end(),
               [](auto& f) { return f.state == File::State::cancelled; }));
 }
+
+TEST_CASE("Loading config without a port must set the port to default 8080")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+)";
+  std::istringstream is{conf};
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.port, 8080);
+}
+
+TEST_CASE("Loading config with empty port must throw")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port:
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is), "port is null",
+                       std::runtime_error);
+}
+
+TEST_CASE("Loading config with valid integer port must succeed")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 1234
+)";
+  std::istringstream is{conf};
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.port, 1234);
+}
+
+TEST_CASE("Loading config with port equal to '0' must throw")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 0
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("Loading config with negative integer port must throw")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: -1
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("Loading config with too large port must throw")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 65538
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("Loading config with floating point number port must throw")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 3.14
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("Loading config with valid numerical string port must succeed")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: "8080"
+)";
+  std::istringstream is{conf};
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.port, 8080);
+}
+
+TEST_CASE("Loading config with not numerical string port must throw")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: foo
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("Loading config with string port as real number must throw")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: "3.14"
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
 } // namespace storm

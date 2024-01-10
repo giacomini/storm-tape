@@ -2,6 +2,7 @@
 #include "extended_attributes.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast/try_lexical_convert.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -11,6 +12,7 @@
 #include <algorithm>
 #include <fstream>
 #include <numeric>
+#include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -272,28 +274,51 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
   return result;
 }
 
+static std::optional<std::uint16_t> load_port(YAML::Node const& node)
+{
+  if (!node.IsDefined()) {
+    return {};
+  }
+
+  if (node.IsNull()) {
+    throw std::runtime_error{fmt::format("port is null")};
+  }
+
+  int port;
+  if (boost::conversion::try_lexical_convert(node, port)) {
+    if (port > 0 && port < 65536) {
+      return static_cast<std::uint16_t>(port);
+    }
+  }
+  throw std::runtime_error{"invalid 'port' entry in configuration"};
+}
+
 static Configuration load(YAML::Node const& node)
 {
-  static auto key = "storage-areas";
-  auto& sas       = node[key];
+  const auto sas_key = "storage-areas";
+  const auto& sas    = node[sas_key];
 
   if (!sas) {
     throw std::runtime_error{
-        fmt::format("no '{}' entry in configuration", key)};
+        fmt::format("no '{}' entry in configuration", sas_key)};
   }
 
   Configuration config;
   config.storage_areas = load_storage_areas(sas);
+
+  const auto port_key   = "port";
+  const auto& port_s    = node[port_key];
+  const auto maybe_port = load_port(port_s);
+  if (maybe_port.has_value()) {
+    config.port = maybe_port.value();
+  }
 
   return config;
 }
 
 Configuration load_configuration(std::istream& is)
 {
-  Configuration result;
-
   YAML::Node const config = YAML::Load(is);
-
   return load(config);
 }
 
