@@ -99,7 +99,7 @@ StatusResponse TapeService::status(StageId const& id)
 
   // determine the actual state of files and update the db
   std::vector<std::pair<PhysicalPath, File::State>> files_to_update;
-  auto& stage = maybe_stage.value();
+  auto& stage = *maybe_stage;
   for (auto& files = stage.files; auto& file : files) {
     switch (file.state) {
     case File::State::completed:
@@ -116,7 +116,7 @@ StatusResponse TapeService::status(StageId const& id)
       file.state       = on_disk ? File::State::completed : File::State::failed;
       file.locality    = locality;
       file.finished_at = now;
-      files_to_update.push_back({file.physical_path, file.state});
+      files_to_update.emplace_back(file.physical_path, file.state);
       break;
     }
     case File::State::cancelled:
@@ -127,7 +127,7 @@ StatusResponse TapeService::status(StageId const& id)
       if (recall_in_progress(file.physical_path)) {
         file.state      = File::State::started;
         file.started_at = now;
-        files_to_update.push_back({file.physical_path, File::State::started});
+        files_to_update.emplace_back(file.physical_path, File::State::started);
       } else if (auto locality = m_storage->locality(file.physical_path);
                  locality != Locality::tape) {
         override_locality(locality, file.physical_path);
@@ -136,7 +136,7 @@ StatusResponse TapeService::status(StageId const& id)
             file.on_disk() ? File::State::completed : File::State::failed;
         file.started_at  = now;
         file.finished_at = now;
-        files_to_update.push_back({file.physical_path, file.state});
+        files_to_update.emplace_back(file.physical_path, file.state);
       }
       break;
     }
@@ -297,7 +297,7 @@ static auto extend_paths_with_localities(PhysicalPaths&& paths,
   return path_localities;
 }
 
-static auto select_only_on_tape(std::span<PathLocality> path_locs)
+static auto select_only_on_tape(std::span<PathLocality> path_locs) //-V813 span is passed by value
 {
   auto const it = std::partition(path_locs.begin(), path_locs.end(),
                                  [&](auto const& path_loc) {
@@ -318,7 +318,7 @@ static auto select_in_progress(std::span<PathLocality> path_locs)
                     std::span{it, path_locs.end()}};
 }
 
-static auto select_on_disk(std::span<PathLocality> path_locs)
+static auto select_on_disk(std::span<PathLocality> path_locs) //-V813 span is passed by value
 {
   auto const it = std::partition(
       path_locs.begin(), path_locs.end(), [](auto const& path_loc) {
@@ -347,7 +347,7 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
 
   // reuse physical_paths, premature optimization?
   // reserve enough space for all the following assignments
-  physical_paths.reserve(path_locs.size());
+  physical_paths.reserve(path_locs.size()); //-V1030
 
   physical_paths.assign(
       boost::make_transform_iterator(in_progress.begin(), proj),
@@ -400,7 +400,7 @@ auto to_underlying_state(File::State s)
   return to_underlying(s);
 }
 
-auto to_underlying_state(File f)
+auto to_underlying_state(File const& f)
 {
   return to_underlying(f.state);
 }

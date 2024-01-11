@@ -184,7 +184,7 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
   StorageAreas result;
 
   for (auto& sa : sas) {
-    result.push_back(load_storage_area(sa));
+    result.emplace_back(load_storage_area(sa));
   }
 
   if (result.empty()) {
@@ -310,7 +310,7 @@ static Configuration load(YAML::Node const& node)
   const auto& port_s    = node[port_key];
   const auto maybe_port = load_port(port_s);
   if (maybe_port.has_value()) {
-    config.port = maybe_port.value();
+    config.port = *maybe_port;
   }
 
   return config;

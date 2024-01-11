@@ -52,7 +52,7 @@ class Instrumentor
  public:
   static Instrumentor& Instance()
   {
-    static Instrumentor instance;
+    static Instrumentor instance; //-V1096 TODO check
     return instance;
   }
 

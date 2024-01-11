@@ -105,7 +105,7 @@ boost::json::object file_missing_to_json(LogicalPaths const& missing,
                              {"detail", message.str()}};
 }
 
-crow::response to_crow_response(DeleteResponse const&)
+crow::response to_crow_response(DeleteResponse const&) //-V835 for uniformity
 {
   return crow::response{crow::status::OK};
 }
@@ -154,7 +154,7 @@ crow::response to_crow_response(ArchiveInfoResponse const& resp)
                         fmt::format("{}\n", boost::json::serialize(jbody))};
 }
 
-crow::response to_crow_response(ReadyTakeOverResponse const& resp)
+crow::response to_crow_response(ReadyTakeOverResponse const& resp) //-V835 for uniformity
 {
   return crow::response{crow::status::OK, "txt",
                         fmt::format("{}\n", resp.n_ready)};
@@ -189,7 +189,7 @@ crow::response to_crow_response(storm::HttpError const& e)
   return response;
 }
 
-Files from_json(std::string_view const& body, StageRequest::Tag)
+Files from_json(std::string_view body, StageRequest::Tag)
 {
   try {
     auto const value =
@@ -212,7 +212,7 @@ Files from_json(std::string_view const& body, StageRequest::Tag)
   }
 }
 
-LogicalPaths from_json(std::string_view const& body, RequestWithPaths::Tag)
+LogicalPaths from_json(std::string_view body, RequestWithPaths::Tag)
 {
   try {
     LogicalPaths paths;
@@ -298,7 +298,7 @@ void fill_hostinfo_from_host(HostInfo& info, std::string const& http_host)
     int port; // uninitialized
     if (boost::conversion::try_lexical_convert(port_s, port)) {
       if (port > 0 && port < 65536) {
-        info.port = port_s;
+        info.port = std::move(port_s);
       }
     }
   }

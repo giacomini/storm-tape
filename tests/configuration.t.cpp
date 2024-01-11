@@ -276,11 +276,8 @@ storage-areas:
       sa2.access_points.front().lexically_relative(sa1.access_points.front()),
       "somedir");
 
-  try {
-    fs::remove_all("/tmp/data1");
-    fs::remove_all("/tmp/data2");
-  } catch (...) {
-  }
+  fs::remove_all("/tmp/data1");
+  fs::remove_all("/tmp/data2");
 }
 
 TEST_CASE("A storage area can have nested access points")
@@ -366,10 +363,7 @@ storage-areas:
   auto const& sa2 = configuration.storage_areas[1];
   CHECK_EQ(sa2.root.lexically_relative(sa1.root), "data");
 
-  try {
-    fs::remove_all("/tmp/data");
-  } catch (...) {
-  }
+  fs::remove_all("/tmp/data");
 }
 
 TEST_CASE("Two storage areas can have nested access points and nested roots")
@@ -394,10 +388,7 @@ storage-areas:
       "somedir");
   CHECK_EQ(sa2.root.lexically_relative(sa1.root), "data");
 
-  try {
-    fs::remove_all("/tmp/data");
-  } catch (...) {
-  }
+  fs::remove_all("/tmp/data");
 }
 
 TEST_CASE("Two storage areas can have nested access points and nested roots, "
@@ -423,10 +414,7 @@ storage-areas:
       "somedir");
   CHECK_EQ(sa1.root.lexically_relative(sa2.root), "data");
 
-  try {
-    fs::remove_all("/tmp/data");
-  } catch (...) {
-  }
+  fs::remove_all("/tmp/data");
 }
 
 TEST_CASE("The root of a storage area must be an absolute path")
@@ -473,10 +461,7 @@ storage-areas:
       storm::load_configuration(is),
       R"(root '/tmp/file' of storage area 'test' is not a directory)",
       std::runtime_error);
-  try {
-    fs::remove(fs::path("/tmp/file"));
-  } catch (...) {
-  }
+  fs::remove(fs::path("/tmp/file"));
 }
 
 TEST_CASE("The root of a storage area must have the right permissions")
@@ -504,9 +489,10 @@ storage-areas:
 )";
   std::istringstream is(conf);
   auto configuration  = storm::load_configuration(is);
-  auto name           = configuration.storage_areas.front().name;
-  auto root           = configuration.storage_areas.front().root;
-  auto& access_points = configuration.storage_areas.front().access_points;
+  auto& sa            = configuration.storage_areas.front();
+  auto& name          = sa.name;
+  auto& root          = sa.root;
+  auto& access_points = sa.access_points;
   CHECK_EQ("test", name);
   CHECK_EQ(storm::PhysicalPath{"/tmp"}, root);
   CHECK_EQ(storm::LogicalPaths{"/someexp"}, access_points);
@@ -524,17 +510,15 @@ TEST_CASE("The configuration can be loaded from a file")
   ofs.close();
   auto configuration =
       storm::load_configuration(fs::path{"/tmp/application.yml"});
-  auto name           = configuration.storage_areas.front().name;
-  auto root           = configuration.storage_areas.front().root;
-  auto& access_points = configuration.storage_areas.front().access_points;
+  auto& sa            = configuration.storage_areas.front();
+  auto& name          = sa.name;
+  auto& root          = sa.root;
+  auto& access_points = sa.access_points;
   CHECK_EQ("test", name);
   CHECK_EQ(storm::PhysicalPath{"/tmp"}, root);
   CHECK_EQ(storm::LogicalPaths{"/someexp"}, access_points);
 
-  try {
-    fs::remove("/tmp/application.yml");
-  } catch (...) {
-  }
+  fs::remove("/tmp/application.yml");
 }
 
 TEST_CASE("The configuration file must have the right permissions")
@@ -554,10 +538,7 @@ TEST_CASE("The configuration file must have the right permissions")
       R"(cannot open configuration file '/tmp/conf/application.yml')",
       std::runtime_error);
 
-  try {
-    fs::remove_all("/tmp/conf");
-  } catch (...) {
-  }
+  fs::remove_all("/tmp/conf");
 }
 
 TEST_SUITE_END;

@@ -45,8 +45,9 @@ const Files FILES{{"/tmp/example1.txt", "/tmp/example1.txt"},
 TEST_CASE_FIXTURE(TestFixture, "Stage")
 {
   StageRequest request{FILES, now, 0, 0};
-  make_stub(request.files.at(0).physical_path);
-  make_file(request.files.at(1).physical_path);
+  REQUIRE_GE(request.files.size(), 2);
+  make_stub(request.files[0].physical_path);
+  make_file(request.files[1].physical_path);
 
   // Do stage
   auto stage_response = m_service.stage(std::move(request));
@@ -77,14 +78,15 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     auto& stage          = status_response.stage();
     auto& files          = stage.files;
 
-    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
-    CHECK_EQ(files.at(0).state, File::State::submitted);
-    CHECK_EQ(files.at(0).started_at, 0);
-    CHECK_EQ(files.at(0).finished_at, 0);
-    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
-    CHECK_EQ(files.at(1).state, File::State::completed);
-    CHECK_GT(files.at(1).started_at, 0);
-    CHECK_EQ(files.at(1).finished_at, files.at(1).started_at);
+    REQUIRE_GE(files.size(), 2);
+    CHECK_EQ(files[0].physical_path, "/tmp/example1.txt");
+    CHECK_EQ(files[0].state, File::State::submitted);
+    CHECK_EQ(files[0].started_at, 0);
+    CHECK_EQ(files[0].finished_at, 0);
+    CHECK_EQ(files[1].physical_path, "/tmp/example2.txt");
+    CHECK_EQ(files[1].state, File::State::completed);
+    CHECK_GT(files[1].started_at, 0);
+    CHECK_EQ(files[1].finished_at, files[1].started_at);
 
     CHECK_EQ(stage.created_at, now);
     CHECK_GE(stage.started_at, now);
@@ -97,14 +99,15 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     auto& stage = maybe_stage.value();
     auto& files = stage.files;
 
-    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
-    CHECK_EQ(files.at(0).state, File::State::submitted);
-    CHECK_EQ(files.at(0).started_at, 0);
-    CHECK_EQ(files.at(0).finished_at, 0);
-    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
-    CHECK_EQ(files.at(1).state, File::State::completed);
-    CHECK_GT(files.at(1).started_at, 0);
-    CHECK_EQ(files.at(1).finished_at, files.at(1).started_at);
+    REQUIRE_GE(files.size(), 2);
+    CHECK_EQ(files[0].physical_path, "/tmp/example1.txt");
+    CHECK_EQ(files[0].state, File::State::submitted);
+    CHECK_EQ(files[0].started_at, 0);
+    CHECK_EQ(files[0].finished_at, 0);
+    CHECK_EQ(files[1].physical_path, "/tmp/example2.txt");
+    CHECK_EQ(files[1].state, File::State::completed);
+    CHECK_GT(files[1].started_at, 0);
+    CHECK_EQ(files[1].finished_at, files[1].started_at);
     CHECK_EQ(stage.created_at, now);
     CHECK_GE(stage.started_at, now);
     CHECK_EQ(stage.completed_at, 0);
@@ -135,15 +138,16 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     auto& stage       = status.stage();
     auto& files       = stage.files;
     CHECK_EQ(status.id(), id);
-    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
-    CHECK_EQ(files.at(0).state, File::State::started);
-    CHECK_GE(files.at(0).started_at, 0);
-    CHECK_EQ(files.at(0).finished_at, 0);
+    REQUIRE_GE(files.size(), 2);
+    CHECK_EQ(files[0].physical_path, "/tmp/example1.txt");
+    CHECK_EQ(files[0].state, File::State::started);
+    CHECK_GE(files[0].started_at, 0);
+    CHECK_EQ(files[0].finished_at, 0);
 
-    CHECK_EQ(files.at(1).state, File::State::completed);
-    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
-    CHECK_GE(files.at(1).started_at, files.at(1).finished_at);
-    CHECK_GE(files.at(1).finished_at, files.at(1).started_at);
+    CHECK_EQ(files[1].state, File::State::completed);
+    CHECK_EQ(files[1].physical_path, "/tmp/example2.txt");
+    CHECK_GE(files[1].started_at, files[1].finished_at);
+    CHECK_GE(files[1].finished_at, files[1].started_at);
   }
   {
     // check from db
@@ -151,16 +155,17 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     CHECK(maybe_stage.has_value());
     auto& stage = maybe_stage.value();
     auto& files = stage.files;
-    CHECK_EQ(files.at(0).state, File::State::started);
-    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
-    CHECK_GE(files.at(0).started_at, 0);
-    CHECK_EQ(files.at(0).finished_at, 0);
+    REQUIRE_GE(files.size(), 2);
+    CHECK_EQ(files[0].state, File::State::started);
+    CHECK_EQ(files[0].physical_path, "/tmp/example1.txt");
+    CHECK_GE(files[0].started_at, 0);
+    CHECK_EQ(files[0].finished_at, 0);
 
-    CHECK_EQ(files.at(1).state, File::State::completed);
-    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
-    CHECK_GT(files.at(1).started_at, 0);
-    CHECK_GT(files.at(1).finished_at, 0);
-    CHECK_GE(files.at(1).finished_at, files.at(1).started_at);
+    CHECK_EQ(files[1].state, File::State::completed);
+    CHECK_EQ(files[1].physical_path, "/tmp/example2.txt");
+    CHECK_GT(files[1].started_at, 0);
+    CHECK_GT(files[1].finished_at, 0);
+    CHECK_GE(files[1].finished_at, files[1].started_at);
   }
   // Simulate the end of the recall
   {
@@ -175,19 +180,20 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     auto& stage       = status.stage();
     auto& files       = stage.files;
     CHECK_EQ(status.id(), id);
-    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
-    CHECK_EQ(files.at(0).state, File::State::completed);
-    CHECK_GT(files.at(0).finished_at, files.at(0).started_at);
-    CHECK_GT(files.at(0).started_at, files.at(1).started_at);
+    REQUIRE_GE(files.size(), 2);
+    CHECK_EQ(files[0].physical_path, "/tmp/example1.txt");
+    CHECK_EQ(files[0].state, File::State::completed);
+    CHECK_GT(files[0].finished_at, files[0].started_at);
+    CHECK_GT(files[0].started_at, files[1].started_at);
 
-    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
-    CHECK_EQ(files.at(1).state, File::State::completed);
-    CHECK_EQ(files.at(1).started_at, files.at(1).finished_at);
+    CHECK_EQ(files[1].physical_path, "/tmp/example2.txt");
+    CHECK_EQ(files[1].state, File::State::completed);
+    CHECK_EQ(files[1].started_at, files[1].finished_at);
 
     CHECK_GE(stage.started_at, stage.created_at);
     CHECK_GT(stage.completed_at, stage.created_at);
-    CHECK_EQ(stage.started_at, files.at(1).started_at);
-    CHECK_EQ(stage.completed_at, files.at(0).finished_at);
+    CHECK_EQ(stage.started_at, files[1].started_at);
+    CHECK_EQ(stage.completed_at, files[0].finished_at);
   }
   {
     // check from db
@@ -195,20 +201,21 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     CHECK(maybe_stage.has_value());
     auto& stage = maybe_stage.value();
     auto& files = stage.files;
-    CHECK_EQ(files.at(0).state, File::State::completed);
-    CHECK_EQ(files.at(0).physical_path, "/tmp/example1.txt");
-    CHECK_GT(files.at(0).started_at, 0);
-    CHECK_GE(files.at(0).finished_at, files.at(0).started_at);
+    REQUIRE_GE(files.size(), 2);
+    CHECK_EQ(files[0].state, File::State::completed);
+    CHECK_EQ(files[0].physical_path, "/tmp/example1.txt");
+    CHECK_GT(files[0].started_at, 0);
+    CHECK_GE(files[0].finished_at, files[0].started_at);
 
-    CHECK_EQ(files.at(1).state, File::State::completed);
-    CHECK_EQ(files.at(1).physical_path, "/tmp/example2.txt");
-    CHECK_GT(files.at(1).started_at, 0);
-    CHECK_GT(files.at(1).finished_at, 0);
-    CHECK_GE(files.at(1).finished_at, files.at(1).started_at);
+    CHECK_EQ(files[1].state, File::State::completed);
+    CHECK_EQ(files[1].physical_path, "/tmp/example2.txt");
+    CHECK_GT(files[1].started_at, 0);
+    CHECK_GT(files[1].finished_at, 0);
+    CHECK_GE(files[1].finished_at, files[1].started_at);
     CHECK_GE(stage.started_at, stage.created_at);
     CHECK_GT(stage.completed_at, stage.created_at);
-    CHECK_EQ(stage.started_at, files.at(1).started_at);
-    CHECK_EQ(stage.completed_at, files.at(0).finished_at);
+    CHECK_EQ(stage.started_at, files[1].started_at);
+    CHECK_EQ(stage.completed_at, files[0].finished_at);
   }
 
   for (auto& f : request.files) {
@@ -219,11 +226,12 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
 TEST_CASE_FIXTURE(TestFixture, "Cancel")
 {
   StageRequest request{FILES, now, 0, 0};
-  make_stub(request.files.at(0).physical_path);
-  make_file(request.files.at(1).physical_path);
+  REQUIRE_GE(request.files.size(), 2);
+  make_stub(request.files[0].physical_path);
+  make_file(request.files[1].physical_path);
   // Do stage
   auto stage_response = m_service.stage(std::move(request));
-  auto id             = stage_response.id();
+  auto& id            = stage_response.id();
   // Do cancel
   LogicalPaths paths;
   std::transform(FILES.begin(), FILES.end(), std::back_inserter(paths),

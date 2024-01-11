@@ -24,7 +24,7 @@ PrefixMatchOpt prefix_match(LogicalPath const& path, LogicalPath const& ap)
 
 struct BestMatch
 {
-  std::ptrdiff_t match_size;
+  std::ptrdiff_t match_size{};
   LogicalPath const* path{nullptr};
   StorageArea const* sa{nullptr};
   friend auto operator<(BestMatch const& bm1, BestMatch const& bm2)
@@ -61,7 +61,7 @@ PhysicalPath StorageAreaResolver::operator()(LogicalPath const& path) const
               return prefix_match(path, ap1) < prefix_match(path, ap2);
             });
         if (auto m = prefix_match(path, *ap_it); m.has_value()) {
-          return BestMatch{m.value(), std::to_address(ap_it),
+          return BestMatch{*m, std::to_address(ap_it),
                            std::addressof(sa)};
         } else {
           return std::nullopt;

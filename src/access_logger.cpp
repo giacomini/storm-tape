@@ -24,7 +24,7 @@ void storm::AccessLogger::after_handle(crow::request& req, crow::response& res,
     return fmt::format("{:%FT%T%Ez}", fmt::localtime(std::time({})));
   }();
   auto const request_id = [&] {
-    auto id = req.get_header_value("x-request-id");
+    auto& id = req.get_header_value("x-request-id");
     return acceptable_request_id(id) ? id : "-";
   }();
   auto const principal = [&] {

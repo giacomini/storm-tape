@@ -28,14 +28,15 @@ void create_routes(CrowApp& app, Configuration const& config,
   CROW_ROUTE(app, "/api/v1/stage")
       .methods("POST"_method)([&](crow::request const& req) {
         PROFILE_SCOPE("STAGE");
-        app.get_context<AccessLogger>(req).operation = "STAGE";
+        auto& access_logger = app.get_context<AccessLogger>(req);
+        access_logger.operation = "STAGE";
         try {
           StageRequest request{from_json(req.body, StageRequest::tag),
                                std::time(nullptr), 0, 0};
           auto resp      = service.stage(std::move(request));
           auto crow_resp = to_crow_response(resp, get_hostinfo(req, config));
-          app.get_context<AccessLogger>(req).stage_id = resp.id();
-          app.get_context<AccessLogger>(req).files    = std::move(resp.files());
+          access_logger.stage_id = resp.id();
+          access_logger.files    = std::move(resp.files());
           return crow_resp;
         } catch (HttpError const& e) {
           CROW_LOG_ERROR << e.what() << '\n';

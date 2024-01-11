@@ -10,6 +10,12 @@
 
 namespace storm {
 
+bool XAttrName::valid() const
+{
+  static std::regex const re{R"(^(user|system|security|trusted)\..+)"};
+  return std::regex_match(name_, re);
+}
+
 std::ostream& operator<<(std::ostream& os, XAttrName const& n)
 {
   return os << n.value();
@@ -85,7 +91,7 @@ XAttrValue get_xattr(fs::path const& path, XAttrName const& name,
 XAttrValue get_xattr(fs::path const& path, XAttrName const& name)
 {
   std::error_code ec;
-  auto result = get_xattr(path, name, ec);
+  auto result = get_xattr(path, name, ec); //-V821
 
   if (ec) {
     throw std::system_error{ec};

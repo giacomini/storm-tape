@@ -37,11 +37,7 @@ class XAttrName
   {
     return name_.c_str();
   }
-  bool valid() const
-  {
-    static std::regex const re{R"(^(user|system|security|trusted)\..+)"};
-    return std::regex_match(name_, re);
-  }
+  bool valid() const;
 };
 
 using XAttrNames = std::vector<XAttrName>;

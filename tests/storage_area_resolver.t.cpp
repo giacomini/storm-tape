@@ -7,7 +7,7 @@ TEST_SUITE_BEGIN("StorageAreaResolver");
 
 TEST_CASE("An invalid path is resolved to an empty path")
 {
-  storm::StorageAreas const sas{
+  storm::StorageAreas const sas{ //-V826
     {"sa1", "/storage/atlas"        , {"/atlas"}},
     {"sa2", "/storage/atlas/scratch", {"/atlasscratch"}},
     {"sa3", "/storage/cms"          , {"/cms"}},

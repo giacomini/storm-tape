@@ -322,7 +322,7 @@ bool SociDatabase::update(StageUpdate const& stage_update)
   PROFILE_FUNCTION();
   soci::transaction tr{m_sql};
   if (stage_update.stage.has_value()) {
-    update(stage_update.stage.value());
+    update(*stage_update.stage);
   }
   update(stage_update.files, stage_update.tp);
   tr.commit();

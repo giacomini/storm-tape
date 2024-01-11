@@ -49,8 +49,8 @@ crow::response to_crow_response(TakeOverResponse const& resp);
 crow::response to_crow_response(InProgressResponse const& resp);
 crow::response to_crow_response(storm::HttpError const& exception);
 
-Files from_json(std::string_view const& body, StageRequest::Tag);
-LogicalPaths from_json(std::string_view const& body, RequestWithPaths::Tag);
+Files from_json(std::string_view body, StageRequest::Tag);
+LogicalPaths from_json(std::string_view body, RequestWithPaths::Tag);
 
 void fill_hostinfo_from_forwarded(HostInfo& info, std::string const& http_forwarded);
 HostInfo get_hostinfo(crow::request const& req, Configuration const& conf);
