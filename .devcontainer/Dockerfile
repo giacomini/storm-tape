@@ -1,4 +1,4 @@
-FROM centos:7
+FROM --platform=amd64 centos:7
 
 ARG DEVTOOLSET_VERSION=11
 ARG CMAKE_VERSION=3.25.2

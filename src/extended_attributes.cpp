@@ -109,7 +109,7 @@ bool has_xattr(fs::path const& path, XAttrName const& name, std::error_code& ec)
   if (res >= 0) {
     ec.clear();
     return true;
-  } else if (errno == ENOATTR) {
+  } else if (errno == ENODATA) {
     ec.clear();
     return false;
   } else {
