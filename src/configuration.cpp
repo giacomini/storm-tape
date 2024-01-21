@@ -293,6 +293,25 @@ static std::optional<std::uint16_t> load_port(YAML::Node const& node)
   throw std::runtime_error{"invalid 'port' entry in configuration"};
 }
 
+static std::optional<LogLevel> load_log_level(YAML::Node const& node)
+{
+  if (!node.IsDefined()) {
+    return {};
+  }
+
+  if (node.IsNull()) {
+    throw std::runtime_error{fmt::format("log-level is null")};
+  }
+
+  int log_level;
+  if (boost::conversion::try_lexical_convert(node, log_level)) {
+    if (log_level >= 0 && log_level <= 4) {
+      return log_level;
+    }
+  }
+  throw std::runtime_error{"invalid 'log-level' entry in configuration"};
+}
+
 static Configuration load(YAML::Node const& node)
 {
   const auto sas_key = "storage-areas";
@@ -306,11 +325,18 @@ static Configuration load(YAML::Node const& node)
   Configuration config;
   config.storage_areas = load_storage_areas(sas);
 
-  const auto port_key   = "port";
-  const auto& port_s    = node[port_key];
-  const auto maybe_port = load_port(port_s);
+  auto const port_key   = "port";
+  auto const& port_s    = node[port_key];
+  auto const maybe_port = load_port(port_s);
   if (maybe_port.has_value()) {
     config.port = *maybe_port;
+  }
+
+  auto const log_level_key   = "log-level";
+  auto const& log_level_s    = node[log_level_key];
+  auto const maybe_log_level = load_log_level(log_level_s);
+  if (maybe_log_level.has_value()) {
+    config.log_level = *maybe_log_level;
   }
 
   return config;
