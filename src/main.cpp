@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     auto const config = storm::load_configuration(fs::path{config_file});
 
     storm::CrowApp app;
-    app.loglevel(crow::LogLevel::Debug);
+    app.loglevel(crow::LogLevel{config.log_level});
     soci::session sql(soci::sqlite3, "storm-tape.sqlite");
     storm::SociDatabase db{sql};
     // storm::MockDatabase db{};

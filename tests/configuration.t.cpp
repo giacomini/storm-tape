@@ -1,5 +1,6 @@
 #include "configuration.hpp"
 #include <doctest.h>
+#include <fmt/core.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -477,6 +478,76 @@ storage-areas:
       storm::load_configuration(is),
       R"(root '/usr/local' of storage area 'test' has invalid permissions)",
       std::runtime_error);
+}
+
+TEST_CASE("If the log level is not specified, it defaults to 1")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+)";
+  std::istringstream is{conf};
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.log_level, 1);
+}
+
+TEST_CASE("If present, the log level cannot be empty")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+log-level:
+)";
+
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "log-level is null",
+                       std::runtime_error);
+}
+
+TEST_CASE("The log level is an integer between 0 and 4 included")
+{
+  auto constexpr sa_conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+)";
+
+  for (int i : {0, 1, 2, 3, 4}) {
+    auto conf = sa_conf + fmt::format("log-level: {}\n", i);
+    std::istringstream is{conf};
+    auto config = storm::load_configuration(is);
+    CHECK_EQ(config.log_level, i);
+  }
+
+  for (int i : {-1, 5}) {
+    auto conf = sa_conf + fmt::format("log-level: {}\n", i);
+    std::istringstream is{conf};
+    CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                         "invalid 'log-level' entry in configuration",
+                         std::runtime_error);
+  }
+
+  {
+    auto conf = sa_conf + fmt::format("log-level: {}\n", 3.14);
+    std::istringstream is{conf};
+    CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                         "invalid 'log-level' entry in configuration",
+                         std::runtime_error);
+  }
+
+  {
+    auto conf = sa_conf + fmt::format("log-level: {}\n", "foo");
+    std::istringstream is{conf};
+    CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                         "invalid 'log-level' entry in configuration",
+                         std::runtime_error);
+  }
 }
 
 TEST_CASE("The configuration can be loaded from a stream")
