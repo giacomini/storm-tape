@@ -12,7 +12,7 @@ bool acceptable_request_id(std::string_view id)
   std::string_view acceptable = "ABCDEFGHIJKLMNOPQRSTUVWZ"
                                 "abcdefghijklmnopqrstuvwz"
                                 "0123456789";
-  return id.size() > 0U && id.size() <= 16U
+  return id.size() > 0U && id.size() <= 32U
       && id.find_first_not_of(acceptable) == std::string::npos;
 }
 } // namespace
