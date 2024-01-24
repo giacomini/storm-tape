@@ -344,4 +344,26 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
   }
   return n_files;
 }
+
+InProgressRequest from_query_params(crow::query_string const& qs,
+                                    InProgressRequest::Tag)
+{
+  InProgressRequest result{};
+
+  if (auto v = qs.get("n")) {
+    int n;
+    if (boost::conversion::try_lexical_convert(std::string{v}, n) && n > 0) {
+      result.n_files = static_cast<std::size_t>(n);
+    }
+  }
+  if (auto v = qs.get("precise")) {
+    int precise;
+    if (boost::conversion::try_lexical_convert(std::string{v}, precise) && precise >= 0) {
+      result.precise = precise;
+    }
+  }
+
+  return result;
+}
+
 } // namespace storm
