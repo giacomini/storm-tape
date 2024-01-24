@@ -27,6 +27,7 @@ class ArchiveInfoResponse;
 class ReadyTakeOverResponse;
 class TakeOverRequest;
 class TakeOverResponse;
+class InProgressRequest;
 class InProgressResponse;
 class File;
 
@@ -53,6 +54,7 @@ class TapeService
   ReadyTakeOverResponse ready_take_over();
   TakeOverResponse take_over(TakeOverRequest);
   InProgressResponse in_progress();
+  InProgressResponse in_progress(InProgressRequest);
 };
 
 } // namespace storm
