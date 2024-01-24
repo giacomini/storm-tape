@@ -286,6 +286,7 @@ using PathLocality = std::pair<PhysicalPath, Locality>;
 static auto extend_paths_with_localities(PhysicalPaths&& paths,
                                          Storage& storage)
 {
+  PROFILE_FUNCTION();
   std::vector<PathLocality> path_localities;
   path_localities.reserve(paths.size());
 
