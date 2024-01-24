@@ -25,6 +25,7 @@ struct Configuration
   std::uint16_t port   = 8080;
   StorageAreas storage_areas;
   LogLevel log_level = 1;
+  bool mirror_mode = false;
 };
 
 Configuration load_configuration(std::istream& is);
