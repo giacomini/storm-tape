@@ -298,7 +298,8 @@ static auto extend_paths_with_localities(PhysicalPaths&& paths,
   return path_localities;
 }
 
-static auto select_only_on_tape(std::span<PathLocality> path_locs) //-V813 span is passed by value
+static auto select_only_on_tape(
+    std::span<PathLocality> path_locs) //-V813 span is passed by value
 {
   auto const it = std::partition(path_locs.begin(), path_locs.end(),
                                  [&](auto const& path_loc) {
@@ -319,7 +320,8 @@ static auto select_in_progress(std::span<PathLocality> path_locs)
                     std::span{it, path_locs.end()}};
 }
 
-static auto select_on_disk(std::span<PathLocality> path_locs) //-V813 span is passed by value
+static auto select_on_disk(
+    std::span<PathLocality> path_locs) //-V813 span is passed by value
 {
   auto const it = std::partition(
       path_locs.begin(), path_locs.end(), [](auto const& path_loc) {
@@ -372,23 +374,25 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
       boost::make_transform_iterator(need_recall.begin(), proj),
       boost::make_transform_iterator(need_recall.end(), proj));
 
-  // first set the xattr, then update the DB. failing to update the DB is not
-  // a big deal, because the file stays in submitted state and can be passed
-  // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
-  // operation
-  // clang-format off
-  std::for_each(
-      physical_paths.begin(), physical_paths.end(), [&](auto& physical_path) {
-        XAttrName const tsm_rect{"user.TSMRecT"};
-        std::error_code ec;
-        create_xattr(physical_path, tsm_rect, ec);
-        if (ec != std::error_code{}) {
-          CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
-                                          tsm_rect.value(),
-                                          physical_path.string());
-        }
-      });
-  // clang-format on
+  if (!m_config.mirror_mode) {
+    // first set the xattr, then update the DB. failing to update the DB is not
+    // a big deal, because the file stays in submitted state and can be passed
+    // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
+    // operation
+    // clang-format off
+    std::for_each(
+        physical_paths.begin(), physical_paths.end(), [&](auto& physical_path) {
+          XAttrName const tsm_rect{"user.TSMRecT"};
+          std::error_code ec;
+          create_xattr(physical_path, tsm_rect, ec);
+          if (ec != std::error_code{}) {
+            CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
+                                            tsm_rect.value(),
+                                            physical_path.string());
+          }
+        });
+    // clang-format on
+  }
   m_db->update(physical_paths, File::State::started, now);
 
   return TakeOverResponse{std::move(physical_paths)};
@@ -408,7 +412,7 @@ auto to_underlying_state(File const& f)
 
 PhysicalPaths get_paths_in_progress(TapeService& ts, StageId const& id)
 {
-  auto st     = ts.status(id);
+  auto st = ts.status(id);
 
   // after the status update, the stage can result completed
   if (st.stage().completed_at != 0) {
