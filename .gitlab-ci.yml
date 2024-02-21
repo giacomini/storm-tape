@@ -31,7 +31,8 @@ build-storm-tape:debug:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - git config --add safe.directory $CI_PROJECT_DIR
+    - pwd; env; ls -al
+    - git -C $CI_PROJECT_DIR config --add safe.directory $CI_PROJECT_DIR
     - cmake --preset debug -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cmake --build build/debug --target package --parallel
     - build/debug/tests/all.t
@@ -60,7 +61,7 @@ build-storm-tape:release:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - git config --add safe.directory $CI_PROJECT_DIR
+    - git -C $CI_PROJECT_DIR config --add safe.directory $CI_PROJECT_DIR
     - cmake --preset release -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cmake --build build/release --target package --parallel
   artifacts:
@@ -81,7 +82,7 @@ package-storm-tape:
   before_script:
     - mkdir -p $VCPKG_DEFAULT_BINARY_CACHE
   script:
-    - git config --add safe.directory $CI_PROJECT_DIR
+    - git -C $CI_PROJECT_DIR config --add safe.directory $CI_PROJECT_DIR
     - cmake -S . -B build/mc -G "Ninja Multi-Config" -DBUILD_TESTING=OFF -DCPACK_RPM_BUILD_SOURCE_DIRS_PREFIX=/storm
     - cd build/mc
     - cmake --build . --parallel --config Debug
