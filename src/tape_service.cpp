@@ -110,55 +110,75 @@ class ExtendedFileStatus
   }
   bool is_in_progress()
   {
-    if (!m_in_progress.has_value()) {
+    bool ret{false};
+    if (m_in_progress.has_value()) {
+      ret = *m_in_progress;
+    } else {
       auto result = m_storage.is_in_progress(m_path);
-      if (result.has_value()) {
-        m_in_progress = *result;
-      } else {
+      auto ec     = result.error();
+      if (ec.failed()) {
         // log something
-        m_ec = result.error();
+        m_ec = ec;
+      } else {
+        m_in_progress = *result;
+        ret           = *m_in_progress;
       }
     }
-    return *m_in_progress;
+    return ret;
   }
   bool is_stub()
   {
-    if (!m_file_size_info.has_value()) {
+    bool ret{false};
+    if (m_file_size_info.has_value()) {
+      ret = m_file_size_info->is_stub;
+    } else {
       auto result = m_storage.file_size_info(m_path);
-      if (result.has_value()) {
-        m_file_size_info = *result;
-      } else {
+      auto ec     = result.error();
+      if (ec.failed()) {
         // log something
-        m_ec = result.error();
+        m_ec = ec;
+      } else {
+        m_file_size_info = *result;
+        ret              = m_file_size_info->is_stub;
       }
     }
-    return m_file_size_info->is_stub;
+    return ret;
   }
   auto file_size()
   {
-    if (!m_file_size_info.has_value()) {
+    std::size_t ret{0};
+    if (m_file_size_info.has_value()) {
+      ret = m_file_size_info->size;
+    } else {
       auto result = m_storage.file_size_info(m_path);
-      if (result.has_value()) {
-        m_file_size_info = *result;
-      } else {
+      auto ec     = result.error();
+      if (ec.failed()) {
         // log something
-        m_ec = result.error();
+        m_ec = ec;
+      } else {
+        m_file_size_info = *result;
+        ret              = m_file_size_info->size;
       }
     }
-    return m_file_size_info->size;
+    return ret;
   }
   bool is_on_tape()
   {
-    if (!m_on_tape.has_value()) {
+    bool ret{false};
+    if (m_on_tape.has_value()) {
+      ret = *m_on_tape;
+    } else {
       auto result = m_storage.is_on_tape(m_path);
-      if (result.has_value()) {
-        m_on_tape = *result;
-      } else {
+      auto ec     = result.error();
+      if (ec.failed()) {
         // log something
-        m_ec = result.error();
+        m_ec = ec;
+      } else {
+        m_on_tape = *result;
+        ret       = *m_on_tape;
       }
     }
-    return *m_on_tape;
+    return ret;
   }
   Locality locality()
   {
