@@ -86,6 +86,106 @@ static bool override_locality(Locality& locality, PhysicalPath const& path)
   return false;
 }
 
+namespace {
+
+class ExtendedFileStatus
+{
+  Storage& m_storage;
+  PhysicalPath const& m_path;
+  std::error_code m_ec{};
+  template<typename T>
+  using Cached = std::optional<T>;
+  Cached<bool> m_in_progress{std::nullopt};
+  Cached<FileSizeInfo> m_file_size_info{std::nullopt};
+  Cached<bool> m_on_tape{std::nullopt};
+
+ public:
+  ExtendedFileStatus(Storage& storage, PhysicalPath const& path)
+      : m_storage(storage)
+      , m_path(path)
+  {}
+  auto error() const
+  {
+    return m_ec;
+  }
+  bool is_in_progress()
+  {
+    if (!m_in_progress.has_value()) {
+      auto result = m_storage.is_in_progress(m_path);
+      if (result.has_value()) {
+        m_in_progress = *result;
+      } else {
+        // log something
+        m_ec = result.error();
+      }
+    }
+    return *m_in_progress;
+  }
+  bool is_stub()
+  {
+    if (!m_file_size_info.has_value()) {
+      auto result = m_storage.file_size_info(m_path);
+      if (result.has_value()) {
+        m_file_size_info = *result;
+      } else {
+        // log something
+        m_ec = result.error();
+      }
+    }
+    return m_file_size_info->is_stub;
+  }
+  auto file_size()
+  {
+    if (!m_file_size_info.has_value()) {
+      auto result = m_storage.file_size_info(m_path);
+      if (result.has_value()) {
+        m_file_size_info = *result;
+      } else {
+        // log something
+        m_ec = result.error();
+      }
+    }
+    return m_file_size_info->size;
+  }
+  bool is_on_tape()
+  {
+    if (!m_on_tape.has_value()) {
+      auto result = m_storage.is_on_tape(m_path);
+      if (result.has_value()) {
+        m_on_tape = *result;
+      } else {
+        // log something
+        m_ec = result.error();
+      }
+    }
+    return *m_on_tape;
+  }
+  Locality locality()
+  {
+    auto const file_size_ = file_size();
+    if (error() != std::error_code{}) {
+      return Locality::unavailable;
+    }
+    if (file_size_ == 0) {
+      return Locality::none;
+    }
+    bool const is_on_disk_{!(is_stub() || is_in_progress())};
+    bool const is_on_tape_{is_on_tape()};
+
+    if (error() != std::error_code{}) {
+      return Locality::unavailable;
+    }
+
+    if (is_on_disk_) {
+      return is_on_tape_ ? Locality::disk_and_tape : Locality::disk;
+    } else {
+      return is_on_tape_ ? Locality::tape : Locality::lost;
+    }
+  }
+};
+
+} // namespace
+
 StatusResponse TapeService::status(StageId const& id)
 {
   PROFILE_FUNCTION();
@@ -101,39 +201,38 @@ StatusResponse TapeService::status(StageId const& id)
   std::vector<std::pair<PhysicalPath, File::State>> files_to_update;
   auto& stage = *maybe_stage;
   for (auto& files = stage.files; auto& file : files) {
+    ExtendedFileStatus file_status{*m_storage, file.physical_path};
+
     switch (file.state) {
-    case File::State::completed:
-      file.locality = Locality::disk; // even if it can be disk_and_tape
-      break;
     case File::State::started: {
-      if (recall_in_progress(file.physical_path)) {
+      if (file_status.is_in_progress()) {
         break;
       }
-      auto locality = m_storage->locality(file.physical_path);
-      override_locality(locality, file.physical_path);
-      auto const on_disk =
-          locality == Locality::disk || locality == Locality::disk_and_tape;
-      file.state       = on_disk ? File::State::completed : File::State::failed;
-      file.locality    = locality;
+      file.state =
+          file_status.is_stub() ? File::State::failed : File::State::completed;
       file.finished_at = now;
       files_to_update.emplace_back(file.physical_path, file.state);
       break;
     }
+
+    case File::State::completed:
     case File::State::cancelled:
     case File::State::failed:
       // do nothing
       break;
+
     case File::State::submitted: {
-      if (recall_in_progress(file.physical_path)) {
+      if (file_status.is_in_progress()) {
         file.state      = File::State::started;
         file.started_at = now;
         files_to_update.emplace_back(file.physical_path, File::State::started);
-      } else if (auto locality = m_storage->locality(file.physical_path);
-                 locality != Locality::tape) {
-        override_locality(locality, file.physical_path);
-        file.locality = locality;
-        file.state =
-            file.on_disk() ? File::State::completed : File::State::failed;
+      } else if (!file_status.is_stub()) {
+        file.state       = File::State::completed;
+        file.started_at  = now;
+        file.finished_at = now;
+        files_to_update.emplace_back(file.physical_path, file.state);
+      } else if (file_status.error() != std::error_code{}) {
+        file.state       = File::State::failed;
         file.started_at  = now;
         file.finished_at = now;
         files_to_update.emplace_back(file.physical_path, file.state);
@@ -266,7 +365,8 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
         if (!fs::is_regular_file(status)) {
           return PathInfo{std::move(logical_path), "Not a regular file"s};
         }
-        auto locality = m_storage->locality(physical_path);
+        auto locality =
+            ExtendedFileStatus{*m_storage, physical_path}.locality();
         override_locality(locality, physical_path);
         return PathInfo{std::move(logical_path), locality};
       });
@@ -291,7 +391,7 @@ static auto extend_paths_with_localities(PhysicalPaths&& paths,
   path_localities.reserve(paths.size());
 
   for (auto&& path : paths) {
-    auto const locality{storage.locality(path)};
+    auto const locality = ExtendedFileStatus{storage, path}.locality();
     path_localities.emplace_back(std::move(path), locality);
   }
 
