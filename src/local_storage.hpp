@@ -7,7 +7,9 @@ namespace storm {
 
 struct LocalStorage : Storage
 {
-  Locality locality(PhysicalPath const&) override;
+  Result<bool> is_in_progress(PhysicalPath const& path) override;
+  Result<FileSizeInfo> file_size_info(PhysicalPath const& path) override;
+  Result<bool> is_on_tape(PhysicalPath const& path) override;
 };
 
 } // namespace storm

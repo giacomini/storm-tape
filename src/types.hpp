@@ -1,6 +1,7 @@
 #ifndef STORM_TYPES_HPP
 #define STORM_TYPES_HPP
 
+#include <boost/system.hpp>
 #include <filesystem>
 #include <string>
 #include <type_traits>
@@ -44,6 +45,15 @@ constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
 {
   return static_cast<std::underlying_type_t<Enum>>(e);
 }
+
+template<typename T>
+using Result = boost::system::result<T>;
+
+struct FileSizeInfo
+{
+  std::size_t size{0};
+  bool is_stub{false};
+};
 
 } // namespace storm
 
