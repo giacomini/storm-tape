@@ -52,6 +52,39 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
   // Do stage
   auto stage_response = m_service.stage(std::move(request));
   auto id             = stage_response.id();
+
+  {
+    auto status_response = m_service.status(id);
+    auto& stage          = status_response.stage();
+    auto& files          = stage.files;
+
+    CHECK(files[0].state == File::State::submitted);
+    CHECK(files[1].state == File::State::completed);
+  }
+
+  {
+    fs::remove(FILES[0].physical_path);
+    fs::remove(FILES[1].physical_path);
+
+    auto status_response = m_service.status(id);
+    auto& stage          = status_response.stage();
+    auto& files          = stage.files;
+
+    CHECK(files[0].state == File::State::failed);
+    CHECK(files[1].state == File::State::completed);
+  }
+}
+
+TEST_CASE_FIXTURE(TestFixture, "Stage")
+{
+  StageRequest request{FILES, now, 0, 0};
+  REQUIRE_GE(request.files.size(), 2);
+  make_stub(request.files[0].physical_path);
+  make_file(request.files[1].physical_path);
+
+  // Do stage
+  auto stage_response = m_service.stage(std::move(request));
+  auto id             = stage_response.id();
   {
     auto maybe_stage = m_db.find(id);
 

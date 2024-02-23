@@ -104,9 +104,13 @@ class ExtendedFileStatus
       : m_storage(storage)
       , m_path(path)
   {}
-  auto error() const
+  auto error() const noexcept
   {
     return m_ec;
+  }
+  explicit operator bool() const noexcept
+  {
+    return m_ec == std::error_code{};
   }
   bool is_in_progress()
   {
@@ -242,16 +246,16 @@ StatusResponse TapeService::status(StageId const& id)
       break;
 
     case File::State::submitted: {
-      if (file_status.is_in_progress()) {
+      if (file_status && file_status.is_in_progress()) {
         file.state      = File::State::started;
         file.started_at = now;
         files_to_update.emplace_back(file.physical_path, File::State::started);
-      } else if (!file_status.is_stub()) {
+      } else if (file_status && !file_status.is_stub()) {
         file.state       = File::State::completed;
         file.started_at  = now;
         file.finished_at = now;
         files_to_update.emplace_back(file.physical_path, file.state);
-      } else if (file_status.error() != std::error_code{}) {
+      } else if (!file_status) {
         file.state       = File::State::failed;
         file.started_at  = now;
         file.finished_at = now;
