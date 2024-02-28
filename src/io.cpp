@@ -62,14 +62,8 @@ crow::response to_crow_response(StatusResponse const& resp)
   std::transform( //
       m_files.begin(), m_files.end(), std::back_inserter(files),
       [](File const& file) {
-        boost::json::object result{{"path", file.logical_path.c_str()}};
-        if (file.locality == Locality::disk
-            || file.locality == Locality::disk_and_tape) {
-          result.emplace("onDisk", true);
-        } else {
-          result.emplace("state", to_string(file.state));
-        }
-        return result;
+        return boost::json::object{{"path", file.logical_path.c_str()},
+                                   {"state", to_string(file.state)}};
       });
   boost::json::object jbody;
   jbody["id"]          = id;
