@@ -603,21 +603,9 @@ InProgressResponse TapeService::in_progress(InProgressRequest req)
   auto physical_paths = m_db.get_files(File::State::started, req.n_files);
 
   if (req.precise > 0) {
-    auto path_locs =
-        extend_paths_with_localities(std::move(physical_paths), m_storage);
-
-    auto [only_on_tape, not_only_on_tape] = select_only_on_tape(path_locs);
-    auto [in_progress, need_recall]       = select_in_progress(only_on_tape);
-
-    auto proj = [](auto const& file_loc) { return file_loc.first; };
-
-    // reuse physical_paths, premature optimization?
-    // reserve enough space for all the following assignments
-    physical_paths.reserve(path_locs.size()); //-V1030
-
-    physical_paths.assign(
-        boost::make_transform_iterator(in_progress.begin(), proj),
-        boost::make_transform_iterator(in_progress.end(), proj));
+    std::erase_if(physical_paths, [&](PhysicalPath const& path) {
+      return !ExtendedFileStatus{m_storage, path}.is_in_progress();
+    });
   }
 
   return InProgressResponse{std::move(physical_paths)};
