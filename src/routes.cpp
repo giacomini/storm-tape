@@ -210,7 +210,8 @@ void create_internal_routes(CrowApp& app, storm::Configuration const&,
     PROFILE_SCOPE("IN_PROGRESS");
     app.get_context<AccessLogger>(req).operation = "IN_PROGRESS";
     try {
-      auto resp = service.in_progress();
+      auto in_progress = from_query_params(req.url_params, InProgressRequest::tag);
+      auto resp = service.in_progress(in_progress);
       return to_crow_response(resp);
     } catch (HttpError const& e) {
       CROW_LOG_ERROR << e.what() << '\n';

@@ -27,6 +27,7 @@ class ArchiveInfoResponse;
 class ReadyTakeOverResponse;
 class TakeOverRequest;
 class TakeOverResponse;
+class InProgressRequest;
 class InProgressResponse;
 class File;
 
@@ -34,12 +35,12 @@ class TapeService
 {
   boost::uuids::random_generator m_uuid_gen;
   Configuration const& m_config;
-  Database* m_db;
-  Storage* m_storage;
+  Database& m_db;
+  Storage& m_storage;
 
  public:
   TapeService(Configuration const& config, Database& db, Storage& storage)
-      : m_config{config}, m_db(&db), m_storage(&storage)
+      : m_config{config}, m_db(db), m_storage(storage)
   {}
 
   StageResponse stage(StageRequest stage_request);
@@ -53,6 +54,7 @@ class TapeService
   ReadyTakeOverResponse ready_take_over();
   TakeOverResponse take_over(TakeOverRequest);
   InProgressResponse in_progress();
+  InProgressResponse in_progress(InProgressRequest);
 };
 
 } // namespace storm

@@ -56,7 +56,7 @@ StageResponse TapeService::stage(StageRequest stage_request)
   }
   auto const uuid     = m_uuid_gen();
   auto const id       = to_string(uuid);
-  auto const inserted = m_db->insert(id, stage_request);
+  auto const inserted = m_db.insert(id, stage_request);
   if (!inserted) {
     CROW_LOG_ERROR << fmt::format(
         "Failed to insert request {} into the database", id);
@@ -86,10 +86,134 @@ static bool override_locality(Locality& locality, PhysicalPath const& path)
   return false;
 }
 
+namespace {
+
+class ExtendedFileStatus
+{
+  Storage& m_storage;
+  PhysicalPath const& m_path;
+  std::error_code m_ec{};
+  template<typename T>
+  using Cached = std::optional<T>;
+  Cached<bool> m_in_progress{std::nullopt};
+  Cached<FileSizeInfo> m_file_size_info{std::nullopt};
+  Cached<bool> m_on_tape{std::nullopt};
+
+ public:
+  ExtendedFileStatus(Storage& storage, PhysicalPath const& path)
+      : m_storage(storage)
+      , m_path(path)
+  {}
+  auto error() const noexcept
+  {
+    return m_ec;
+  }
+  explicit operator bool() const noexcept
+  {
+    return m_ec == std::error_code{};
+  }
+  bool is_in_progress()
+  {
+    bool ret{false};
+    if (m_in_progress.has_value()) {
+      ret = *m_in_progress;
+    } else {
+      auto result = m_storage.is_in_progress(m_path);
+      auto ec     = result.error();
+      if (ec.failed()) {
+        // log something
+        m_ec = ec;
+      } else {
+        m_in_progress = *result;
+        ret           = *m_in_progress;
+      }
+    }
+    return ret;
+  }
+  bool is_stub()
+  {
+    bool ret{false};
+    if (m_file_size_info.has_value()) {
+      ret = m_file_size_info->is_stub;
+    } else {
+      auto result = m_storage.file_size_info(m_path);
+      auto ec     = result.error();
+      if (ec.failed()) {
+        // log something
+        m_ec = ec;
+      } else {
+        m_file_size_info = *result;
+        ret              = m_file_size_info->is_stub;
+      }
+    }
+    return ret;
+  }
+  auto file_size()
+  {
+    std::size_t ret{0};
+    if (m_file_size_info.has_value()) {
+      ret = m_file_size_info->size;
+    } else {
+      auto result = m_storage.file_size_info(m_path);
+      auto ec     = result.error();
+      if (ec.failed()) {
+        // log something
+        m_ec = ec;
+      } else {
+        m_file_size_info = *result;
+        ret              = m_file_size_info->size;
+      }
+    }
+    return ret;
+  }
+  bool is_on_tape()
+  {
+    bool ret{false};
+    if (m_on_tape.has_value()) {
+      ret = *m_on_tape;
+    } else {
+      auto result = m_storage.is_on_tape(m_path);
+      auto ec     = result.error();
+      if (ec.failed()) {
+        // log something
+        m_ec = ec;
+      } else {
+        m_on_tape = *result;
+        ret       = *m_on_tape;
+      }
+    }
+    return ret;
+  }
+  Locality locality()
+  {
+    auto const file_size_ = file_size();
+    if (error() != std::error_code{}) {
+      return Locality::unavailable;
+    }
+    if (file_size_ == 0) {
+      return Locality::none;
+    }
+    bool const is_on_disk_{!(is_stub() || is_in_progress())};
+    bool const is_on_tape_{is_on_tape()};
+
+    if (error() != std::error_code{}) {
+      return Locality::unavailable;
+    }
+
+    if (is_on_disk_) {
+      return is_on_tape_ ? Locality::disk_and_tape : Locality::disk;
+    } else {
+      return is_on_tape_ ? Locality::tape : Locality::lost;
+    }
+  }
+};
+
+} // namespace
+
 StatusResponse TapeService::status(StageId const& id)
 {
   PROFILE_FUNCTION();
-  auto maybe_stage = m_db->find(id);
+  auto maybe_stage = m_db.find(id);
 
   if (!maybe_stage.has_value()) {
     throw StageNotFound(id);
@@ -101,39 +225,38 @@ StatusResponse TapeService::status(StageId const& id)
   std::vector<std::pair<PhysicalPath, File::State>> files_to_update;
   auto& stage = *maybe_stage;
   for (auto& files = stage.files; auto& file : files) {
+    ExtendedFileStatus file_status{m_storage, file.physical_path};
+
     switch (file.state) {
-    case File::State::completed:
-      file.locality = Locality::disk; // even if it can be disk_and_tape
-      break;
     case File::State::started: {
-      if (recall_in_progress(file.physical_path)) {
+      if (file_status.is_in_progress()) {
         break;
       }
-      auto locality = m_storage->locality(file.physical_path);
-      override_locality(locality, file.physical_path);
-      auto const on_disk =
-          locality == Locality::disk || locality == Locality::disk_and_tape;
-      file.state       = on_disk ? File::State::completed : File::State::failed;
-      file.locality    = locality;
+      file.state =
+          file_status.is_stub() ? File::State::failed : File::State::completed;
       file.finished_at = now;
       files_to_update.emplace_back(file.physical_path, file.state);
       break;
     }
+
+    case File::State::completed:
     case File::State::cancelled:
     case File::State::failed:
       // do nothing
       break;
+
     case File::State::submitted: {
-      if (recall_in_progress(file.physical_path)) {
+      if (file_status && file_status.is_in_progress()) {
         file.state      = File::State::started;
         file.started_at = now;
         files_to_update.emplace_back(file.physical_path, File::State::started);
-      } else if (auto locality = m_storage->locality(file.physical_path);
-                 locality != Locality::tape) {
-        override_locality(locality, file.physical_path);
-        file.locality = locality;
-        file.state =
-            file.on_disk() ? File::State::completed : File::State::failed;
+      } else if (file_status && !file_status.is_stub()) {
+        file.state       = File::State::completed;
+        file.started_at  = now;
+        file.finished_at = now;
+        files_to_update.emplace_back(file.physical_path, file.state);
+      } else if (!file_status) {
+        file.state       = File::State::failed;
         file.started_at  = now;
         file.finished_at = now;
         files_to_update.emplace_back(file.physical_path, file.state);
@@ -154,14 +277,14 @@ StatusResponse TapeService::status(StageId const& id)
                                           stage.started_at, stage.completed_at})
               : std::nullopt,
       files_to_update, now};
-  m_db->update(stage_update);
+  m_db.update(stage_update);
   return StatusResponse{id, std::move(stage)};
 }
 
 CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
 {
   PROFILE_FUNCTION();
-  auto stage = m_db->find(id);
+  auto stage = m_db.find(id);
 
   if (!stage.has_value()) {
     throw StageNotFound{id};
@@ -185,7 +308,7 @@ CancelResponse TapeService::cancel(StageId const& id, CancelRequest cancel)
   }
 
   const auto now = std::time(nullptr);
-  m_db->update(id, cancel.paths, File::State::cancelled, now);
+  m_db.update(id, cancel.paths, File::State::cancelled, now);
   // do not bother cancelling the recalls in progress
 
   return CancelResponse{id};
@@ -195,7 +318,7 @@ DeleteResponse TapeService::erase(StageId const& id)
 {
   PROFILE_FUNCTION();
   // do not bother cancelling the recalls in progress
-  auto const erased = m_db->erase(id);
+  auto const erased = m_db.erase(id);
   if (!erased) {
     throw StageNotFound(id);
   }
@@ -206,7 +329,7 @@ ReleaseResponse TapeService::release(StageId const& id,
                                      ReleaseRequest release) const
 {
   PROFILE_FUNCTION();
-  auto stage = m_db->find(id);
+  auto stage = m_db.find(id);
   if (!stage.has_value()) {
     throw StageNotFound{id};
   }
@@ -266,7 +389,8 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
         if (!fs::is_regular_file(status)) {
           return PathInfo{std::move(logical_path), "Not a regular file"s};
         }
-        auto locality = m_storage->locality(physical_path);
+        auto locality =
+            ExtendedFileStatus{m_storage, physical_path}.locality();
         override_locality(locality, physical_path);
         return PathInfo{std::move(logical_path), locality};
       });
@@ -277,7 +401,7 @@ ArchiveInfoResponse TapeService::archive_info(ArchiveInfoRequest info)
 ReadyTakeOverResponse TapeService::ready_take_over()
 {
   PROFILE_FUNCTION();
-  auto const n = m_db->count_files(File::State::submitted);
+  auto const n = m_db.count_files(File::State::submitted);
   return ReadyTakeOverResponse{n};
 }
 
@@ -286,18 +410,20 @@ using PathLocality = std::pair<PhysicalPath, Locality>;
 static auto extend_paths_with_localities(PhysicalPaths&& paths,
                                          Storage& storage)
 {
+  PROFILE_FUNCTION();
   std::vector<PathLocality> path_localities;
   path_localities.reserve(paths.size());
 
   for (auto&& path : paths) {
-    auto const locality{storage.locality(path)};
+    auto const locality = ExtendedFileStatus{storage, path}.locality();
     path_localities.emplace_back(std::move(path), locality);
   }
 
   return path_localities;
 }
 
-static auto select_only_on_tape(std::span<PathLocality> path_locs) //-V813 span is passed by value
+static auto select_only_on_tape(
+    std::span<PathLocality> path_locs) //-V813 span is passed by value
 {
   auto const it = std::partition(path_locs.begin(), path_locs.end(),
                                  [&](auto const& path_loc) {
@@ -318,7 +444,8 @@ static auto select_in_progress(std::span<PathLocality> path_locs)
                     std::span{it, path_locs.end()}};
 }
 
-static auto select_on_disk(std::span<PathLocality> path_locs) //-V813 span is passed by value
+static auto select_on_disk(
+    std::span<PathLocality> path_locs) //-V813 span is passed by value
 {
   auto const it = std::partition(
       path_locs.begin(), path_locs.end(), [](auto const& path_loc) {
@@ -332,10 +459,10 @@ static auto select_on_disk(std::span<PathLocality> path_locs) //-V813 span is pa
 TakeOverResponse TapeService::take_over(TakeOverRequest req)
 {
   PROFILE_FUNCTION();
-  auto physical_paths = m_db->get_files(File::State::submitted, req.n_files);
+  auto physical_paths = m_db.get_files(File::State::submitted, req.n_files);
 
   auto path_locs =
-      extend_paths_with_localities(std::move(physical_paths), *m_storage);
+      extend_paths_with_localities(std::move(physical_paths), m_storage);
 
   auto [only_on_tape, not_only_on_tape] = select_only_on_tape(path_locs);
   auto [in_progress, need_recall]       = select_in_progress(only_on_tape);
@@ -352,43 +479,45 @@ TakeOverResponse TapeService::take_over(TakeOverRequest req)
   physical_paths.assign(
       boost::make_transform_iterator(in_progress.begin(), proj),
       boost::make_transform_iterator(in_progress.end(), proj));
-  m_db->update(physical_paths, File::State::started, now);
+  m_db.update(physical_paths, File::State::started, now);
 
   // update the state of files already on disk to Completed
   // started_at may remain at its default value
   physical_paths.assign(boost::make_transform_iterator(on_disk.begin(), proj),
                         boost::make_transform_iterator(on_disk.end(), proj));
-  m_db->update(physical_paths, File::State::completed, now);
+  m_db.update(physical_paths, File::State::completed, now);
 
   // update the state of all the other files (unavailable/none) to Failed
   // started_at may remain at its default value
   physical_paths.assign(boost::make_transform_iterator(the_rest.begin(), proj),
                         boost::make_transform_iterator(the_rest.end(), proj));
-  m_db->update(physical_paths, File::State::failed, now);
+  m_db.update(physical_paths, File::State::failed, now);
 
   // update the state of files to be passed to GEMSS to Started
   physical_paths.assign(
       boost::make_transform_iterator(need_recall.begin(), proj),
       boost::make_transform_iterator(need_recall.end(), proj));
 
-  // first set the xattr, then update the DB. failing to update the DB is not
-  // a big deal, because the file stays in submitted state and can be passed
-  // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
-  // operation
-  // clang-format off
-  std::for_each(
-      physical_paths.begin(), physical_paths.end(), [&](auto& physical_path) {
-        XAttrName const tsm_rect{"user.TSMRecT"};
-        std::error_code ec;
-        create_xattr(physical_path, tsm_rect, ec);
-        if (ec != std::error_code{}) {
-          CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
-                                          tsm_rect.value(),
-                                          physical_path.string());
-        }
-      });
-  // clang-format on
-  m_db->update(physical_paths, File::State::started, now);
+  if (!m_config.mirror_mode) {
+    // first set the xattr, then update the DB. failing to update the DB is not
+    // a big deal, because the file stays in submitted state and can be passed
+    // later again to GEMSS. passing a file to GEMSS is mostly an idempotent
+    // operation
+    // clang-format off
+    std::for_each(
+        physical_paths.begin(), physical_paths.end(), [&](auto& physical_path) {
+          XAttrName const tsm_rect{"user.TSMRecT"};
+          std::error_code ec;
+          create_xattr(physical_path, tsm_rect, ec);
+          if (ec != std::error_code{}) {
+            CROW_LOG_WARNING << fmt::format("Cannot create xattr {} for file {}",
+                                            tsm_rect.value(),
+                                            physical_path.string());
+          }
+        });
+    // clang-format on
+  }
+  m_db.update(physical_paths, File::State::started, now);
 
   return TakeOverResponse{std::move(physical_paths)};
 }
@@ -407,7 +536,7 @@ auto to_underlying_state(File const& f)
 
 PhysicalPaths get_paths_in_progress(TapeService& ts, StageId const& id)
 {
-  auto st     = ts.status(id);
+  auto st = ts.status(id);
 
   // after the status update, the stage can result completed
   if (st.stage().completed_at != 0) {
@@ -451,7 +580,7 @@ InProgressResponse TapeService::in_progress()
 {
   PROFILE_FUNCTION();
 
-  auto const stage_ids = m_db->find_incomplete_stages();
+  auto const stage_ids = m_db.find_incomplete_stages();
 
   auto paths = std::transform_reduce(
       stage_ids.begin(), stage_ids.end(), PhysicalPaths{},
@@ -465,6 +594,21 @@ InProgressResponse TapeService::in_progress()
   remove_duplicates(paths);
 
   return InProgressResponse{std::move(paths)};
+}
+
+InProgressResponse TapeService::in_progress(InProgressRequest req)
+{
+  PROFILE_FUNCTION();
+
+  auto physical_paths = m_db.get_files(File::State::started, req.n_files);
+
+  if (req.precise > 0) {
+    std::erase_if(physical_paths, [&](PhysicalPath const& path) {
+      return !ExtendedFileStatus{m_storage, path}.is_in_progress();
+    });
+  }
+
+  return InProgressResponse{std::move(physical_paths)};
 }
 
 } // namespace storm

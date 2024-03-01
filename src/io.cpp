@@ -62,14 +62,8 @@ crow::response to_crow_response(StatusResponse const& resp)
   std::transform( //
       m_files.begin(), m_files.end(), std::back_inserter(files),
       [](File const& file) {
-        boost::json::object result{{"path", file.logical_path.c_str()}};
-        if (file.locality == Locality::disk
-            || file.locality == Locality::disk_and_tape) {
-          result.emplace("onDisk", true);
-        } else {
-          result.emplace("state", to_string(file.state));
-        }
-        return result;
+        return boost::json::object{{"path", file.logical_path.c_str()},
+                                   {"state", to_string(file.state)}};
       });
   boost::json::object jbody;
   jbody["id"]          = id;
@@ -344,4 +338,26 @@ std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag)
   }
   return n_files;
 }
+
+InProgressRequest from_query_params(crow::query_string const& qs,
+                                    InProgressRequest::Tag)
+{
+  InProgressRequest result{};
+
+  if (auto v = qs.get("n")) {
+    int n;
+    if (boost::conversion::try_lexical_convert(std::string{v}, n) && n > 0) {
+      result.n_files = static_cast<std::size_t>(n);
+    }
+  }
+  if (auto v = qs.get("precise")) {
+    int precise;
+    if (boost::conversion::try_lexical_convert(std::string{v}, precise) && precise >= 0) {
+      result.precise = precise;
+    }
+  }
+
+  return result;
+}
+
 } // namespace storm

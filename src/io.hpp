@@ -6,11 +6,13 @@
 #include "requests_with_paths.hpp"
 #include "stage_request.hpp"
 #include "takeover_request.hpp"
+#include "in_progress_request.hpp"
 #include <boost/json.hpp>
 
 namespace crow {
 class request;
 class response;
+class query_string;
 } // namespace crow
 
 namespace storm {
@@ -56,6 +58,7 @@ void fill_hostinfo_from_forwarded(HostInfo& info, std::string const& http_forwar
 HostInfo get_hostinfo(crow::request const& req, Configuration const& conf);
 
 std::size_t from_body_params(std::string_view body, TakeOverRequest::Tag);
+InProgressRequest from_query_params(crow::query_string const& qs, InProgressRequest::Tag);
 
 } // namespace storm
 
