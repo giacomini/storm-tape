@@ -504,8 +504,7 @@ log-level:
 )";
 
   std::istringstream is{conf};
-  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
-                       "log-level is null",
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is), "log-level is null",
                        std::runtime_error);
 }
 
@@ -627,7 +626,7 @@ storage-areas:
     auto config = storm::load_configuration(is);
     CHECK_EQ(config.mirror_mode, true);
   }
-  
+
   for (auto s : {"false", "off", "no"}) {
     auto conf = sa_conf + fmt::format("mirror-mode: {}\n", s);
     std::istringstream is{conf};
@@ -654,7 +653,8 @@ storage-areas:
   }
 }
 
-TEST_CASE("If mirror mode is explicitly disabled, there is a write check on the SA root")
+TEST_CASE("If mirror mode is explicitly disabled, there is a write check on "
+          "the SA root")
 {
   std::string const conf = R"(
 storage-areas:

@@ -36,7 +36,9 @@ auto make_stub = [](PhysicalPath const& path, const char* size = "1M") {
   set_xattr(path, XAttrName{"user.storm.migrated"}, XAttrValue{""});
 };
 
-auto delete_file = [](PhysicalPath const& path) { std::filesystem::remove(path); };
+auto delete_file = [](PhysicalPath const& path) {
+  std::filesystem::remove(path);
+};
 
 TEST_SUITE_BEGIN("TapeService");
 
@@ -235,9 +237,10 @@ TEST_CASE_FIXTURE(TestFixture, "Stage")
     // Since one file was already on disk, only the stub file should be returned
     auto const takeover_response = m_service.take_over({42});
     CHECK_EQ(takeover_response.paths.size(), 1);
-    CHECK(has_xattr(PhysicalPath{"/tmp/example1.txt"}, XAttrName{"user.TSMRecT"}));
-    CHECK_FALSE(
-        has_xattr(PhysicalPath{"/tmp/example2.txt"}, XAttrName{"user.TSMRecT"}));
+    CHECK(has_xattr(PhysicalPath{"/tmp/example1.txt"},
+                    XAttrName{"user.TSMRecT"}));
+    CHECK_FALSE(has_xattr(PhysicalPath{"/tmp/example2.txt"},
+                          XAttrName{"user.TSMRecT"}));
   }
 
   // Sleep for a while...
@@ -356,6 +359,6 @@ TEST_CASE_FIXTURE(TestFixture, "Cancel")
   CHECK_GT(stage.started_at, now);
   CHECK_EQ(stage.started_at, stage.completed_at);
   CHECK(std::all_of(stage.files.begin(), stage.files.end(),
-              [](auto& f) { return f.state == File::State::cancelled; }));
+                    [](auto& f) { return f.state == File::State::cancelled; }));
 }
 } // namespace storm
