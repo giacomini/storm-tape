@@ -143,7 +143,7 @@ static StorageArea load_storage_area(YAML::Node const& sa)
   return {name, root, ap};
 }
 
-static void check_root(StorageArea const& sa)
+static void check_root(StorageArea const& sa, bool mirror_mode)
 {
   auto const& [name, root, _] = sa;
 
@@ -172,7 +172,7 @@ static void check_root(StorageArea const& sa)
                     root.string(), name)};
   }
 
-  if (!storm_has_all_permissions(root)) {
+  if (!mirror_mode && !storm_has_all_permissions(root)) {
     throw std::runtime_error{
         fmt::format("root '{}' of storage area '{}' has invalid permissions",
                     root.string(), name)};
@@ -266,11 +266,6 @@ static StorageAreas load_storage_areas(YAML::Node const& sas)
     }
   }
 
-  {
-    std::for_each(result.begin(), result.end(),
-                  [](auto const& sa) { check_root(sa); });
-  }
-
   return result;
 }
 
@@ -312,6 +307,23 @@ static std::optional<LogLevel> load_log_level(YAML::Node const& node)
   throw std::runtime_error{"invalid 'log-level' entry in configuration"};
 }
 
+static std::optional<bool> load_mirror_mode(YAML::Node const& node)
+{
+  if (!node.IsDefined()) {
+    return {};
+  }
+
+  if (node.IsNull()) {
+    throw std::runtime_error{fmt::format("mirror-mode is null")};
+  }
+
+  bool value;
+  if (YAML::convert<bool>::decode(node, value)) {
+    return value;
+  }
+  throw std::runtime_error{"invalid 'mirror-mode' entry in configuration"};
+}
+
 static Configuration load(YAML::Node const& node)
 {
   const auto sas_key = "storage-areas";
@@ -339,13 +351,30 @@ static Configuration load(YAML::Node const& node)
     config.log_level = *maybe_log_level;
   }
 
+  {
+    auto const key    = "mirror-mode";
+    auto const& value = node[key];
+    auto const maybe  = load_mirror_mode(value);
+    if (maybe.has_value()) {
+      config.mirror_mode = *maybe;
+    }
+  }
+
   return config;
+}
+
+auto check_sa_roots(StorageAreas const& sas, bool mirror_mode)
+{
+  std::for_each(sas.begin(), sas.end(),
+                [=](auto& sa) { check_root(sa, mirror_mode); });
 }
 
 Configuration load_configuration(std::istream& is)
 {
-  YAML::Node const config = YAML::Load(is);
-  return load(config);
+  YAML::Node const node = YAML::Load(is);
+  auto config           = load(node);
+  check_sa_roots(config.storage_areas, config.mirror_mode);
+  return config;
 }
 
 Configuration load_configuration(fs::path const& p)

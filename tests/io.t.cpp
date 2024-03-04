@@ -1,4 +1,5 @@
 #include "io.hpp"
+#include <crow/query_string.h>
 #include <doctest.h>
 
 TEST_SUITE_BEGIN("IO");
@@ -53,6 +54,59 @@ TEST_CASE("Testing HostInfo")
     CHECK(result == storm::HostInfo("http", "localhost", "8080"));
   }
   // clang-format on
+}
+
+TEST_CASE("An InProgressRequest accepts an `n > 0` and a `precise >= 0`, both "
+          "optional")
+{
+  {
+    auto r = storm::from_query_params(crow::query_string{"/?n=10&precise=1"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 10);
+    CHECK_EQ(r.precise, 1);
+  }
+  {
+    auto r = storm::from_query_params(crow::query_string{"/"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 1'000);
+    CHECK_EQ(r.precise, 0);
+  }
+  {
+    auto r = storm::from_query_params(crow::query_string{"/?n=10"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 10);
+    CHECK_EQ(r.precise, 0);
+  }
+  {
+    auto r = storm::from_query_params(crow::query_string{"/?precise=1"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 1'000);
+    CHECK_EQ(r.precise, 1);
+  }
+  {
+    auto r = storm::from_query_params(crow::query_string{"/?precise=2"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 1'000);
+    CHECK_EQ(r.precise, 2);
+  }
+  {
+    auto r = storm::from_query_params(crow::query_string{"/?n=0"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 1'000);
+    CHECK_EQ(r.precise, 0);
+  }
+  {
+    auto r = storm::from_query_params(crow::query_string{"/?n=-1"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 1'000);
+    CHECK_EQ(r.precise, 0);
+  }
+  {
+    auto r = storm::from_query_params(crow::query_string{"/?precise=-1"},
+                                      storm::InProgressRequest::tag);
+    CHECK_EQ(r.n_files, 1'000);
+    CHECK_EQ(r.precise, 0);
+  }
 }
 
 TEST_SUITE_END;

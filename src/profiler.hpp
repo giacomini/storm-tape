@@ -12,7 +12,7 @@
 #  define COMBINE_HELPER(X,Y) X##Y
 #  define COMBINE(X,Y) COMBINE_HELPER(X,Y)
 #  define PROFILE_SCOPE(name) storm::InstrumentationTimer COMBINE(timer,__LINE__)(name)
-#  define PROFILE_FUNCTION()  PROFILE_SCOPE(__FUNCTION__)
+#  define PROFILE_FUNCTION()  PROFILE_SCOPE(__PRETTY_FUNCTION__)
 #else
 #  define PROFILE_SCOPE(name)
 #  define PROFILE_FUNCTION()

@@ -9,6 +9,8 @@
 #include "extended_attributes.hpp"
 #include "file.hpp"
 #include "fixture.t.hpp"
+#include "in_progress_request.hpp"
+#include "in_progress_response.hpp"
 #include "requests_with_paths.hpp"
 #include "stage_request.hpp"
 #include "stage_response.hpp"
@@ -41,6 +43,117 @@ TEST_SUITE_BEGIN("TapeService");
 auto const now = std::time(nullptr);
 const Files FILES{{"/tmp/example1.txt", "/tmp/example1.txt"},
                   {"/tmp/example2.txt", "/tmp/example2.txt"}};
+
+TEST_CASE_FIXTURE(TestFixture, "Stage")
+{
+  StageRequest request{FILES, now, 0, 0};
+  REQUIRE_GE(request.files.size(), 2);
+  make_stub(request.files[0].physical_path);
+  make_file(request.files[1].physical_path);
+
+  // Do stage
+  auto stage_response = m_service.stage(std::move(request));
+  auto id             = stage_response.id();
+
+  {
+    auto status_response = m_service.status(id);
+    auto& stage          = status_response.stage();
+    auto& files          = stage.files;
+
+    CHECK(files[0].state == File::State::submitted);
+    CHECK(files[1].state == File::State::completed);
+  }
+
+  {
+    fs::remove(FILES[0].physical_path);
+    fs::remove(FILES[1].physical_path);
+
+    auto status_response = m_service.status(id);
+    auto& stage          = status_response.stage();
+    auto& files          = stage.files;
+
+    CHECK(files[0].state == File::State::failed);
+    CHECK(files[1].state == File::State::completed);
+  }
+}
+
+TEST_CASE_FIXTURE(TestFixture, "In Progress")
+{
+  StageRequest request{FILES, now, 0, 0};
+  REQUIRE_GE(request.files.size(), 2);
+  make_stub(request.files[0].physical_path);
+  make_stub(request.files[1].physical_path);
+
+  // Do stage
+  auto stage_response = m_service.stage(std::move(request));
+  auto id             = stage_response.id();
+
+  {
+    auto const resp = m_service.in_progress({.precise = 0});
+    CHECK(resp.paths.empty());
+  }
+
+  {
+    auto const resp = m_service.in_progress({.precise = 1});
+    CHECK(resp.paths.empty());
+  }
+
+  {
+    auto const to_resp = m_service.take_over({.n_files = 10});
+
+    CHECK_EQ(to_resp.paths.size(), 2);
+    {
+      auto const resp = m_service.in_progress({.precise = 0});
+      CHECK_EQ(resp.paths.size(), 2);
+    }
+    {
+      auto const resp = m_service.in_progress({.precise = 1});
+      CHECK_EQ(resp.paths.size(), 2);
+    }
+
+    {
+      // Simulate the end of the recall
+      make_file(FILES[0].physical_path);
+      storm::remove_xattr(FILES[0].physical_path, XAttrName{"user.TSMRecT"});
+    }
+    {
+      auto const resp = m_service.in_progress({.precise = 0});
+      CHECK_EQ(resp.paths.size(), 2);
+    }
+    {
+      auto const resp = m_service.in_progress({.precise = 1});
+      CHECK_EQ(resp.paths.size(), 1);
+    }
+
+    auto status_response = m_service.status(id);
+    auto& files          = status_response.stage().files;
+
+    CHECK_EQ(files.size(), 2);
+    CHECK(std::all_of(files.begin(), files.end(), [](auto const& f) {
+      if (f.physical_path == FILES[0].physical_path) {
+         return f.state == File::State::completed;
+      } else if (f.physical_path == FILES[1].physical_path) {
+        return f.state == File::State::started;
+      } else {
+        return false;
+      }
+    }));
+  }
+
+  {
+    auto const resp = m_service.in_progress({.precise = 0});
+    CHECK_EQ(resp.paths.size(), 1);
+  }
+
+  {
+    auto const resp = m_service.in_progress({.precise = 1});
+    CHECK_EQ(resp.paths.size(), 1);
+  }
+
+  for (auto& f : FILES) {
+    delete_file(f.physical_path);
+  }
+}
 
 TEST_CASE_FIXTURE(TestFixture, "Stage")
 {

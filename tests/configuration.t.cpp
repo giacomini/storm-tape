@@ -612,4 +612,76 @@ TEST_CASE("The configuration file must have the right permissions")
   fs::remove_all("/tmp/conf");
 }
 
+TEST_CASE("Mirror mode can have a boolean value")
+{
+  auto constexpr sa_conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+)";
+
+  for (auto s : {"true", "on", "yes"}) {
+    auto conf = sa_conf + fmt::format("mirror-mode: {}\n", s);
+    std::istringstream is{conf};
+    auto config = storm::load_configuration(is);
+    CHECK_EQ(config.mirror_mode, true);
+  }
+  
+  for (auto s : {"false", "off", "no"}) {
+    auto conf = sa_conf + fmt::format("mirror-mode: {}\n", s);
+    std::istringstream is{conf};
+    auto config = storm::load_configuration(is);
+    CHECK_EQ(config.mirror_mode, false);
+  }
+}
+
+TEST_CASE("Mirror mode cannot have an integer value")
+{
+  auto constexpr sa_conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+)";
+
+  for (int i : {0, 1}) {
+    auto conf = sa_conf + fmt::format("mirror-mode: {}\n", i);
+    std::istringstream is{conf};
+    CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                         "invalid 'mirror-mode' entry in configuration",
+                         std::runtime_error);
+  }
+}
+
+TEST_CASE("If mirror mode is explicitly disabled, there is a write check on the SA root")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test
+  root: /usr/local
+  access-point: /someexp
+mirror-mode: false
+)";
+  std::istringstream is(conf);
+  CHECK_THROWS_WITH_AS(
+      storm::load_configuration(is),
+      R"(root '/usr/local' of storage area 'test' has invalid permissions)",
+      std::runtime_error);
+}
+
+TEST_CASE("If mirror mode is enabled, there is no write check on the SA root")
+{
+  std::string const conf = R"(
+storage-areas:
+- name: test
+  root: /usr/local
+  access-point: /someexp
+mirror-mode: on
+)";
+  std::istringstream is(conf);
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.mirror_mode, true);
+}
+
 TEST_SUITE_END;
