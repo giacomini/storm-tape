@@ -684,4 +684,149 @@ mirror-mode: on
   CHECK_EQ(config.mirror_mode, true);
 }
 
+TEST_CASE("The default port must be 8080, if not specified")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+)";
+  std::istringstream is{conf};
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.port, 8080);
+}
+
+TEST_CASE("The port entry cannot be empty")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port:
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is), "port is null",
+                       std::runtime_error);
+}
+
+TEST_CASE("An integer port between 1 and 65535 must succeed")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 1234
+)";
+  std::istringstream is{conf};
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.port, 1234);
+}
+
+TEST_CASE("The port cannot be equal to '0'")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 0
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("The port cannot be negative")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: -1
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("The port cannot be larger than 65535")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 65538
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("The port cannot be a floating point number")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: 3.14
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("The port can be a string, if the numeric range is valid")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: "8080"
+)";
+  std::istringstream is{conf};
+  auto config = storm::load_configuration(is);
+  CHECK_EQ(config.port, 8080);
+}
+
+TEST_CASE("The port cannot be a string representing an not valid integer")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: foo
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
+TEST_CASE("The port cannot be a string representing a floating point number")
+{
+  auto constexpr conf = R"(
+storage-areas:
+- name: test
+  root: /tmp
+  access-point: /someexp
+port: "3.14"
+)";
+  std::istringstream is{conf};
+  CHECK_THROWS_WITH_AS(storm::load_configuration(is),
+                       "invalid 'port' entry in configuration",
+                       std::runtime_error);
+}
+
 TEST_SUITE_END;
