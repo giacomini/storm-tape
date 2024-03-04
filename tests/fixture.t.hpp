@@ -10,7 +10,7 @@
 #include "tape_service.hpp"
 
 namespace storm {
-auto static constexpr DB_NAME           = "storm-tape-test.sqlite";
+auto static constexpr DB_NAME           = ":memory:";
 auto static constexpr DUMMY_CONFIG_PATH = "storm-tape-test.conf";
 
 static inline void make_dummy_config()
@@ -47,7 +47,6 @@ class TestFixture
 
   ~TestFixture()
   {
-    std::filesystem::remove(DB_NAME);
     std::filesystem::remove(DUMMY_CONFIG_PATH);
   }
 };
