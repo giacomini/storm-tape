@@ -19,6 +19,9 @@ on:
   schedule:
     - cron: '35 4 * * 1'
 
+env:
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
 jobs:
   analyze:
     name: Analyze
@@ -45,6 +48,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Bootstrap vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git ${{ github.workspace }}/vcpkg
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
